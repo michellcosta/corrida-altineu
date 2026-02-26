@@ -247,7 +247,7 @@ export default function ChipRegistrationsPage() {
               <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="admin-table-wrapper">
               <table className="admin-table">
                 <thead>
                   <tr>

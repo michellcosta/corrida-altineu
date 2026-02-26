@@ -118,10 +118,10 @@ function CreatePageModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 overflow-y-auto">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl my-auto max-h-[90vh] overflow-y-auto"
       >
         <h2 className="text-2xl font-semibold text-gray-900">Nova pagina</h2>
         <p className="mt-1 text-sm text-gray-500">
@@ -393,7 +393,7 @@ export default function PagesManagementPage() {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <div className="admin-table-wrapper">
             <table className="admin-table">
               <thead>
                 <tr>

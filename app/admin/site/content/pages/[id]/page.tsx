@@ -101,10 +101,10 @@ function AddSectionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8 overflow-y-auto">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl my-auto max-h-[90vh] overflow-y-auto"
       >
         <h2 className="text-2xl font-semibold text-gray-900">Adicionar secao</h2>
         <p className="mt-1 text-sm text-gray-500">

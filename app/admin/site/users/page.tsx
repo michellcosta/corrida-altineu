@@ -247,8 +247,8 @@ export default function UsersManagementPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table">
+<div className="admin-table-wrapper">
+            <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Nome</th>

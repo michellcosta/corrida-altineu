@@ -71,8 +71,8 @@ export default function PostsPage() {
               Nenhum post cadastrado. Crie o primeiro post.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table">
+<div className="admin-table-wrapper">
+            <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Título</th>

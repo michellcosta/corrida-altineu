@@ -1,13 +1,5 @@
 /* Estilos específicos do painel administrativo - Premium SaaS */
 
-.admin-sidebar {
-  @apply fixed left-0 top-0 h-full w-64 bg-gray-900 text-white overflow-y-auto z-40;
-}
-
-.admin-content {
-  @apply ml-64 min-h-screen bg-gray-50;
-}
-
 /* Cards premium - sombras sutis, bordas refinadas */
 .admin-card {
   @apply bg-white rounded-xl shadow-card p-6 border border-gray-100 transition-shadow duration-200 hover:shadow-card-hover;
@@ -53,17 +45,18 @@
   @apply w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 placeholder:text-gray-400;
 }
 
-/* Responsivo */
+/* Tabelas responsivas - scroll horizontal em mobile */
+.admin-table-wrapper {
+  @apply overflow-x-auto -mx-4 md:mx-0;
+}
+
+.admin-table-wrapper .admin-table {
+  @apply min-w-[600px] md:min-w-0;
+}
+
+/* Cards responsivos */
 @media (max-width: 768px) {
-  .admin-sidebar {
-    @apply -translate-x-full transition-transform duration-300;
-  }
-
-  .admin-sidebar.open {
-    @apply translate-x-0;
-  }
-
-  .admin-content {
-    @apply ml-0;
+  .admin-card {
+    @apply p-4;
   }
 }

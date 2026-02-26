@@ -137,7 +137,7 @@ export default function NumberingPage() {
               Nenhuma inscrição confirmada. A numeração é aplicada apenas a atletas com status confirmado.
             </div>
           ) : (
-            <div className="overflow-x-auto max-h-96">
+            <div className="admin-table-wrapper max-h-96 overflow-y-auto">
               <table className="admin-table">
                 <thead>
                   <tr>

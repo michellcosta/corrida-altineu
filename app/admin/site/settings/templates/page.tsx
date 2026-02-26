@@ -75,8 +75,8 @@ export default function TemplatesSettingsPage() {
               Nenhum template cadastrado. Crie templates para confirmação de inscrição, lembretes, etc.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table">
+<div className="admin-table-wrapper">
+            <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Nome</th>

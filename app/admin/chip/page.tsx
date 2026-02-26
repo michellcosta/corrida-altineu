@@ -332,7 +332,7 @@ export default function ChipAdminDashboard() {
               Ver todas →
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="admin-table-wrapper">
             <table className="admin-table">
               <thead>
                 <tr>

@@ -133,12 +133,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation = ROLE_NAVIGATION[user.role]
 
+  const closeMobileMenu = () => setMobileMenuOpen(false)
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar Desktop */}
-      <aside className={`admin-sidebar ${sidebarOpen ? '' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300`}>
-        <div className="p-6 border-b border-gray-800">
-          <Link href="/" className="flex items-center space-x-3 group">
+      {/* Sidebar - Desktop: toggle com sidebarOpen | Mobile: overlay com mobileMenuOpen */}
+      <aside
+        className={`fixed left-0 top-0 h-full w-64 bg-gray-900 text-white overflow-y-auto z-40 transition-transform duration-300 ease-out
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${sidebarOpen ? 'md:translate-x-0' : 'md:-translate-x-full'}`}
+      >
+        <div className="p-4 md:p-6 border-b border-gray-800">
+          <Link href="/" className="flex items-center space-x-3 group" onClick={closeMobileMenu}>
             <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-accent-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">51ª</span>
             </div>
@@ -195,6 +201,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 ) : (
                   <Link
                     href={item.href}
+                    onClick={closeMobileMenu}
                     className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
                       isActive
                         ? 'bg-primary-600 text-white'
@@ -224,6 +231,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         <Link
                           key={child.name}
                           href={child.href}
+                          onClick={closeMobileMenu}
                           className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
                             isChildActive
                               ? 'bg-primary-600 text-white'
@@ -246,6 +254,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800 space-y-1">
           <Link
             href="/admin/settings/security"
+            onClick={closeMobileMenu}
             className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
           >
             <Shield size={20} />
@@ -262,34 +271,41 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div className={`admin-content ${sidebarOpen ? 'ml-64' : 'ml-0'} transition-all duration-300`}>
+      <div className={`min-h-screen bg-gray-50 transition-all duration-300 ml-0 ${sidebarOpen ? 'md:ml-64' : ''}`}>
         {/* Top Bar */}
         <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 gap-2">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setMobileMenuOpen((o) => !o)
+                  } else {
+                    setSidebarOpen((o) => !o)
+                  }
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+                aria-label="Abrir menu"
               >
                 <Menu size={24} />
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-base md:text-xl font-bold text-gray-900 truncate">
                   {navigation.find(n => pathname.startsWith(n.href))?.name || 'Dashboard'}
                 </h1>
-                <p className="text-sm text-gray-500">51ª Corrida de Macuco - 2026</p>
+                <p className="text-xs md:text-sm text-gray-500 hidden sm:block">51ª Corrida de Macuco - 2026</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative">
+            <div className="flex items-center gap-1 md:gap-4 shrink-0">
+              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative" aria-label="Notificações">
                 <Bell size={20} />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <Link
                 href="/"
                 target="_blank"
-                className="text-sm text-primary-600 hover:text-primary-700 font-semibold"
+                className="text-xs md:text-sm text-primary-600 hover:text-primary-700 font-semibold whitespace-nowrap"
               >
                 Ver Site →
               </Link>
@@ -298,7 +314,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           {children}
         </main>
       </div>
@@ -307,7 +323,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={closeMobileMenu}
+          aria-hidden
         />
       )}
     </div>
