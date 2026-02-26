@@ -48,29 +48,26 @@ export default function Header() {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
-      // Fechar menu mobile ao rolar
-      if (isOpen) {
-        setIsOpen(false)
-      }
+      // Não fechar menu no scroll em mobile - viewport resize (ex: barra de endereço) dispara scroll e impede toques
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [isOpen])
+  }, [])
 
   // Fechar menu ao clicar fora ou pressionar ESC
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as HTMLElement
-      const nav = target.closest('nav')
       const menuButton = target.closest('button[aria-label*="menu" i]')
-      
-      // Se clicou fora do nav ou no botão do menu (que já fecha/abre via onClick)
-      if (isOpen && nav && !menuButton) {
-        // Verificar se o clique foi fora do menu mobile
-        const mobileMenu = nav.querySelector('.lg\\:hidden')
-        if (mobileMenu && !mobileMenu.contains(target)) {
-          setIsOpen(false)
-        }
+      const mobileMenuPanel = document.getElementById('mobile-menu-panel')
+      const link = target.closest('a[href]')
+
+      // Se clicou no botão do menu ou em um link (navegação), não fechar aqui - o link já tem onClick
+      if (menuButton || (link && mobileMenuPanel?.contains(link))) return
+
+      // Se clicou fora do painel do menu
+      if (isOpen && mobileMenuPanel && !mobileMenuPanel.contains(target)) {
+        setIsOpen(false)
       }
     }
 
@@ -82,13 +79,14 @@ export default function Header() {
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside, { passive: true })
       document.addEventListener('keydown', handleEscape)
-      // Prevenir scroll do body quando menu está aberto (mas o menu pode rolar)
       document.body.style.overflow = 'hidden'
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
       document.body.style.overflow = ''
     }
@@ -228,7 +226,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="mt-4 max-h-[calc(100vh-120px)] overflow-y-auto animate-slide-up rounded-xl border border-white/20 bg-white/95 p-4 text-gray-800 shadow-lg lg:hidden">
+          <div id="mobile-menu-panel" className="mt-4 max-h-[calc(100vh-120px)] overflow-y-auto animate-slide-up rounded-xl border border-white/20 bg-white/95 p-4 text-gray-800 shadow-lg lg:hidden">
             <div className="flex flex-col space-y-2">
               {navigation.map((item) => (
                 <div key={item.name}>
@@ -266,14 +264,14 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/inscricao/lista"
-                  className="block rounded-lg py-2.5 px-4 text-center font-medium text-white transition-colors hover:bg-white/15"
+                  className="block rounded-lg py-2.5 px-4 text-center font-medium text-gray-700 transition-colors hover:bg-primary-50 hover:text-primary-600"
                   onClick={() => setIsOpen(false)}
                 >
                   Lista de Inscritos
                 </Link>
                 <Link
                   href="/inscricao/acompanhar"
-                  className="block rounded-lg border border-white/60 bg-white/10 py-2.5 px-4 text-center font-semibold text-white transition-colors hover:bg-white/20"
+                  className="block rounded-lg border border-primary-200 bg-primary-50 py-2.5 px-4 text-center font-semibold text-gray-800 transition-colors hover:bg-primary-100 hover:text-primary-700"
                   onClick={() => setIsOpen(false)}
                 >
                   Acompanhar Inscrição
