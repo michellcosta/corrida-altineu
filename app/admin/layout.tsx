@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import './admin.css'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Painel Administrativo | Corrida de Macuco',
   description: 'Sistema de gerenciamento da Corrida Rústica de Macuco',
