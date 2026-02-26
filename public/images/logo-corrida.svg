@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Text "51ª" -->
+  <text x="100" y="115" 
+        font-family="'Montserrat', 'Arial', sans-serif" 
+        font-size="85" 
+        font-weight="800" 
+        fill="url(#mainGradient)"
+        text-anchor="middle"
+        dominant-baseline="middle">51ª</text>
+</svg>

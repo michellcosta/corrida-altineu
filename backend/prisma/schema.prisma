@@ -1,0 +1,430 @@
+// This is your Prisma schema file for Corrida de Macuco
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// ADMINISTRAÇÃO & SEGURANÇA
+// ========================================
+
+model AdminUser {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @relation(fields: [roleId], references: [id])
+  roleId        String
+  mfaSecret     String?
+  mfaEnabled    Boolean  @default(false)
+  avatar        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLogin     DateTime?
+  
+  auditLogs     AuditLog[]
+  createdPages  Page[]
+  createdPosts  Post[]
+  
+  @@index([email])
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // SITE_ADMIN, CHIP_ADMIN, ORG_ADMIN
+  description String?
+  createdAt   DateTime @default(now())
+  
+  permissions RolePermission[]
+  users       AdminUser[]
+}
+
+model RolePermission {
+  id       String @id @default(uuid())
+  roleId   String
+  resource String // content, registrations, results, etc
+  action   String // read, write, delete, *
+  
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  @@unique([roleId, resource, action])
+  @@index([roleId])
+}
+
+model AuditLog {
+  id         String     @id @default(uuid())
+  userId     String
+  user       AdminUser  @relation(fields: [userId], references: [id])
+  action     String     // CREATE, UPDATE, DELETE, EXPORT, PUBLISH
+  resource   String     // pages, posts, settings, registrations
+  resourceId String?
+  payload    Json?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime   @default(now())
+  
+  @@index([userId, timestamp])
+  @@index([resource, timestamp])
+  @@index([timestamp])
+}
+
+// ========================================
+// EVENTO & CATEGORIAS
+// ========================================
+
+model Event {
+  id                  String   @id @default(uuid())
+  year                Int      @unique
+  edition             Int
+  raceDate            DateTime
+  ageCutoffDate       DateTime // Último dia do ano (31/12/year)
+  location            String
+  city                String
+  state               String
+  startTime10K        String   @default("07:00")
+  startTime2K         String   @default("08:30")
+  totalPrize          Decimal  @default(0)
+  registrationsOpen   Boolean  @default(false)
+  openDate            DateTime?
+  closeDate           DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  categories          Category[]
+  registrations       Registration[]
+  batches             Batch[]
+}
+
+model Category {
+  id               String   @id @default(uuid())
+  eventId          String
+  event            Event    @relation(fields: [eventId], references: [id])
+  slug             String   // geral, morador, sessenta, infantil
+  name             String
+  distance         String
+  price            Decimal  @default(0)
+  isFree           Boolean  @default(false)
+  minAge           Int
+  maxAge           Int?
+  totalSlots       Int
+  ageRule          String
+  requiresProof    Boolean  @default(false)
+  requiresGuardian Boolean  @default(false)
+  color            String?
+  icon             String?
+  description      String?
+  
+  registrations    Registration[]
+  
+  @@unique([eventId, slug])
+  @@index([eventId])
+}
+
+model Batch {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  name      String
+  category  String   // geral, morador, etc
+  price     Decimal
+  slots     Int
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  
+  @@index([eventId])
+  @@index([isActive])
+}
+
+// ========================================
+// INSCRIÇÕES & ATLETAS
+// ========================================
+
+model Athlete {
+  id              String   @id @default(uuid())
+  fullName        String
+  cpf             String?  @unique
+  rg              String?
+  passport        String?
+  documentType    String   // RG, CPF, PASSAPORTE
+  birthDate       DateTime
+  gender          String   // M, F
+  email           String   @unique
+  whatsapp        String
+  team            String?
+  shirtSize       String
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  photoUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  registrations   Registration[]
+  guardian        Guardian?
+  
+  @@index([email])
+  @@index([cpf])
+}
+
+model Guardian {
+  id             String  @id @default(uuid())
+  athleteId      String  @unique
+  athlete        Athlete @relation(fields: [athleteId], references: [id])
+  fullName       String
+  cpf            String
+  rg             String
+  phone          String
+  relationship   String  @default("responsável legal")
+  
+  documents      Document[]
+}
+
+model Registration {
+  id                String   @id @default(uuid())
+  eventId           String
+  event             Event    @relation(fields: [eventId], references: [id])
+  categoryId        String
+  category          Category @relation(fields: [categoryId], references: [id])
+  athleteId         String
+  athlete           Athlete  @relation(fields: [athleteId], references: [id])
+  bibNumber         Int?     @unique
+  status            String   @default("pending") // pending, validating, confirmed, cancelled
+  paymentStatus     String   @default("pending") // pending, paid, free
+  paymentId         String?
+  amount            Decimal  @default(0)
+  kitPickedAt       DateTime?
+  qrCode            String?  @unique
+  checkInCode       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  confirmedAt       DateTime?
+  cancelledAt       DateTime?
+  
+  documents         Document[]
+  result            Result?
+  
+  @@index([eventId, categoryId])
+  @@index([status])
+  @@index([qrCode])
+  @@index([bibNumber])
+}
+
+model Document {
+  id              String        @id @default(uuid())
+  registrationId  String?
+  registration    Registration? @relation(fields: [registrationId], references: [id])
+  guardianId      String?
+  guardian        Guardian?     @relation(fields: [guardianId], references: [id])
+  type            String        // residencia, documento_foto, autorizacao, medico
+  fileName        String
+  fileUrl         String
+  fileSize        Int
+  mimeType        String
+  status          String        @default("pending") // pending, approved, rejected
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewNotes     String?
+  uploadedAt      DateTime      @default(now())
+  
+  @@index([registrationId, status])
+  @@index([status])
+}
+
+model Result {
+  id               String        @id @default(uuid())
+  registrationId   String        @unique
+  registration     Registration  @relation(fields: [registrationId], references: [id])
+  grossTime        Int           // Segundos
+  netTime          Int           // Segundos
+  pace             String
+  overallPosition  Int?
+  genderPosition   Int?
+  categoryPosition Int?
+  ageGroupPosition Int?
+  ageGroup         String?
+  isFinisher       Boolean       @default(true)
+  certificateUrl   String?
+  publishedAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  
+  @@index([overallPosition])
+  @@index([categoryPosition])
+}
+
+// ========================================
+// CMS - CONTEÚDO
+// ========================================
+
+model Page {
+  id                String   @id @default(uuid())
+  slug              String   @unique
+  title             String
+  metaDescription   String?
+  ogImage           String?
+  sections          Json     // Array de Section objects
+  draftSections     Json?    // Versão em rascunho
+  status            String   @default("draft") // draft, published, archived
+  publishedAt       DateTime?
+  createdBy         String
+  creator           AdminUser @relation(fields: [createdBy], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([status])
+}
+
+model Post {
+  id              String     @id @default(uuid())
+  slug            String     @unique
+  title           String
+  excerpt         String?
+  content         String     // Markdown ou HTML
+  coverImage      String?
+  category        String     // treino, nutricao, turismo, releases
+  tags            String[]
+  status          String     @default("draft")
+  publishedAt     DateTime?
+  authorId        String
+  author          AdminUser  @relation(fields: [authorId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+}
+
+model Media {
+  id          String   @id @default(uuid())
+  fileName    String
+  fileUrl     String
+  fileSize    Int
+  mimeType    String
+  altText     String?
+  tags        String[]
+  width       Int?
+  height      Int?
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+  
+  @@index([mimeType])
+  @@index([tags])
+}
+
+model GlobalBlock {
+  id        String   @id @default(uuid())
+  key       String   @unique // header, footer, floating_cta, etc
+  content   Json
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  
+  @@index([key])
+}
+
+model Navigation {
+  id       String   @id @default(uuid())
+  location String   // main_menu, footer_menu
+  items    Json     // Array de menu items
+  order    Int      @default(0)
+  isActive Boolean  @default(true)
+  
+  @@index([location])
+}
+
+model SiteConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+  
+  @@index([key])
+}
+
+// ========================================
+// COMUNICAÇÃO
+// ========================================
+
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  type        String   // email, sms, whatsapp
+  subject     String?
+  body        String   // Template com variáveis {{var}}
+  variables   Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  notifications Notification[]
+  
+  @@index([type])
+}
+
+model Notification {
+  id              String                @id @default(uuid())
+  templateId      String
+  template        NotificationTemplate  @relation(fields: [templateId], references: [id])
+  recipientEmail  String?
+  recipientPhone  String?
+  category        String?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  status          String                @default("queued")
+  errorMessage    String?
+  
+  @@index([status])
+  @@index([sentAt])
+}
+
+// ========================================
+// SEO
+// ========================================
+
+model SeoSetting {
+  id              String   @id @default(uuid())
+  pageSlug        String   @unique
+  title           String?
+  description     String?
+  keywords        String[]
+  ogTitle         String?
+  ogDescription   String?
+  ogImage         String?
+  canonicalUrl    String?
+  noindex         Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+  
+  @@index([pageSlug])
+}
+
+model Redirect {
+  id        String   @id @default(uuid())
+  from      String   @unique
+  to        String
+  type      Int      @default(301) // 301, 302
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  
+  @@index([from])
+}
+
+
+
+
+
+
+
+
