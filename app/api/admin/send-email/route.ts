@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/serverClient'
-import { Resend } from 'resend'
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getSESClient() {
+  const region = process.env.AWS_SES_REGION || 'us-east-1'
+  const accessKey = process.env.AWS_ACCESS_KEY_ID
+  const secretKey = process.env.AWS_SECRET_ACCESS_KEY
+
+  if (!accessKey || !secretKey) {
+    return null
+  }
+
+  return new SESClient({
+    region,
+    credentials: {
+      accessKeyId: accessKey,
+      secretAccessKey: secretKey,
+    },
+  })
+}
 
 function getGreeting(): string {
   const formatter = new Intl.DateTimeFormat('pt-BR', {
@@ -41,9 +57,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sem permissão para enviar emails' }, { status: 403 })
     }
 
-    if (!process.env.RESEND_API_KEY) {
+    const ses = getSESClient()
+    if (!ses) {
       return NextResponse.json(
-        { error: 'RESEND_API_KEY não configurada. Adicione no .env.local' },
+        { error: 'AWS SES não configurado. Adicione AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY e SES_FROM_EMAIL nas variáveis de ambiente.' },
+        { status: 500 }
+      )
+    }
+
+    const fromEmail = process.env.SES_FROM_EMAIL?.trim()
+    if (!fromEmail) {
+      return NextResponse.json(
+        { error: 'SES_FROM_EMAIL não configurado. Use um email verificado no Amazon SES.' },
         { status: 500 }
       )
     }
@@ -62,8 +87,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-    const fromName = process.env.RESEND_FROM_NAME || 'Corrida Macuco'
+    const fromName = process.env.SES_FROM_NAME || 'Corrida Rústica de Macuco'
 
     let sent = 0
     const errors: string[] = []
@@ -78,17 +102,31 @@ export async function POST(request: NextRequest) {
         .replace(/\n/g, '<br>')
       const subj = replaceVariables(subject, vars)
 
-      const { error } = await resend.emails.send({
-        from: `${fromName} <${fromEmail}>`,
-        to: r.email.trim(),
-        subject: subj,
-        html,
-      })
+      try {
+        const command = new SendEmailCommand({
+          Source: `${fromName} <${fromEmail}>`,
+          Destination: {
+            ToAddresses: [r.email.trim()],
+          },
+          Message: {
+            Subject: {
+              Data: subj,
+              Charset: 'UTF-8',
+            },
+            Body: {
+              Html: {
+                Data: html,
+                Charset: 'UTF-8',
+              },
+            },
+          },
+        })
 
-      if (error) {
-        errors.push(`${r.email}: ${error.message}`)
-      } else {
+        await ses.send(command)
         sent++
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        errors.push(`${r.email}: ${msg}`)
       }
     }
 
@@ -97,10 +135,10 @@ export async function POST(request: NextRequest) {
       total: recipients.length,
       errors: errors.length > 0 ? errors : undefined,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Erro ao enviar email:', err)
     return NextResponse.json(
-      { error: err.message || 'Erro ao enviar emails' },
+      { error: err instanceof Error ? err.message : 'Erro ao enviar emails' },
       { status: 500 }
     )
   }

@@ -44,26 +44,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao listar inscritos' }, { status: 500 })
     }
 
-    type RegWithRelations = {
+    type RegItem = {
       id: string
       registration_number: string | null
       status: string
-      athlete: { full_name: string; birth_date: string } | null
-      category: { id: string; name: string; slug: string } | null
+      athlete?: { full_name?: string; birth_date?: string } | { full_name?: string; birth_date?: string }[] | null
+      category?: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null
     }
+
+    const getAthlete = (r: RegItem) => (Array.isArray(r.athlete) ? r.athlete[0] : r.athlete)
+    const getCategory = (r: RegItem) => (Array.isArray(r.category) ? r.category[0] : r.category)
 
     const excludedStatuses = ['cancelled', 'rejected']
     let list = (regs || [])
-      .filter((r: RegWithRelations) => !excludedStatuses.includes(r.status))
-      .map((r: RegWithRelations) => ({
-      id: r.id,
-      registration_number: r.registration_number,
-      status: r.status,
-      full_name: r.athlete?.full_name ?? '',
-      birth_date: r.athlete?.birth_date ?? null,
-      category_name: r.category?.name ?? '',
-      category_slug: r.category?.slug ?? '',
-    }))
+      .filter((r: RegItem) => !excludedStatuses.includes(r.status))
+      .map((r: RegItem) => ({
+        id: r.id,
+        registration_number: r.registration_number,
+        status: r.status,
+        full_name: getAthlete(r)?.full_name ?? '',
+        birth_date: getAthlete(r)?.birth_date ?? null,
+        category_name: getCategory(r)?.name ?? '',
+        category_slug: getCategory(r)?.slug ?? '',
+      }))
 
     if (categorySlug) {
       list = list.filter((item) => item.category_slug === categorySlug)

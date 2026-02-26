@@ -28,12 +28,13 @@ export default function ScrollReveal({
 }: ScrollRevealProps) {
   const offset = directionOffset[direction]
   const isVertical = direction === 'up' || direction === 'down'
+  const offsetVal = isVertical ? (offset as { y: number }).y : (offset as { x: number }).x
 
   return (
     <motion.div
       initial={{
         opacity: 0,
-        ...(isVertical ? { y: offset.y } : { x: offset.x }),
+        ...(isVertical ? { y: offsetVal } : { x: offsetVal }),
       }}
       whileInView={{
         opacity: 1,

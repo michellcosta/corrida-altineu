@@ -158,7 +158,7 @@ export default function MessagesPage() {
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>Configuração:</strong> Adicione <code>RESEND_API_KEY</code> no .env.local. Opcional: <code>RESEND_FROM_EMAIL</code> e <code>RESEND_FROM_NAME</code> para personalizar o remetente.
+            <strong>Configuração:</strong> Adicione <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>AWS_SES_REGION</code> (ex: us-east-2) e <code>SES_FROM_EMAIL</code> (email verificado no Amazon SES) nas variáveis de ambiente.
           </p>
         </div>
       </div>

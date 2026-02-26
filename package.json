@@ -11,6 +11,7 @@
     "migrate": "tsx scripts/run-migrations.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.998.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.75.0",
