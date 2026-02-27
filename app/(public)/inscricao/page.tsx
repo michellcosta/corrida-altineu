@@ -169,6 +169,7 @@ export default function InscricaoPage() {
     amount: number
     expiresAt?: string
   } | null>(null)
+  const [checkingStatus, setCheckingStatus] = useState(false)
   const [pendingRegistrationId, setPendingRegistrationId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     // Dados pessoais básicos
@@ -273,6 +274,32 @@ export default function InscricaoPage() {
       .catch(() => setMunicipios([]))
       .finally(() => setMunicipiosLoading(false))
   }, [formData.state, formData.originType])
+
+  async function handleCheckPaymentStatus() {
+    if (!pixData?.id) return
+    setCheckingStatus(true)
+    setSubmitError('')
+    try {
+      const res = await fetch(`/api/payments/status?payment_id=${encodeURIComponent(pixData.id)}`)
+      const json = await res.json()
+      if (json.status === 'PAID') {
+        setCurrentStep(4)
+        setPixData(null)
+      } else if (json.status === 'EXPIRED' || json.status === 'CANCELLED') {
+        setPixData(null)
+        setSubmitError('O PIX expirou. Volte e gere um novo.')
+      } else if (json.status === 'REFUNDED') {
+        setPixData(null)
+        setSubmitError('O pagamento foi estornado. Entre em contato para mais informações.')
+      } else {
+        setSubmitError('Pagamento ainda não identificado. Aguarde alguns segundos e tente novamente.')
+      }
+    } catch {
+      setSubmitError('Erro ao verificar. Tente novamente.')
+    } finally {
+      setCheckingStatus(false)
+    }
+  }
 
   // Polling do status do PIX quando pixData existe
   useEffect(() => {
@@ -1365,12 +1392,33 @@ export default function InscricaoPage() {
                           <Loader2 size={16} className="animate-spin" />
                           Aguardando pagamento...
                         </p>
+                        <button
+                          onClick={handleCheckPaymentStatus}
+                          disabled={checkingStatus}
+                          className="btn-primary flex items-center gap-2 mx-auto mt-4 disabled:opacity-50"
+                        >
+                          {checkingStatus ? (
+                            <>
+                              <Loader2 size={18} className="animate-spin" />
+                              Verificando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle size={18} />
+                              Já fiz o pagamento
+                            </>
+                          )}
+                        </button>
                       </div>
+                      {submitError && (
+                        <p className="mt-4 text-sm text-red-600 text-center">{submitError}</p>
+                      )}
                       <div className="mt-6 flex justify-start">
                         <button
                           onClick={() => {
                             setPixData(null)
                             setCurrentStep(2)
+                            setSubmitError('')
                           }}
                           className="btn-secondary"
                         >
