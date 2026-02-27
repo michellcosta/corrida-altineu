@@ -1358,7 +1358,7 @@ export default function InscricaoPage() {
                     </>
                   ) : (
                     <>
-                      <div className="bg-white border-2 border-primary-200 rounded-xl p-6 mb-6 text-center">
+                      <div className="bg-white border-2 border-primary-200 rounded-xl p-6 mb-4 text-center">
                         <p className="font-bold text-lg mb-4">Escaneie o QR Code ou copie o código PIX</p>
                         <div className="flex flex-col items-center gap-4">
                           <img
@@ -1392,10 +1392,12 @@ export default function InscricaoPage() {
                           <Loader2 size={16} className="animate-spin" />
                           Aguardando pagamento...
                         </p>
+                      </div>
+                      <div className="mb-6">
                         <button
                           onClick={handleCheckPaymentStatus}
                           disabled={checkingStatus}
-                          className="btn-primary flex items-center gap-2 mx-auto mt-4 disabled:opacity-50"
+                          className="btn-primary w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 py-3 px-6 disabled:opacity-50"
                         >
                           {checkingStatus ? (
                             <>
