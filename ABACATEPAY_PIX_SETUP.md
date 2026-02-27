@@ -37,7 +37,21 @@ NEXT_PUBLIC_APP_URL=https://seu-dominio.com  # ex: https://corrida-macuco.vercel
 
 ## 5. Teste em desenvolvimento
 
-No modo de desenvolvimento (dev mode), use o endpoint de simulação para testar pagamentos sem pagar de verdade:
+No modo de desenvolvimento (chave `abc_dev_...`), use o endpoint de simulação para testar pagamentos sem pagar de verdade.
+
+**Importante:** O `id` do PIX deve ser passado como parâmetro de query na URL:
+
+```bash
+curl --request POST \
+  --url "https://api.abacatepay.com/v1/pixQrCode/simulate-payment?id=SEU_PIX_ID" \
+  --header "Authorization: Bearer SUA_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{"metadata": {}}'
+```
+
+Substitua:
+- `SEU_PIX_ID` pelo ID retornado ao criar o PIX (ex: `pix_char_ApCfnDeqDdTHm0s4XTdtZPuX`)
+- `SUA_API_KEY` pela sua chave de API (ex: `abc_dev_...`)
 
 - [Simular Pagamento PIX](https://docs.abacatepay.com/api-reference/simular-pagamento)
 
