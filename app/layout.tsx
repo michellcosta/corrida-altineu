@@ -28,12 +28,20 @@ const DEFAULT_METADATA = {
   },
 }
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
 export async function generateMetadata() {
   const seo = await getSeoMetadata()
   const title = seo.meta_title || DEFAULT_METADATA.title
   const description = seo.meta_description || DEFAULT_METADATA.description
   const ogImage = seo.og_image
+  const ogImageUrl = ogImage
+    ? ogImage.startsWith('http')
+      ? ogImage
+      : `${APP_URL.replace(/\/$/, '')}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`
+    : undefined
   return {
+    metadataBase: new URL(APP_URL),
     title,
     description,
     keywords: DEFAULT_METADATA.keywords,
@@ -43,7 +51,14 @@ export async function generateMetadata() {
       description,
       type: 'website',
       locale: 'pt_BR',
-      ...(ogImage && { images: [{ url: ogImage }] }),
+      siteName: 'Corrida Rústica de Macuco',
+      ...(ogImageUrl && { images: [{ url: ogImageUrl }] }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(ogImageUrl && { images: [ogImageUrl] }),
     },
   }
 }

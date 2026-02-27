@@ -287,6 +287,9 @@ export default function InscricaoPage() {
         } else if (json.status === 'EXPIRED' || json.status === 'CANCELLED') {
           setPixData(null)
           setSubmitError('O PIX expirou. Volte e gere um novo.')
+        } else if (json.status === 'REFUNDED') {
+          setPixData(null)
+          setSubmitError('O pagamento foi estornado. Entre em contato para mais informações.')
         }
       } catch {
         // Ignora erros de polling

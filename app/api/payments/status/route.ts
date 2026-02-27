@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
 const ABACATEPAY_API = 'https://api.abacatepay.com/v1'
 
+/**
+ * Checa status do PIX via AbacatePay GET /pixQrCode/check
+ * @see https://docs.abacatepay.com/pages/pix-qrcode/check
+ * Status: PENDING | EXPIRED | CANCELLED | PAID | REFUNDED
+ */
 export async function GET(request: NextRequest) {
   try {
     const apiKey = process.env.ABACATEPAY_API_KEY
@@ -18,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (!paymentId) {
       return NextResponse.json(
-        { error: 'payment_id obrigatório' },
+        { error: 'payment_id ou id obrigatório' },
         { status: 400 }
       )
     }
@@ -42,9 +48,38 @@ export async function GET(request: NextRequest) {
     }
 
     const status = json.data?.status || 'PENDING'
+    const expiresAt = json.data?.expiresAt
+
+    // Se PAID, atualiza a inscrição no DB (fallback caso webhook não tenha chegado)
+    if (status === 'PAID') {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+      )
+      const { data: reg } = await supabase
+        .from('registrations')
+        .select('id, payment_status, status')
+        .eq('payment_id', paymentId)
+        .single()
+
+      if (reg && reg.payment_status !== 'paid') {
+        await supabase
+          .from('registrations')
+          .update({
+            payment_status: 'paid',
+            status: 'confirmed',
+            payment_method: 'pix',
+            confirmed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', reg.id)
+      }
+    }
+
     return NextResponse.json({
       status,
-      expiresAt: json.data?.expiresAt,
+      expiresAt,
     })
   } catch (err: unknown) {
     console.error('Erro ao verificar status:', err)
