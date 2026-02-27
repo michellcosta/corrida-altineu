@@ -18,13 +18,17 @@ ABACATEPAY_WEBHOOK_SECRET=seu_webhook_secret_aqui
 NEXT_PUBLIC_APP_URL=https://seu-dominio.com  # ex: https://corrida-macuco.vercel.app
 ```
 
-## 3. Webhook
+## 3. Webhook (importante)
+
+O webhook é o canal principal para confirmar pagamentos. Quando o AbacatePay confirma um PIX, ele envia um POST para nossa URL e atualizamos o banco. O polling (checagem de status) consulta o banco primeiro – se o webhook já atualizou, retornamos PAID imediatamente.
 
 1. No painel AbacatePay, configure um novo webhook
 2. **URL**: `https://seu-dominio.com/api/payments/webhook`
 3. **Eventos**: `billing.paid` (pagamento PIX confirmado)
 4. **Secret**: Defina um secret único e adicione em `ABACATEPAY_WEBHOOK_SECRET`
 5. O AbacatePay envia o secret como `?webhookSecret=xxx` na URL
+
+**Verifique:** A URL deve ser acessível (não localhost). Use o domínio de produção (ex: corridademacuco.vercel.app).
 
 ## 4. Fluxo
 

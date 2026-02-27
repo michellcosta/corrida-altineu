@@ -29,12 +29,31 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
+    // 1. Verifica no nosso DB primeiro (webhook pode ter atualizado)
+    const { data: reg } = await supabase
+      .from('registrations')
+      .select('id, payment_status, status')
+      .eq('payment_id', paymentId)
+      .maybeSingle()
+
+    if (reg?.payment_status === 'paid') {
+      return NextResponse.json({ status: 'PAID', expiresAt: null, source: 'db' })
+    }
+
+    // 2. Consulta AbacatePay
     const res = await fetch(
       `${ABACATEPAY_API}/pixQrCode/check?id=${encodeURIComponent(paymentId)}`,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
         },
+        cache: 'no-store',
       }
     )
 
@@ -47,41 +66,32 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const rawStatus = json.data?.status || 'PENDING'
-    const status = typeof rawStatus === 'string' ? rawStatus.toUpperCase().replace('PAGO', 'PAID') : 'PENDING'
-    const expiresAt = json.data?.expiresAt
+    // AbacatePay pode retornar status em data.status ou data.pixQrCode?.status
+    const rawStatus = json.data?.status ?? json.data?.pixQrCode?.status ?? json.status ?? 'PENDING'
+    const status = typeof rawStatus === 'string'
+      ? rawStatus.toUpperCase().replace('PAGO', 'PAID')
+      : 'PENDING'
+    const expiresAt = json.data?.expiresAt ?? json.data?.pixQrCode?.expiresAt
 
     // Se PAID, atualiza a inscrição no DB (fallback caso webhook não tenha chegado)
-    if (status === 'PAID') {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
-      )
-      const { data: reg } = await supabase
+    if (status === 'PAID' && reg && reg.payment_status !== 'paid') {
+      await supabase
         .from('registrations')
-        .select('id, payment_status, status')
-        .eq('payment_id', paymentId)
-        .single()
-
-      if (reg && reg.payment_status !== 'paid') {
-        await supabase
-          .from('registrations')
-          .update({
-            payment_status: 'paid',
-            status: 'confirmed',
-            payment_method: 'pix',
-            confirmed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', reg.id)
-      }
+        .update({
+          payment_status: 'paid',
+          status: 'confirmed',
+          payment_method: 'pix',
+          confirmed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reg.id)
     }
 
-    return NextResponse.json({
-      status,
-      expiresAt,
-    })
+    const result: Record<string, unknown> = { status, expiresAt }
+    if (request.nextUrl.searchParams.get('_debug') === '1') {
+      result._raw = json
+    }
+    return NextResponse.json(result)
   } catch (err: unknown) {
     console.error('Erro ao verificar status:', err)
     return NextResponse.json(
