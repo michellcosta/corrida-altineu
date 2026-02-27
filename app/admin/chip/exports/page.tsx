@@ -5,6 +5,14 @@ import AdminLayout from '@/components/admin/AdminLayout'
 import { Download, Loader2, FileSpreadsheet } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
 import { toast } from 'sonner'
+import { getCountryLabel } from '@/lib/countries'
+
+function formatOrigin(athlete: { city?: string | null; state?: string | null; country?: string | null }): string {
+  if (athlete?.country && athlete.country !== 'BRA') return getCountryLabel(athlete.country)
+  if (athlete?.city && athlete?.state) return `${athlete.city} - ${athlete.state}`
+  if (athlete?.city) return athlete.city
+  return ''
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendente',
@@ -40,7 +48,7 @@ export default function ExportsPage() {
         .from('registrations')
         .select(`
           id, registration_number, status, bib_number, registered_at,
-          athlete:athletes(full_name, email, phone, gender, city, birth_date),
+          athlete:athletes(full_name, email, phone, gender, city, state, country, birth_date),
           category:categories(name)
         `)
         .eq('event_id', event.id)
@@ -49,7 +57,7 @@ export default function ExportsPage() {
       const { data: regs, error } = await query
       if (error) throw error
       const list = (regs || []) as any[]
-      const headers = ['Nº Inscrição', 'Nome', 'Email', 'Telefone', 'Categoria', 'Sexo', 'Cidade', 'Nº Peito', 'Status', 'Data Inscrição']
+      const headers = ['Nº Inscrição', 'Nome', 'Email', 'Telefone', 'Categoria', 'Sexo', 'Origem', 'Nº Peito', 'Status', 'Data Inscrição']
       const rows = list.map((r) => [
         r.registration_number ?? '',
         r.athlete?.full_name ?? '',
@@ -57,7 +65,7 @@ export default function ExportsPage() {
         r.athlete?.phone ?? '',
         r.category?.name ?? '',
         r.athlete?.gender ?? '',
-        r.athlete?.city ?? '',
+        formatOrigin(r.athlete) ?? '',
         r.bib_number ?? '',
         STATUS_LABELS[r.status] ?? r.status,
         r.registered_at ? new Date(r.registered_at).toLocaleString('pt-BR') : '',

@@ -8,6 +8,7 @@ Execute as migrations na ordem abaixo no **Supabase Dashboard → SQL Editor**.
 2. **20250225000001_regulations_table.sql** – Tabela `regulations` (se ainda não existir)
 3. **20250225000002_email_templates.sql** – Tabela `email_templates` (se ainda não existir)
 4. **20250225100000_storage_media_bucket.sql** – Políticas de Storage para o bucket `media`
+5. **20250226000000_add_country_to_athletes.sql** – Coluna `country` em `athletes` (origem do atleta)
 
 > **Bucket media:** Execute `npx tsx scripts/setup-supabase.ts` para criar o bucket via API. As políticas são aplicadas pela migration 4.
 
@@ -35,6 +36,7 @@ Após executar, confira:
 - Existe a tabela `regulations`
 - Existe a tabela `email_templates`
 - Políticas de Storage em `storage.objects` para o bucket `media`
+- `athletes` tem a coluna `country`
 
 ## Supabase CLI (alternativa)
 

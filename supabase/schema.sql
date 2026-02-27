@@ -211,6 +211,7 @@ create table if not exists public.athletes (
   team_name text,
   city text,
   state text,
+  country text,
   address text,
   zip_code text,
   emergency_contact_name text,

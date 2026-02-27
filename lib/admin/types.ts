@@ -48,6 +48,7 @@ export const ROLE_NAVIGATION: Record<UserRole, NavItem[]> = {
       ],
     },
     { name: 'Regulamentos', href: '/admin/site/regulations', icon: 'FileCheck' },
+    { name: 'Inscritos', href: '/admin/site/inscritos', icon: 'Users' },
     { name: 'Usuarios', href: '/admin/site/users', icon: 'Users' },
   ],
   [UserRole.CHIP_ADMIN]: [

@@ -90,3 +90,7 @@ drop policy if exists "Leitura pública de media" on storage.objects;
 create policy "Leitura pública de media"
   on storage.objects for select to public
   using (bucket_id = 'media');
+
+-- 5. Coluna country em athletes (origem do atleta)
+alter table public.athletes add column if not exists country text;
+comment on column public.athletes.country is 'Código ISO do país (ex: BRA, ARG). Para brasileiros sempre BRA.';

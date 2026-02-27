@@ -3,10 +3,22 @@
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { Button, Input, Badge, Card } from '@/components/ui'
-import { Search, Download, Filter, Hash, Loader2 } from 'lucide-react'
+import { Search, Download, Filter, Hash, Loader2, CheckCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browserClient'
+import { getCountryLabel } from '@/lib/countries'
+
+function formatOrigin(athlete: { city?: string | null; state?: string | null; country?: string | null }): string {
+  if (athlete?.country && athlete.country !== 'BRA') {
+    return getCountryLabel(athlete.country)
+  }
+  if (athlete?.city && athlete?.state) {
+    return `${athlete.city} - ${athlete.state}`
+  }
+  if (athlete?.city) return athlete.city
+  return '-'
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendente',
@@ -33,7 +45,7 @@ interface RegistrationRow {
   registration_number: string | null
   status: string
   bib_number: number | null
-  athlete: { full_name: string; gender: string | null; city: string | null }
+  athlete: { full_name: string; gender: string | null; city: string | null; state: string | null; country: string | null }
   category: { name: string }
 }
 
@@ -91,7 +103,7 @@ export default function ChipRegistrationsPage() {
           registration_number,
           status,
           bib_number,
-          athlete:athletes(full_name, gender, city),
+          athlete:athletes(full_name, gender, city, state, country),
           category:categories(name)
         `)
         .eq('event_id', event.id)
@@ -133,14 +145,14 @@ export default function ChipRegistrationsPage() {
         .from('registrations')
         .select(`
           id, registration_number, status, bib_number, registered_at,
-          athlete:athletes(full_name, email, phone, gender, city, birth_date),
+          athlete:athletes(full_name, email, phone, gender, city, state, country, birth_date),
           category:categories(name)
         `)
         .eq('event_id', event.id)
         .order('registered_at', { ascending: false })
       if (error) throw error
       const list = (regs || []) as any[]
-      const headers = ['Nº Inscrição', 'Nome', 'Email', 'Telefone', 'Categoria', 'Sexo', 'Cidade', 'Nº Peito', 'Status', 'Data Inscrição']
+      const headers = ['Nº Inscrição', 'Nome', 'Email', 'Telefone', 'Categoria', 'Sexo', 'Origem', 'Nº Peito', 'Status', 'Data Inscrição']
       const rows = list.map((r) => [
         r.registration_number ?? '',
         r.athlete?.full_name ?? '',
@@ -148,7 +160,7 @@ export default function ChipRegistrationsPage() {
         r.athlete?.phone ?? '',
         r.category?.name ?? '',
         r.athlete?.gender ?? '',
-        r.athlete?.city ?? '',
+        formatOrigin(r.athlete) ?? '',
         r.bib_number ?? '',
         STATUS_LABELS[r.status] ?? r.status,
         r.registered_at ? new Date(r.registered_at).toLocaleString('pt-BR') : '',
@@ -176,7 +188,7 @@ export default function ChipRegistrationsPage() {
               Inscritos
             </h1>
             <p className="text-gray-600">
-              Visualize e gerencie todos os atletas inscritos
+              Visualização e ações de chip (numeração, check-in)
             </p>
           </div>
           <div className="flex gap-3">
@@ -186,6 +198,13 @@ export default function ChipRegistrationsPage() {
               onClick={() => router.push('/admin/chip/numbering')}
             >
               Atribuir Números
+            </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<CheckCircle size={18} />}
+              onClick={() => router.push('/admin/chip/checkin')}
+            >
+              Check-in
             </Button>
             <Button
               variant="primary"
@@ -255,7 +274,7 @@ export default function ChipRegistrationsPage() {
                     <th>Nome</th>
                     <th>Categoria</th>
                     <th>Sexo</th>
-                    <th>Cidade</th>
+                    <th>Origem</th>
                     <th>Status</th>
                     <th>Nº Peito</th>
                     <th className="text-right">Ações</th>
@@ -275,7 +294,7 @@ export default function ChipRegistrationsPage() {
                         <td className="font-semibold">{reg.athlete?.full_name || '-'}</td>
                         <td>{reg.category?.name || '-'}</td>
                         <td>{reg.athlete?.gender || '-'}</td>
-                        <td className="text-gray-600">{reg.athlete?.city || '-'}</td>
+                        <td className="text-gray-600">{formatOrigin(reg.athlete)}</td>
                         <td>
                           <Badge variant={STATUS_BADGE_MAP[reg.status] || 'neutral'}>
                             {STATUS_LABELS[reg.status] || reg.status}
@@ -289,8 +308,11 @@ export default function ChipRegistrationsPage() {
                           )}
                         </td>
                         <td className="text-right">
-                          <button className="text-primary-600 hover:text-primary-700 font-semibold text-sm">
-                            Ver Detalhes
+                          <button
+                            onClick={() => router.push(`/admin/chip/checkin?q=${encodeURIComponent(reg.registration_number || reg.id)}`)}
+                            className="text-primary-600 hover:text-primary-700 font-semibold text-sm"
+                          >
+                            Check-in
                           </button>
                         </td>
                       </tr>

@@ -1009,6 +1009,15 @@ export const COUNTRY_OPTIONS: CountryOption[] = [
   }
 ];
 
+/** Países para estrangeiros (exclui Brasil) */
+export const COUNTRY_OPTIONS_FOREIGN = COUNTRY_OPTIONS.filter((c) => c.code !== 'BRA');
+
+/** Retorna o nome do país pelo código ISO */
+export function getCountryLabel(code: string): string {
+  const found = COUNTRY_OPTIONS.find((c) => c.code === code)
+  return found?.label ?? code
+}
+
 
 
 

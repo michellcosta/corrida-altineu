@@ -12,6 +12,14 @@ import {
   FileText,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
+import { getCountryLabel } from '@/lib/countries'
+
+function formatOrigin(athlete: { city?: string | null; state?: string | null; country?: string | null }): string {
+  if (athlete?.country && athlete.country !== 'BRA') return getCountryLabel(athlete.country)
+  if (athlete?.city && athlete?.state) return `${athlete.city} - ${athlete.state}`
+  if (athlete?.city) return athlete.city
+  return 'Não informado'
+}
 
 const AGE_RANGES = [
   { key: '15-19', min: 15, max: 19 },
@@ -26,7 +34,7 @@ interface RegistrationWithAthlete {
   id: string
   payment_status: string
   payment_amount: number
-  athlete: { birth_date: string; gender: string | null; city: string | null }
+  athlete: { birth_date: string; gender: string | null; city: string | null; state: string | null; country: string | null }
 }
 
 
@@ -98,22 +106,22 @@ export default function OrgAdminDashboard() {
           id,
           payment_status,
           payment_amount,
-          athlete:athletes(birth_date, gender, city)
+          athlete:athletes(birth_date, gender, city, state, country)
         `)
         .eq('event_id', event.id)
 
       const list = (regs || []) as unknown as RegistrationWithAthlete[]
       setTotal(list.length)
 
-      const cities = new Set(list.map((r) => (r.athlete?.city ?? 'Não informado').trim() || 'Não informado'))
-      setCitiesCount(cities.size)
+      const origins = new Set(list.map((r) => formatOrigin(r.athlete)))
+      setCitiesCount(origins.size)
 
-      const byCity = list.reduce<Record<string, number>>((acc, r) => {
-        const city = (r.athlete?.city ?? 'Não informado').trim() || 'Não informado'
-        acc[city] = (acc[city] || 0) + 1
+      const byOrigin = list.reduce<Record<string, number>>((acc, r) => {
+        const origin = formatOrigin(r.athlete)
+        acc[origin] = (acc[origin] || 0) + 1
         return acc
       }, {})
-      const top = Object.entries(byCity)
+      const top = Object.entries(byOrigin)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([city, count]) => ({ city, count }))

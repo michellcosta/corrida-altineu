@@ -5,6 +5,14 @@ import AdminLayout from '@/components/admin/AdminLayout'
 import { FileText, Download, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
 import { toast } from 'sonner'
+import { getCountryLabel } from '@/lib/countries'
+
+function formatOrigin(athlete: { city?: string | null; state?: string | null; country?: string | null }): string {
+  if (athlete?.country && athlete.country !== 'BRA') return getCountryLabel(athlete.country)
+  if (athlete?.city && athlete?.state) return `${athlete.city} - ${athlete.state}`
+  if (athlete?.city) return athlete.city
+  return ''
+}
 
 function escapeCsv(val: string | number | null | undefined): string {
   if (val == null) return ''
@@ -26,19 +34,19 @@ export default function ReportsPage() {
         .from('registrations')
         .select(`
           registration_number, status, bib_number, registered_at, payment_status, payment_amount,
-          athlete:athletes(full_name, email, phone, gender, city, birth_date),
+          athlete:athletes(full_name, email, phone, gender, city, state, country, birth_date),
           category:categories(name)
         `)
         .eq('event_id', event.id)
         .order('registered_at', { ascending: false })
       const list = (regs || []) as any[]
-      const headers = ['Nº', 'Nome', 'Email', 'Categoria', 'Cidade', 'Status', 'Pagamento', 'Valor', 'Data']
+      const headers = ['Nº', 'Nome', 'Email', 'Categoria', 'Origem', 'Status', 'Pagamento', 'Valor', 'Data']
       const rows = list.map((r) => [
         r.registration_number ?? '',
         r.athlete?.full_name ?? '',
         r.athlete?.email ?? '',
         r.category?.name ?? '',
-        r.athlete?.city ?? '',
+        formatOrigin(r.athlete) ?? '',
         r.status ?? '',
         r.payment_status ?? '',
         r.payment_amount ?? '',

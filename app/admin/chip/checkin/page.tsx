@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { CheckCircle, Search, Loader2, QrCode } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
@@ -32,12 +33,22 @@ function extractSearchFromQr(decodedText: string): string {
 }
 
 export default function CheckinPage() {
+  const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
   const [result, setResult] = useState<Registration | null>(null)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q?.trim()) {
+      setSearch(q.trim())
+      doSearch(q.trim())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   async function doSearch(searchValue: string) {
     if (!searchValue.trim()) return

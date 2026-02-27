@@ -81,6 +81,7 @@ Acesse: **http://localhost:3000**
 |---------|-----------|
 | **[START_HERE_SUPABASE.md](./START_HERE_SUPABASE.md)** | 👈 **COMECE AQUI** - Guia de início rápido |
 | [DEPLOY_SUPABASE.md](./DEPLOY_SUPABASE.md) | Deploy completo (Supabase + Vercel) |
+| [ABACATEPAY_PIX_SETUP.md](./ABACATEPAY_PIX_SETUP.md) | Configuração de pagamentos PIX (AbacatePay) |
 | [MIGRATE_TO_SUPABASE.md](./MIGRATE_TO_SUPABASE.md) | Migração de código para Supabase |
 | [CATEGORIES.md](./CATEGORIES.md) | Detalhes das 4 categorias |
 | [CMS_IMPLEMENTATION.md](./CMS_IMPLEMENTATION.md) | Arquitetura do CMS headless |

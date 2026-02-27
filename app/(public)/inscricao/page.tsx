@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, ChevronRight, CreditCard, User, FileText, CheckCircle, Upload, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Check, ChevronRight, CreditCard, User, FileText, CheckCircle, Upload, AlertCircle, Loader2, Copy } from 'lucide-react'
 import Link from 'next/link'
-import { COUNTRY_OPTIONS } from '@/lib/countries'
+import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
+import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
 
 // ============================================================
 // TIPOS E INTERFACES
@@ -161,15 +162,29 @@ export default function InscricaoPage() {
     registration_number: string
     confirmation_code: string
   } | null>(null)
+  const [pixData, setPixData] = useState<{
+    id: string
+    brCode: string
+    brCodeBase64: string
+    amount: number
+    expiresAt?: string
+  } | null>(null)
+  const [pendingRegistrationId, setPendingRegistrationId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     // Dados pessoais básicos
     fullName: '',
-    birthDate: '',
+    birthDay: '',
+    birthMonth: '',
+    birthYear: '',
     gender: '',
     email: '',
     phone: '',
     teamName: '',
-    nationality: 'BRA',
+    // Origem: brasileiro ou estrangeiro (obrigatório escolher)
+    originType: null as 'brazilian' | 'foreign' | null,
+    state: '',
+    city: '',
+    nationality: '', // código do país (apenas para estrangeiros)
     
     // Documento do responsável (para estrangeiros)
     guardianDocumentType: '' as DocumentType | '',
@@ -205,19 +220,115 @@ export default function InscricaoPage() {
 
   const documentGridClass = 'md:grid-cols-[160px_1fr]'
 
+  const getBirthDate = (): string => {
+    if (!formData.birthDay || !formData.birthMonth || !formData.birthYear) return ''
+    const d = formData.birthDay.padStart(2, '0')
+    const m = formData.birthMonth.padStart(2, '0')
+    return `${formData.birthYear}-${m}-${d}`
+  }
+
+  const MONTHS = [
+    { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
+    { value: '4', label: 'Abril' }, { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+    { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Setembro' },
+    { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+  ]
+  const DAYS = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))
+  const currentYear = new Date().getFullYear()
+  const YEARS = Array.from({ length: 101 }, (_, i) => ({ value: String(currentYear - i), label: String(currentYear - i) }))
+
   // Calcular steps dinâmicos (sem pagamento para categorias gratuitas)
   const activeSteps = selectedCategory?.isFree 
     ? steps.filter(step => step.id !== 3)
     : steps
 
+  // Municípios (carregados ao selecionar estado)
+  const [municipios, setMunicipios] = useState<string[]>([])
+  const [municipiosLoading, setMunicipiosLoading] = useState(false)
+
   // Verificar se deve mostrar campo de documento principal
   const CATEGORY_DOC_REQUIRED = new Set(['geral-10k', 'sessenta-10k', 'morador-10k'])
   const shouldShowMainDocument = selectedCategory && CATEGORY_DOC_REQUIRED.has(selectedCategory.id)
   
-  // Flags derivadas da nacionalidade
-  const isBrazilian = formData.nationality === 'BRA'
+  // Flags derivadas da origem (brasileiro vs estrangeiro)
+  const isBrazilian = formData.originType === 'brazilian'
+  const isForeign = formData.originType === 'foreign'
   const shouldShowAthleteDocument = shouldShowMainDocument && isBrazilian
-  const shouldShowGuardianDocument = shouldShowMainDocument && !isBrazilian
+  const shouldShowGuardianDocument = shouldShowMainDocument && isForeign
+
+  // Carregar municípios quando estado mudar (apenas para brasileiros)
+  useEffect(() => {
+    if (!formData.state || formData.originType !== 'brazilian') {
+      setMunicipios([])
+      setFormData((prev) => ({ ...prev, city: '' }))
+      return
+    }
+    setMunicipiosLoading(true)
+    fetch(`/api/ibge/municipios?uf=${formData.state}`)
+      .then((res) => res.json())
+      .then((json) => {
+        setMunicipios(json.data || [])
+        setFormData((prev) => ({ ...prev, city: '' }))
+      })
+      .catch(() => setMunicipios([]))
+      .finally(() => setMunicipiosLoading(false))
+  }, [formData.state, formData.originType])
+
+  // Polling do status do PIX quando pixData existe
+  useEffect(() => {
+    if (!pixData?.id) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/payments/status?payment_id=${encodeURIComponent(pixData.id)}`)
+        const json = await res.json()
+        if (json.status === 'PAID') {
+          setCurrentStep(4)
+          setPixData(null)
+        } else if (json.status === 'EXPIRED' || json.status === 'CANCELLED') {
+          setPixData(null)
+          setSubmitError('O PIX expirou. Volte e gere um novo.')
+        }
+      } catch {
+        // Ignora erros de polling
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [pixData?.id])
+
+  // Verifica se todos os campos obrigatórios estão preenchidos (para desabilitar botão Continuar)
+  const isPersonalDataComplete = (): boolean => {
+    const base = formData.fullName?.trim() &&
+      formData.birthDay && formData.birthMonth && formData.birthYear &&
+      formData.gender &&
+      formData.email?.trim() &&
+      formData.phone?.trim() &&
+      formData.originType &&
+      formData.acceptedTerms
+
+    if (!base) return false
+
+    if (formData.originType === 'brazilian' && (!formData.state || !formData.city)) return false
+    if (formData.originType === 'foreign' && !formData.nationality) return false
+
+    if (shouldShowAthleteDocument && !validateDocumentNumber(documentNumber, documentType)) return false
+    if (shouldShowGuardianDocument) {
+      if (!formData.guardianName?.trim() || !formData.guardianDocumentType) return false
+      if (!formData.guardianDocumentNumber || !validateDocumentNumber(formData.guardianDocumentNumber, formData.guardianDocumentType as DocumentType)) return false
+    }
+
+    if (selectedCategory?.id === 'morador-10k') {
+      if (!formData.residenceProofType || !formData.residenceProofFile) return false
+      if (!formData.addressStreet?.trim() || !formData.addressNumber?.trim() || !formData.addressNeighborhood?.trim() || !formData.addressZipCode?.trim()) return false
+    }
+
+    if (selectedCategory?.id === 'infantil-2k') {
+      if (!formData.childCpf || !validateDocumentNumber(formData.childCpf, 'CPF')) return false
+      if (!formData.guardianName?.trim() || !formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF')) return false
+      if (!formData.guardianPhone?.trim() || !formData.guardianRelationship || !formData.authorizationFile) return false
+    }
+
+    return true
+  }
 
   // ============================================================
   // HANDLERS
@@ -253,12 +364,15 @@ export default function InscricaoPage() {
       const payload = {
         categoryId: selectedCategory.id,
         fullName: formData.fullName.trim(),
-        birthDate: formData.birthDate,
+        birthDate: getBirthDate(),
         gender: formData.gender || undefined,
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         teamName: formData.teamName.trim() || undefined,
-        nationality: formData.nationality,
+        originType: formData.originType,
+        city: isBrazilian ? formData.city : undefined,
+        state: isBrazilian ? formData.state : undefined,
+        country: isBrazilian ? 'BRA' : (formData.nationality || undefined),
         documentType: shouldShowAthleteDocument ? documentType : undefined,
         documentNumber: shouldShowAthleteDocument ? documentNumber : undefined,
         addressStreet: formData.addressStreet.trim() || undefined,
@@ -294,6 +408,40 @@ export default function InscricaoPage() {
   }
 
   const handleContinueFromPersonalData = () => {
+    // Campos obrigatórios básicos
+    if (!formData.fullName?.trim()) {
+      setDocumentError('Preencha o nome completo.')
+      return
+    }
+    if (!formData.birthDay || !formData.birthMonth || !formData.birthYear) {
+      setDocumentError('Informe a data de nascimento completa.')
+      return
+    }
+    if (!formData.gender) {
+      setDocumentError('Selecione o sexo.')
+      return
+    }
+    if (!formData.email?.trim()) {
+      setDocumentError('Preencha o email.')
+      return
+    }
+    if (!formData.phone?.trim()) {
+      setDocumentError('Preencha o telefone/WhatsApp.')
+      return
+    }
+    if (!formData.originType) {
+      setDocumentError('Selecione se você é brasileiro(a) ou estrangeiro(a).')
+      return
+    }
+    if (isBrazilian && (!formData.state || !formData.city)) {
+      setDocumentError('Selecione o estado e o município.')
+      return
+    }
+    if (isForeign && !formData.nationality) {
+      setDocumentError('Selecione sua nacionalidade.')
+      return
+    }
+
     // Validar documento do atleta (apenas brasileiros)
     if (shouldShowAthleteDocument) {
       if (!validateDocumentNumber(documentNumber, documentType)) {
@@ -325,6 +473,62 @@ export default function InscricaoPage() {
       setDocumentError('')
     }
 
+    // Morador: comprovante e endereço
+    if (selectedCategory?.id === 'morador-10k') {
+      if (!formData.residenceProofType) {
+        setDocumentError('Selecione o tipo de comprovante de residência.')
+        return
+      }
+      if (!formData.residenceProofFile) {
+        setDocumentError('Envie o comprovante de residência.')
+        return
+      }
+      if (!formData.addressStreet?.trim()) {
+        setDocumentError('Preencha o endereço.')
+        return
+      }
+      if (!formData.addressNumber?.trim()) {
+        setDocumentError('Preencha o número.')
+        return
+      }
+      if (!formData.addressNeighborhood?.trim()) {
+        setDocumentError('Preencha o bairro.')
+        return
+      }
+      if (!formData.addressZipCode?.trim()) {
+        setDocumentError('Preencha o CEP.')
+        return
+      }
+    }
+
+    // Infantil: dados da criança e responsável
+    if (selectedCategory?.id === 'infantil-2k') {
+      if (!formData.childCpf || !validateDocumentNumber(formData.childCpf, 'CPF')) {
+        setDocumentError('Informe um CPF válido da criança.')
+        return
+      }
+      if (!formData.guardianName?.trim()) {
+        setDocumentError('Preencha o nome do responsável.')
+        return
+      }
+      if (!formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF')) {
+        setDocumentError('Informe um CPF válido do responsável.')
+        return
+      }
+      if (!formData.guardianPhone?.trim()) {
+        setDocumentError('Preencha o telefone do responsável.')
+        return
+      }
+      if (!formData.guardianRelationship) {
+        setDocumentError('Selecione o grau de parentesco.')
+        return
+      }
+      if (!formData.authorizationFile) {
+        setDocumentError('Envie o termo de autorização assinado.')
+        return
+      }
+    }
+
     if (!formData.acceptedTerms) {
       setDocumentError('Aceite o regulamento e as políticas para continuar.')
       return
@@ -337,12 +541,110 @@ export default function InscricaoPage() {
     }
   }
 
-  const handleFinalizePayment = () => {
+  const getTaxIdForPayment = (): string | undefined => {
+    if (selectedCategory?.id === 'infantil-2k') return formData.guardianCpf?.replace(/\D/g, '')
+    if (shouldShowGuardianDocument && formData.guardianDocumentType === 'CPF') return formData.guardianDocumentNumber?.replace(/\D/g, '')
+    if (shouldShowAthleteDocument && documentType === 'CPF') return documentNumber.replace(/\D/g, '')
+    return undefined
+  }
+
+  const handleFinalizePayment = async () => {
     if (!formData.acceptedTerms) {
       setSubmitError('Aceite o regulamento e as políticas para continuar.')
       return
     }
-    submitRegistration()
+    if (!selectedCategory || selectedCategory.isFree) {
+      submitRegistration()
+      return
+    }
+
+    setSubmitError('')
+    setSubmitLoading(true)
+    try {
+      let registrationId = pendingRegistrationId
+      let registrationNumber: string
+      let confirmationCode: string
+
+      if (!registrationId) {
+        const payload = {
+        categoryId: selectedCategory.id,
+        fullName: formData.fullName.trim(),
+        birthDate: getBirthDate(),
+        gender: formData.gender || undefined,
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        teamName: formData.teamName.trim() || undefined,
+        originType: formData.originType,
+        city: isBrazilian ? formData.city : undefined,
+        state: isBrazilian ? formData.state : undefined,
+        country: isBrazilian ? 'BRA' : (formData.nationality || undefined),
+        documentType: shouldShowAthleteDocument ? documentType : undefined,
+        documentNumber: shouldShowAthleteDocument ? documentNumber : undefined,
+        addressStreet: formData.addressStreet.trim() || undefined,
+        addressNumber: formData.addressNumber.trim() || undefined,
+        addressComplement: formData.addressComplement.trim() || undefined,
+        addressNeighborhood: formData.addressNeighborhood.trim() || undefined,
+        addressZipCode: formData.addressZipCode.trim() || undefined,
+        childCpf: selectedCategory.id === 'infantil-2k' ? formData.childCpf : undefined,
+        guardianName: formData.guardianName.trim() || undefined,
+        guardianCpf: formData.guardianCpf || undefined,
+        guardianPhone: formData.guardianPhone.trim() || undefined,
+        guardianRelationship: formData.guardianRelationship || undefined,
+        guardianDocumentType: shouldShowGuardianDocument ? formData.guardianDocumentType : undefined,
+        guardianDocumentNumber: shouldShowGuardianDocument ? formData.guardianDocumentNumber : undefined,
+      }
+        const resInsc = await fetch('/api/inscricao', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const jsonInsc = await resInsc.json()
+        if (!resInsc.ok) throw new Error(jsonInsc.error || 'Erro ao finalizar inscrição')
+        registrationId = jsonInsc.registration.id
+        registrationNumber = jsonInsc.registration.registration_number
+        confirmationCode = jsonInsc.registration.confirmation_code
+        setPendingRegistrationId(registrationId)
+      } else {
+        if (!registrationResult) throw new Error('Dados da inscrição não encontrados. Volte e preencha novamente.')
+        registrationNumber = registrationResult.registration_number
+        confirmationCode = registrationResult.confirmation_code
+      }
+
+      const resCheckout = await fetch('/api/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          registrationId: registrationId!,
+          amount: selectedCategory.price,
+          email: formData.email.trim(),
+          fullName: formData.fullName.trim(),
+          phone: formData.phone.trim(),
+          taxId: getTaxIdForPayment(),
+        }),
+      })
+      const jsonCheckout = await resCheckout.json()
+      if (!resCheckout.ok) throw new Error(jsonCheckout.error || 'Erro ao criar pagamento')
+
+      if (jsonCheckout.id && jsonCheckout.brCode && jsonCheckout.brCodeBase64) {
+        setRegistrationResult({
+          registration_number: registrationNumber!,
+          confirmation_code: confirmationCode!,
+        })
+        setPixData({
+          id: jsonCheckout.id,
+          brCode: jsonCheckout.brCode,
+          brCodeBase64: jsonCheckout.brCodeBase64,
+          amount: jsonCheckout.amount || selectedCategory.price * 100,
+          expiresAt: jsonCheckout.expiresAt,
+        })
+        return
+      }
+      throw new Error('Resposta inválida do pagamento')
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Erro ao processar pagamento')
+    } finally {
+      setSubmitLoading(false)
+    }
   }
 
   const handleFileUpload = (field: 'residenceProofFile' | 'authorizationFile', file: File | null) => {
@@ -558,7 +860,7 @@ export default function InscricaoPage() {
                     {/* Dados básicos */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Nome Completo *
+                        Nome Completo <span className="text-gray-500 font-normal">(Obrigatório)</span>
                       </label>
                       <input
                         type="text"
@@ -570,40 +872,122 @@ export default function InscricaoPage() {
                       />
                     </div>
 
-                    {/* Nacionalidade */}
+                    {/* Origem: Brasileiro ou Estrangeiro */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Nacionalidade *
+                        Você é brasileiro(a) ou estrangeiro(a)? <span className="text-gray-500 font-normal">(Obrigatório)</span>
                       </label>
-                      <select
-                        required
-                        value={formData.nationality}
-                        onChange={(e) => {
-                          const newNationality = e.target.value
-                          // Limpar dados ao trocar nacionalidade
-                          setFormData({
-                            ...formData,
-                            nationality: newNationality,
-                            guardianName: '',
-                            guardianDocumentType: '',
-                            guardianDocumentNumber: '',
-                          })
-                          setDocumentType('CPF')
-                          setDocumentNumber('')
-                          setDocumentError('')
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      >
-                        {COUNTRY_OPTIONS.map(country => (
-                          <option key={country.code} value={country.code}>
-                            {country.label}
-                          </option>
-                        ))}
-                      </select>
-                      {formData.nationality !== 'BRA' && (
-                        <p className="text-xs text-blue-600 mt-2">
-                          ℹ️ Participantes estrangeiros devem fornecer documento de um responsável brasileiro
-                        </p>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="originType"
+                            checked={formData.originType === 'brazilian'}
+                            onChange={() => {
+                              setFormData({
+                                ...formData,
+                                originType: 'brazilian',
+                                nationality: '',
+                                state: '',
+                                city: '',
+                                guardianName: '',
+                                guardianDocumentType: '',
+                                guardianDocumentNumber: '',
+                              })
+                              setDocumentType('CPF')
+                              setDocumentNumber('')
+                              setDocumentError('')
+                            }}
+                            className="w-4 h-4 text-primary-600"
+                          />
+                          <span>Sou brasileiro(a)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="originType"
+                            checked={formData.originType === 'foreign'}
+                            onChange={() => {
+                              setFormData({
+                                ...formData,
+                                originType: 'foreign',
+                                state: '',
+                                city: '',
+                                guardianName: '',
+                                guardianDocumentType: '',
+                                guardianDocumentNumber: '',
+                              })
+                              setDocumentNumber('')
+                              setDocumentError('')
+                            }}
+                            className="w-4 h-4 text-primary-600"
+                          />
+                          <span>Sou estrangeiro(a)</span>
+                        </label>
+                      </div>
+
+                      {/* Estado + Município (apenas brasileiros) */}
+                      {isBrazilian && (
+                        <div className="mt-4 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Estado <span className="text-gray-500 font-normal">(Obrigatório)</span></label>
+                            <select
+                              required
+                              value={formData.state}
+                              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            >
+                              <option value="">Selecione o estado</option>
+                              {BRAZILIAN_STATES.map((s) => (
+                                <option key={s.code} value={s.code}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Município <span className="text-gray-500 font-normal">(Obrigatório)</span></label>
+                            <select
+                              required
+                              value={formData.city}
+                              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                              disabled={!formData.state || municipiosLoading}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                            >
+                              <option value="">
+                                {municipiosLoading ? 'Carregando...' : !formData.state ? 'Selecione o estado primeiro' : 'Selecione o município'}
+                              </option>
+                              {municipios.map((m) => (
+                                <option key={m} value={m}>
+                                  {m}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Nacionalidade (apenas estrangeiros) */}
+                      {isForeign && (
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Nacionalidade <span className="text-gray-500 font-normal">(Obrigatório)</span></label>
+                          <select
+                            required
+                            value={formData.nationality}
+                            onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          >
+                            <option value="">Selecione seu país</option>
+                            {COUNTRY_OPTIONS_FOREIGN.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-blue-600 mt-2">
+                            ℹ️ Participantes estrangeiros devem fornecer documento de um responsável brasileiro
+                          </p>
+                        </div>
                       )}
                     </div>
 
@@ -611,7 +995,7 @@ export default function InscricaoPage() {
                     {shouldShowAthleteDocument && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Documento de Identificação *
+                          Documento de Identificação <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
                         <div className={`grid grid-cols-1 ${documentGridClass} gap-4`}>
                           <select
@@ -644,7 +1028,7 @@ export default function InscricaoPage() {
                     {shouldShowGuardianDocument && (
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-sm font-semibold text-gray-900 mb-3">
-                          Documento do Responsável no Brasil *
+                          Documento do Responsável no Brasil <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </p>
                         <p className="text-xs text-gray-600 mb-4">
                           Como você é estrangeiro, precisamos do documento de um cidadão brasileiro que se responsabiliza pela sua inscrição.
@@ -654,7 +1038,7 @@ export default function InscricaoPage() {
                           {/* Nome do Responsável */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Nome do Responsável *
+                              Nome do Responsável <span className="text-gray-500 font-normal">(Obrigatório)</span>
                             </label>
                             <input
                               type="text"
@@ -669,7 +1053,7 @@ export default function InscricaoPage() {
                           {/* Documento do Responsável */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Documento do Responsável *
+                              Documento do Responsável <span className="text-gray-500 font-normal">(Obrigatório)</span>
                             </label>
                             <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
                               <select
@@ -708,15 +1092,43 @@ export default function InscricaoPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Data de Nascimento *
+                          Data de Nascimento <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
-                        <input
-                          type="date"
-                          required
-                          value={formData.birthDate}
-                          onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
+                        <div className="grid grid-cols-3 gap-2">
+                          <select
+                            required
+                            value={formData.birthDay}
+                            onChange={(e) => setFormData({ ...formData, birthDay: e.target.value })}
+                            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                          >
+                            <option value="">Dia</option>
+                            {DAYS.map((d) => (
+                              <option key={d.value} value={d.value}>{d.label}</option>
+                            ))}
+                          </select>
+                          <select
+                            required
+                            value={formData.birthMonth}
+                            onChange={(e) => setFormData({ ...formData, birthMonth: e.target.value })}
+                            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                          >
+                            <option value="">Mês</option>
+                            {MONTHS.map((m) => (
+                              <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                          </select>
+                          <select
+                            required
+                            value={formData.birthYear}
+                            onChange={(e) => setFormData({ ...formData, birthYear: e.target.value })}
+                            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                          >
+                            <option value="">Ano</option>
+                            {YEARS.map((y) => (
+                              <option key={y.value} value={y.value}>{y.label}</option>
+                            ))}
+                          </select>
+                        </div>
                         {selectedCategory && (
                           <p className="text-xs text-gray-500 mt-1">
                             {selectedCategory.ageMax 
@@ -727,7 +1139,7 @@ export default function InscricaoPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Sexo *
+                          Sexo <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
                         <select
                           required
@@ -744,7 +1156,7 @@ export default function InscricaoPage() {
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Email *
+                        Email <span className="text-gray-500 font-normal">(Obrigatório)</span>
                       </label>
                       <input
                         type="email"
@@ -759,7 +1171,7 @@ export default function InscricaoPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Telefone/WhatsApp *
+                          Telefone/WhatsApp <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
                         <input
                           type="tel"
@@ -807,7 +1219,8 @@ export default function InscricaoPage() {
                         e as{' '}
                         <Link href="/politicas" className="text-primary-600 hover:text-primary-700 font-semibold">
                           políticas de privacidade
-                        </Link>
+                        </Link>{' '}
+                        <span className="text-gray-500 font-normal">(Obrigatório)</span>
                       </label>
                     </div>
                   </form>
@@ -825,8 +1238,8 @@ export default function InscricaoPage() {
                     </button>
                     <button
                       onClick={handleContinueFromPersonalData}
-                      disabled={submitLoading}
-                      className="btn-primary flex items-center disabled:opacity-50"
+                      disabled={submitLoading || !isPersonalDataComplete()}
+                      className="btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {submitLoading ? (
                         <>
@@ -871,67 +1284,98 @@ export default function InscricaoPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <button className="w-full p-6 border-2 border-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors text-left">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-lg mb-1">PIX</p>
-                          <p className="text-sm text-gray-600">Aprovação instantânea</p>
+                  {!pixData ? (
+                    <>
+                      <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-6 mb-6">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-lg mb-1">PIX</p>
+                            <p className="text-sm text-gray-600">Pagamento instantâneo via QR Code ou copia e cola</p>
+                          </div>
+                          <div className="text-4xl">💰</div>
                         </div>
-                        <div className="text-4xl">💰</div>
                       </div>
-                    </button>
 
-                    <button className="w-full p-6 border-2 border-gray-200 hover:border-primary-300 rounded-xl transition-colors text-left">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-lg mb-1">Cartão de Crédito</p>
-                          <p className="text-sm text-gray-600">Parcele em até 3x sem juros</p>
-                        </div>
-                        <div className="text-4xl">💳</div>
-                      </div>
-                    </button>
-
-                    <button className="w-full p-6 border-2 border-gray-200 hover:border-primary-300 rounded-xl transition-colors text-left">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-lg mb-1">Boleto Bancário</p>
-                          <p className="text-sm text-gray-600">Vencimento em 3 dias úteis</p>
-                        </div>
-                        <div className="text-4xl">🏦</div>
-                      </div>
-                    </button>
-                  </div>
-
-                  {submitError && (
-                    <p className="mt-4 text-sm text-red-600">{submitError}</p>
-                  )}
-                  <div className="mt-8 flex justify-between">
-                    <button
-                      onClick={() => setCurrentStep(2)}
-                      disabled={submitLoading}
-                      className="btn-secondary disabled:opacity-50"
-                    >
-                      Voltar
-                    </button>
-                    <button
-                      onClick={handleFinalizePayment}
-                      disabled={submitLoading}
-                      className="btn-primary flex items-center disabled:opacity-50"
-                    >
-                      {submitLoading ? (
-                        <>
-                          <Loader2 size={20} className="mr-2 animate-spin" />
-                          Finalizando...
-                        </>
-                      ) : (
-                        <>
-                          Finalizar Pagamento
-                          <ChevronRight size={20} className="ml-2" />
-                        </>
+                      {submitError && (
+                        <p className="mt-4 text-sm text-red-600">{submitError}</p>
                       )}
-                    </button>
-                  </div>
+                      <div className="mt-8 flex justify-between">
+                        <button
+                          onClick={() => setCurrentStep(2)}
+                          disabled={submitLoading}
+                          className="btn-secondary disabled:opacity-50"
+                        >
+                          Voltar
+                        </button>
+                        <button
+                          onClick={handleFinalizePayment}
+                          disabled={submitLoading}
+                          className="btn-primary flex items-center disabled:opacity-50"
+                        >
+                          {submitLoading ? (
+                            <>
+                              <Loader2 size={20} className="mr-2 animate-spin" />
+                              Gerando PIX...
+                            </>
+                          ) : (
+                            <>
+                              Gerar PIX
+                              <ChevronRight size={20} className="ml-2" />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-white border-2 border-primary-200 rounded-xl p-6 mb-6 text-center">
+                        <p className="font-bold text-lg mb-4">Escaneie o QR Code ou copie o código PIX</p>
+                        <div className="flex flex-col items-center gap-4">
+                          <img
+                            src={pixData.brCodeBase64}
+                            alt="QR Code PIX"
+                            className="w-48 h-48 rounded-lg border border-gray-200"
+                          />
+                          <div className="w-full max-w-md">
+                            <label className="block text-sm font-medium text-gray-700 mb-2 text-left">Código copia e cola</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                readOnly
+                                value={pixData.brCode}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-gray-50"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(pixData.brCode)
+                                }}
+                                className="btn-secondary px-4 flex items-center gap-2 shrink-0"
+                              >
+                                <Copy size={18} />
+                                Copiar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="mt-4 text-sm text-gray-600 flex items-center justify-center gap-2">
+                          <Loader2 size={16} className="animate-spin" />
+                          Aguardando pagamento...
+                        </p>
+                      </div>
+                      <div className="mt-6 flex justify-start">
+                        <button
+                          onClick={() => {
+                            setPixData(null)
+                            setCurrentStep(2)
+                          }}
+                          className="btn-secondary"
+                        >
+                          Voltar e gerar novo PIX
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -1057,7 +1501,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Tipo de Comprovante *
+              Tipo de Comprovante <span className="text-gray-500 font-normal">(Obrigatório)</span>
             </label>
             <select
               required
@@ -1075,7 +1519,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
           
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Upload do Comprovante *
+              Upload do Comprovante <span className="text-gray-500 font-normal">(Obrigatório)</span>
             </label>
             <div className="relative">
               <input
@@ -1092,7 +1536,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Endereço (Rua/Av) *
+              Endereço (Rua/Av) <span className="text-gray-500 font-normal">(Obrigatório)</span>
             </label>
             <input
               type="text"
@@ -1105,7 +1549,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Número *
+              Número <span className="text-gray-500 font-normal">(Obrigatório)</span>
             </label>
             <input
               type="text"
@@ -1133,7 +1577,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Bairro *
+              Bairro <span className="text-gray-500 font-normal">(Obrigatório)</span>
             </label>
             <input
               type="text"
@@ -1148,7 +1592,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
 
         <div className="max-w-xs">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            CEP *
+            CEP <span className="text-gray-500 font-normal">(Obrigatório)</span>
           </label>
           <input
             type="text"
@@ -1202,13 +1646,13 @@ function InfantilFields({ formData, setFormData, onFileUpload }: FieldsProps) {
         {/* CPF da Criança */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            CPF da Criança *
+            CPF da Criança <span className="text-gray-500 font-normal">(Obrigatório)</span>
           </label>
           <input
             type="text"
             required
             value={formData?.childCpf || ''}
-            onChange={(e) => setFormData?.({...formData, childCpf: e.target.value})}
+            onChange={(e) => setFormData?.({...formData, childCpf: formatDocumentNumber(e.target.value, 'CPF')})}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             placeholder="000.000.000-00"
           />
@@ -1222,7 +1666,7 @@ function InfantilFields({ formData, setFormData, onFileUpload }: FieldsProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nome do Responsável *
+                  Nome do Responsável <span className="text-gray-500 font-normal">(Obrigatório)</span>
                 </label>
                 <input
                   type="text"
@@ -1235,13 +1679,13 @@ function InfantilFields({ formData, setFormData, onFileUpload }: FieldsProps) {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  CPF do Responsável *
+                  CPF do Responsável <span className="text-gray-500 font-normal">(Obrigatório)</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={formData?.guardianCpf || ''}
-                  onChange={(e) => setFormData?.({...formData, guardianCpf: e.target.value})}
+                  onChange={(e) => setFormData?.({...formData, guardianCpf: formatDocumentNumber(e.target.value, 'CPF')})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="000.000.000-00"
                 />
@@ -1251,7 +1695,7 @@ function InfantilFields({ formData, setFormData, onFileUpload }: FieldsProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Telefone do Responsável *
+                  Telefone do Responsável <span className="text-gray-500 font-normal">(Obrigatório)</span>
                 </label>
                 <input
                   type="tel"
@@ -1264,7 +1708,7 @@ function InfantilFields({ formData, setFormData, onFileUpload }: FieldsProps) {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Grau de Parentesco *
+                  Grau de Parentesco <span className="text-gray-500 font-normal">(Obrigatório)</span>
                 </label>
                 <select
                   required
@@ -1287,7 +1731,7 @@ function InfantilFields({ formData, setFormData, onFileUpload }: FieldsProps) {
         {/* Termo de Autorização */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Termo de Autorização Assinado *
+            Termo de Autorização Assinado <span className="text-gray-500 font-normal">(Obrigatório)</span>
           </label>
           <input
             type="file"

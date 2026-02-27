@@ -32,7 +32,10 @@ export async function POST(request: NextRequest) {
       email,
       phone,
       teamName,
-      nationality,
+      originType,
+      city,
+      state,
+      country,
       documentType,
       documentNumber,
       // Morador
@@ -55,6 +58,20 @@ export async function POST(request: NextRequest) {
     if (!categoryId || !fullName?.trim() || !birthDate || !email?.trim()) {
       return NextResponse.json(
         { error: 'Preencha todos os campos obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    const isBrazilian = originType === 'brazilian' || country === 'BRA'
+    if (isBrazilian && (!city?.trim() || !state)) {
+      return NextResponse.json(
+        { error: 'Informe o estado e o município' },
+        { status: 400 }
+      )
+    }
+    if (!isBrazilian && !country) {
+      return NextResponse.json(
+        { error: 'Informe a nacionalidade' },
         { status: 400 }
       )
     }
@@ -97,7 +114,7 @@ export async function POST(request: NextRequest) {
     if (isInfant) {
       athleteDocType = 'CPF'
       athleteDocNumber = childCpf ? formatDocumentNumber(childCpf) : null
-    } else if (nationality !== 'BRA') {
+    } else if (country !== 'BRA') {
       athleteDocType = (guardianDocumentType as string) || 'CPF'
       athleteDocNumber = guardianDocumentNumber ? formatDocumentNumber(guardianDocumentNumber) : null
     }
@@ -112,8 +129,9 @@ export async function POST(request: NextRequest) {
       birth_date: birthDate,
       gender: gender || null,
       team_name: teamName?.trim() || null,
-      city: 'Macuco',
-      state: 'RJ',
+      city: isBrazilian && city ? city.trim() : null,
+      state: isBrazilian && state ? state : null,
+      country: country || (isBrazilian ? 'BRA' : null),
       address: addressStreet
         ? [addressStreet, addressNumber, addressComplement, addressNeighborhood]
             .filter(Boolean)
