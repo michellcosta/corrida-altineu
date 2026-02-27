@@ -74,7 +74,6 @@ export default function Footer() {
                 { name: 'Central de Ajuda', href: '/ajuda' },
                 { name: 'FAQ', href: '/faq' },
                 { name: 'Guia do Atleta', href: '/guia-atleta' },
-                { name: 'Política de Cancelamento', href: '/politicas' },
                 { name: 'Termos de Uso', href: '/termos' },
                 { name: 'Privacidade', href: '/privacidade' },
               ].map((link) => (

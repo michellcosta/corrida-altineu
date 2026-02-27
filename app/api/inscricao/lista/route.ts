@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const { data: event } = await supabase
       .from('events')
-      .select('id')
+      .select('id, edition')
       .eq('year', 2026)
       .single()
 
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       })),
     }))
 
-    return NextResponse.json({ data: categories })
+    return NextResponse.json({ data: categories, edition: event.edition ?? 51 })
   } catch (err: unknown) {
     console.error('Erro:', err)
     return NextResponse.json(

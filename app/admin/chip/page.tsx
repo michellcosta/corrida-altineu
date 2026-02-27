@@ -178,7 +178,7 @@ export default function ChipAdminDashboard() {
         <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-8 text-white">
           <h2 className="text-3xl font-display font-bold mb-2">Painel de Cronometragem ⏱️</h2>
           <p className="text-blue-100 text-lg">
-            Gerencie inscritos, numeração, check-in e resultados da corrida.
+            Gerencie inscritos, numeração e resultados da corrida.
           </p>
         </div>
 
@@ -303,13 +303,6 @@ export default function ChipAdminDashboard() {
             >
               <Hash size={24} />
               <span>Gerar Numeração</span>
-            </Link>
-            <Link
-              href="/admin/chip/checkin"
-              className="admin-button-secondary flex flex-col items-center space-y-2"
-            >
-              <CheckCircle size={24} />
-              <span>Check-in</span>
             </Link>
             <Link
               href="/admin/chip/results"

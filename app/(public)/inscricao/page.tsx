@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Check, ChevronRight, CreditCard, User, FileText, CheckCircle, Upload, AlertCircle, Loader2, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
@@ -91,66 +92,21 @@ const steps = [
 ]
 
 // ============================================================
-// CATEGORIAS OFICIAIS
-// ============================================================
-
-const categories: Category[] = [
-  {
-    id: 'geral-10k',
-    name: 'Prova Geral 10K',
-    price: 20,
-    isFree: false,
-    description: 'Aberta para atletas que completam 15 anos até 31/12/2026.',
-    spots: 500,
-    ageMin: 15,
-    documents: ['Documento oficial com foto'],
-  },
-  {
-    id: 'morador-10k',
-    name: 'Morador de Macuco 10K',
-    price: 0,
-    isFree: true,
-    description: 'Gratuita para residentes de Macuco (15+).',
-    spots: 200,
-    ageMin: 15,
-    documents: [
-      'Documento oficial com foto',
-      'Comprovante de residência emitido nos últimos 90 dias',
-    ],
-    requiresResidenceProof: true,
-  },
-  {
-    id: 'sessenta-10k',
-    name: '60+ 10K',
-    price: 0,
-    isFree: true,
-    description: 'Gratuita para atletas que completam 60 anos até 31/12/2026.',
-    spots: 100,
-    ageMin: 60,
-    documents: ['Documento oficial com foto'],
-  },
-  {
-    id: 'infantil-2k',
-    name: 'Infantil 2K',
-    price: 0,
-    isFree: true,
-    description: 'Para crianças de 5 a 14 anos (nascidos entre 2012 e 2021).',
-    spots: 300,
-    ageMin: 5,
-    ageMax: 14,
-    documents: [
-      'Documento da criança (certidão ou RG)',
-      'Termo de autorização assinado pelo responsável',
-    ],
-    requiresGuardian: true,
-  },
-]
-
-// ============================================================
 // COMPONENTE PRINCIPAL
 // ============================================================
 
 export default function InscricaoPage() {
+  const router = useRouter()
+  const [eventConfig, setEventConfig] = useState<{
+    year: number
+    edition: number
+    raceDateFormatted: string
+    location: string
+    registrationsOpen: boolean
+  } | null>(null)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [configLoading, setConfigLoading] = useState(true)
+  const [configError, setConfigError] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [documentType, setDocumentType] = useState<DocumentType>('CPF')
@@ -171,6 +127,28 @@ export default function InscricaoPage() {
   } | null>(null)
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [pendingRegistrationId, setPendingRegistrationId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/event/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.event && data.categories) {
+          setEventConfig({
+            year: data.event.year,
+            edition: data.event.edition,
+            raceDateFormatted: data.event.raceDateFormatted,
+            location: data.event.location || 'Praça de Macuco',
+            registrationsOpen: data.event.registrationsOpen ?? true,
+          })
+          setCategories(data.categories)
+        } else {
+          setConfigError('Não foi possível carregar as categorias.')
+        }
+      })
+      .catch(() => setConfigError('Erro ao carregar configurações.'))
+      .finally(() => setConfigLoading(false))
+  }, [])
+
   const [formData, setFormData] = useState({
     // Dados pessoais básicos
     fullName: '',
@@ -274,33 +252,6 @@ export default function InscricaoPage() {
       .catch(() => setMunicipios([]))
       .finally(() => setMunicipiosLoading(false))
   }, [formData.state, formData.originType])
-
-  async function handleSimulatePayment() {
-    if (!pixData?.id) return
-    setCheckingStatus(true)
-    setSubmitError('')
-    try {
-      const res = await fetch('/api/payments/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_id: pixData.id }),
-      })
-      const json = await res.json()
-      if (json.success) {
-        // Chama status para atualizar a inscrição no DB
-        await fetch(`/api/payments/status?payment_id=${encodeURIComponent(pixData.id)}`)
-        setCurrentStep(4)
-        setPixData(null)
-      } else {
-        const msg = json.error || json.details?.error || 'Erro ao simular'
-        setSubmitError(typeof msg === 'string' ? msg : JSON.stringify(msg))
-      }
-    } catch {
-      setSubmitError('Erro ao simular. Tente novamente.')
-    } finally {
-      setCheckingStatus(false)
-    }
-  }
 
   async function handleCheckPaymentStatus() {
     if (!pixData?.id) return
@@ -453,7 +404,15 @@ export default function InscricaoPage() {
         body: JSON.stringify(payload),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Erro ao finalizar inscrição')
+      if (!res.ok) {
+        if (res.status === 409 && json.already_registered) {
+          const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.childCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
+          if (docValue) router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
+          else throw new Error(json.error || 'Erro ao finalizar inscrição')
+          return
+        }
+        throw new Error(json.error || 'Erro ao finalizar inscrição')
+      }
       setRegistrationResult({
         registration_number: json.registration.registration_number,
         confirmation_code: json.registration.confirmation_code,
@@ -658,7 +617,15 @@ export default function InscricaoPage() {
           body: JSON.stringify(payload),
         })
         const jsonInsc = await resInsc.json()
-        if (!resInsc.ok) throw new Error(jsonInsc.error || 'Erro ao finalizar inscrição')
+        if (!resInsc.ok) {
+          if (resInsc.status === 409 && jsonInsc.already_registered) {
+            const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.childCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
+            if (docValue) router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
+            else setSubmitError(jsonInsc.error || 'Erro ao finalizar inscrição')
+            return
+          }
+          throw new Error(jsonInsc.error || 'Erro ao finalizar inscrição')
+        }
         registrationId = jsonInsc.registration.id
         registrationNumber = jsonInsc.registration.registration_number
         confirmationCode = jsonInsc.registration.confirmation_code
@@ -722,7 +689,7 @@ export default function InscricaoPage() {
         return <MoradorFields formData={formData} setFormData={setFormData} onFileUpload={handleFileUpload} />
       
       case 'sessenta-10k':
-        return <SeniorFields />
+        return <SeniorFields year={eventConfig?.year ?? 2026} />
       
       case 'infantil-2k':
         return <InfantilFields formData={formData} setFormData={setFormData} onFileUpload={handleFileUpload} />
@@ -735,6 +702,49 @@ export default function InscricaoPage() {
   // ============================================================
   // RENDER
   // ============================================================
+
+  if (configLoading) {
+    return (
+      <div className="pt-24 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
+          <p className="text-gray-600">Carregando categorias...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (configError) {
+    return (
+      <div className="pt-24 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Erro ao carregar</h2>
+          <p className="text-gray-600 mb-4">{configError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-primary"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!eventConfig?.registrationsOpen) {
+    return (
+      <div className="pt-24 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Inscrições encerradas</h2>
+          <p className="text-gray-600">
+            As inscrições para a {eventConfig?.edition ?? 51}ª Corrida Rústica de Macuco estão temporariamente fechadas.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="pt-24 min-h-screen bg-gray-50">
@@ -1422,7 +1432,7 @@ export default function InscricaoPage() {
                           Aguardando pagamento...
                         </p>
                       </div>
-                      <div className="mb-6 flex flex-col sm:flex-row gap-3 items-center">
+                      <div className="mb-6 flex justify-center">
                         <button
                           onClick={handleCheckPaymentStatus}
                           disabled={checkingStatus}
@@ -1440,19 +1450,11 @@ export default function InscricaoPage() {
                             </>
                           )}
                         </button>
-                        <button
-                          type="button"
-                          onClick={handleSimulatePayment}
-                          disabled={checkingStatus}
-                          className="text-sm text-gray-500 hover:text-gray-700 underline disabled:opacity-50"
-                        >
-                          Simular pagamento (teste)
-                        </button>
                       </div>
                       {submitError && (
                         <p className="mt-4 text-sm text-red-600 text-center">{submitError}</p>
                       )}
-                      <div className="mt-6 flex justify-start">
+                      <div className="mt-4 flex justify-start">
                         <button
                           onClick={() => {
                             setPixData(null)
@@ -1483,7 +1485,7 @@ export default function InscricaoPage() {
                     Inscrição Confirmada! 🎉
                   </h2>
                   <p className="text-xl text-gray-600 mb-2">
-                    Parabéns! Sua inscrição na 51ª Corrida de Macuco foi realizada com sucesso.
+                    Parabéns! Sua inscrição na {eventConfig?.edition ?? 51}ª Corrida de Macuco foi realizada com sucesso.
                   </p>
                   <p className="text-lg text-primary-600 font-semibold mb-6">
                     Categoria: {selectedCategory?.name}
@@ -1523,11 +1525,11 @@ export default function InscricaoPage() {
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle className="text-green-600 mt-1" size={20} />
-                        <span>Retirada do kit: 23/06 das 14h às 20h no Ginásio Municipal</span>
+                        <span>Retirada do kit: {eventConfig?.raceDateFormatted ?? '24/06'} das 06h às 11h em {eventConfig?.location ?? 'Praça de Macuco'}</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle className="text-green-600 mt-1" size={20} />
-                        <span>Lembre-se de levar documento original e o QR Code da inscrição</span>
+                        <span>Lembre-se de levar documento original e o código de confirmação na retirada do kit</span>
                       </li>
                       {selectedCategory?.requiresResidenceProof && (
                         <li className="flex items-start gap-3">
@@ -1699,7 +1701,7 @@ function MoradorFields({ formData, setFormData, onFileUpload }: FieldsProps) {
 }
 
 // Campos específicos para 60+
-function SeniorFields() {
+function SeniorFields({ year = 2026 }: { year?: number }) {
   return (
     <div className="border-t border-gray-200 pt-6 mt-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1707,7 +1709,7 @@ function SeniorFields() {
           👴 Categoria 60+ 10K - Gratuita
         </h3>
         <p className="text-sm text-blue-800">
-          <strong>Requisito:</strong> Você deve completar 60 anos até 31/12/2026.
+          <strong>Requisito:</strong> Você deve completar 60 anos até 31/12/{year}.
         </p>
         <p className="text-sm text-blue-800 mt-2">
           Apresente documento com foto na retirada do kit para comprovar sua idade.

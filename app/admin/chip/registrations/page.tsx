@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { Button, Input, Badge, Card } from '@/components/ui'
-import { Search, Download, Filter, Hash, Loader2, CheckCircle } from 'lucide-react'
+import { Search, Download, Filter, Hash, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browserClient'
@@ -188,7 +188,7 @@ export default function ChipRegistrationsPage() {
               Inscritos
             </h1>
             <p className="text-gray-600">
-              Visualização e ações de chip (numeração, check-in)
+              Visualização e ações de chip (numeração)
             </p>
           </div>
           <div className="flex gap-3">
@@ -198,13 +198,6 @@ export default function ChipRegistrationsPage() {
               onClick={() => router.push('/admin/chip/numbering')}
             >
               Atribuir Números
-            </Button>
-            <Button
-              variant="secondary"
-              leftIcon={<CheckCircle size={18} />}
-              onClick={() => router.push('/admin/chip/checkin')}
-            >
-              Check-in
             </Button>
             <Button
               variant="primary"
@@ -277,13 +270,12 @@ export default function ChipRegistrationsPage() {
                     <th>Origem</th>
                     <th>Status</th>
                     <th>Nº Peito</th>
-                    <th className="text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-gray-500">
+                      <td colSpan={7} className="text-center py-12 text-gray-500">
                         Nenhuma inscrição encontrada
                       </td>
                     </tr>
@@ -306,14 +298,6 @@ export default function ChipRegistrationsPage() {
                           ) : (
                             <span className="text-gray-400 text-sm">Não atribuído</span>
                           )}
-                        </td>
-                        <td className="text-right">
-                          <button
-                            onClick={() => router.push(`/admin/chip/checkin?q=${encodeURIComponent(reg.registration_number || reg.id)}`)}
-                            className="text-primary-600 hover:text-primary-700 font-semibold text-sm"
-                          >
-                            Check-in
-                          </button>
                         </td>
                       </tr>
                     ))

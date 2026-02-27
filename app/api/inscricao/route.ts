@@ -119,6 +119,35 @@ export async function POST(request: NextRequest) {
       athleteDocNumber = guardianDocumentNumber ? formatDocumentNumber(guardianDocumentNumber) : null
     }
 
+    // Bloquear inscrição duplicada por documento (CPF/RG) em qualquer categoria
+    if (athleteDocNumber) {
+      const { data: athletesByDoc } = await supabase
+        .from('athletes')
+        .select('id')
+        .eq('document_number', athleteDocNumber)
+        .limit(20)
+      const docAthleteIds = (athletesByDoc || []).map((a) => a.id)
+      if (docAthleteIds.length > 0) {
+        const { data: existingByDoc } = await supabase
+          .from('registrations')
+          .select('id')
+          .eq('event_id', event.id)
+          .in('athlete_id', docAthleteIds)
+          .limit(1)
+          .maybeSingle()
+        if (existingByDoc) {
+          return NextResponse.json(
+            {
+              error: 'Você já possui uma inscrição neste evento. Consulte em Acompanhar Inscrição para editar ou concluir o pagamento.',
+              already_registered: true,
+              document_hint: athleteDocNumber.length === 11 ? 'cpf' : 'rg',
+            },
+            { status: 409 }
+          )
+        }
+      }
+    }
+
     const athleteData = {
       full_name: fullName.trim(),
       email: email.trim().toLowerCase(),

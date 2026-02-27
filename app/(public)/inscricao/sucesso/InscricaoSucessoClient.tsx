@@ -112,11 +112,11 @@ export default function InscricaoSucessoClient() {
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle className="text-green-600 mt-1 shrink-0" size={20} />
-                <span>Retirada do kit: 23/06 das 14h às 20h no Ginásio Municipal</span>
+                <span>Retirada do kit: 24/06 das 06h às 11h na Praça de Macuco</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle className="text-green-600 mt-1 shrink-0" size={20} />
-                <span>Lembre-se de levar documento original e o QR Code da inscrição</span>
+                <span>Lembre-se de levar documento original e o código de confirmação na retirada do kit</span>
               </li>
             </ul>
           </div>

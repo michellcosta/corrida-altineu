@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import AdminLayout from '@/components/admin/AdminLayout'
 import {
   Users,
@@ -9,7 +8,6 @@ import {
   Calendar,
   PieChart,
   Loader2,
-  FileText,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
 import { getCountryLabel } from '@/lib/countries'
@@ -61,8 +59,10 @@ export default function OrgAdminDashboard() {
     pending: 0,
     free: 0,
     totalAmount: 0,
+    netAmount: 0,
   })
-  const [docStats, setDocStats] = useState({ approved: 0, pending: 0, rejected: 0 })
+
+  const FEE_PER_TRANSACTION = 0.8
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -86,8 +86,7 @@ export default function OrgAdminDashboard() {
         setDaysToEvent(null)
         setAgeDistribution([])
         setTopCities([])
-        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0 })
-        setDocStats({ approved: 0, pending: 0, rejected: 0 })
+        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
         return
       }
 
@@ -155,23 +154,13 @@ export default function OrgAdminDashboard() {
       const free = list.filter((r) => r.payment_status === 'free' || !r.payment_status).length
       const totalAmount = list
         .filter((r) => r.payment_status === 'paid')
-        .reduce((sum, r) => sum + (Number(r.payment_amount) || 0), 0)
-      setPaymentStats({ paid, pending, free, totalAmount })
-
-      const regIds = list.map((r) => r.id)
-      if (regIds.length > 0) {
-        const { data: docs } = await supabase
-          .from('documents')
-          .select('status')
-          .in('registration_id', regIds)
-        const docList = (docs || []) as { status: string }[]
-        const approved = docList.filter((d) => d.status === 'approved').length
-        const pendingDoc = docList.filter((d) => d.status === 'pending').length
-        const rejected = docList.filter((d) => d.status === 'rejected').length
-        setDocStats({ approved, pending: pendingDoc, rejected })
-      } else {
-        setDocStats({ approved: 0, pending: 0, rejected: 0 })
-      }
+        .reduce((sum, r) => {
+          const v = r.payment_amount
+          const n = typeof v === 'string' ? parseFloat(String(v).replace(',', '.')) : Number(v)
+          return sum + (Number.isFinite(n) ? n : 0)
+        }, 0)
+      const netAmount = Number.isFinite(totalAmount) ? Math.max(0, totalAmount - paid * FEE_PER_TRANSACTION) : 0
+      setPaymentStats({ paid, pending, free, totalAmount, netAmount })
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err)
       setTotal(0)
@@ -179,8 +168,7 @@ export default function OrgAdminDashboard() {
       setDaysToEvent(null)
       setAgeDistribution([])
       setTopCities([])
-      setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0 })
-      setDocStats({ approved: 0, pending: 0, rejected: 0 })
+      setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
     } finally {
       setLoading(false)
     }
@@ -379,83 +367,15 @@ export default function OrgAdminDashboard() {
               </div>
               <div className="text-center p-6 bg-purple-50 rounded-lg border border-purple-200">
                 <p className="text-3xl font-bold text-purple-600 mb-2">
-                  R$ {paymentStats.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {(Number.isFinite(paymentStats.netAmount) ? paymentStats.netAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-gray-600">Total Arrecadado</p>
+                <p className="text-sm text-gray-600">Líquido (após taxa)</p>
                 <p className="text-xs text-purple-600 font-semibold mt-1">
-                  {paymentStats.paid} × R$ {(paymentStats.totalAmount / (paymentStats.paid || 1)).toFixed(0)}
+                  Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa
                 </p>
               </div>
             </div>
           )}
-        </div>
-
-        {/* Documents Status */}
-        <div className="admin-card">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Status de Documentação</h3>
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="animate-spin text-green-600" size={24} />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl font-bold text-green-600">{docStats.approved}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Aprovados</p>
-                  <p className="text-xs text-gray-600">Documentos revisados</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl font-bold text-yellow-600">{docStats.pending}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Em Análise</p>
-                  <p className="text-xs text-gray-600">Aguardando revisão</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl font-bold text-red-600">{docStats.rejected}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Rejeitados</p>
-                  <p className="text-xs text-gray-600">Documentos recusados</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Available Reports */}
-        <div className="admin-card">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Relatórios Disponíveis</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: 'Resumo Executivo', desc: 'Visão geral completa das inscrições', href: '/admin/org/reports' },
-              { name: 'Distribuição Demográfica', desc: 'Análise por idade, sexo e cidade', href: '/admin/org/reports' },
-              { name: 'Status de Documentação', desc: 'Relatório detalhado de docs', href: '/admin/org/reports' },
-              { name: 'Análise de Pagamentos', desc: 'Fluxo financeiro e conversão', href: '/admin/org/reports' },
-            ].map((report) => (
-              <Link
-                key={report.name}
-                href={report.href}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-green-500 transition-colors group"
-              >
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">{report.name}</p>
-                  <p className="text-sm text-gray-600">{report.desc}</p>
-                </div>
-                <span className="text-green-600 hover:text-green-700 font-semibold text-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                  <FileText size={16} />
-                  Ver →
-                </span>
-              </Link>
-            ))}
-          </div>
         </div>
 
         {/* Info Message */}

@@ -56,7 +56,6 @@ export const ROLE_NAVIGATION: Record<UserRole, NavItem[]> = {
     { name: 'Inscritos', href: '/admin/chip/registrations', icon: 'Users' },
     { name: 'Exportacoes', href: '/admin/chip/exports', icon: 'Download' },
     { name: 'Numeracao', href: '/admin/chip/numbering', icon: 'Hash' },
-    { name: 'Check-in', href: '/admin/chip/checkin', icon: 'CheckCircle' },
     { name: 'Resultados', href: '/admin/chip/results', icon: 'Award' },
     { name: 'Alertas', href: '/admin/chip/alerts', icon: 'AlertTriangle', badgeKey: 'alerts' },
   ],

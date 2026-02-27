@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Users, ChevronDown, ChevronUp, Loader2, Search } from 'lucide-react'
-import { RACE_CONFIG } from '@/lib/constants'
 
 interface Inscrito {
   id: string
@@ -21,6 +20,7 @@ interface CategoryGroup {
 
 export default function ListaInscritosClient() {
   const [data, setData] = useState<CategoryGroup[]>([])
+  const [edition, setEdition] = useState<number>(51)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
@@ -32,6 +32,7 @@ export default function ListaInscritosClient() {
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Erro ao carregar lista')
         setData(json.data || [])
+        if (json.edition != null) setEdition(json.edition)
         if (json.data?.length) {
           setExpandedCategories(new Set(json.data.map((c: CategoryGroup) => c.slug)))
         }
@@ -82,7 +83,7 @@ export default function ListaInscritosClient() {
             Lista de <span className="text-primary-600">Inscritos</span>
           </h1>
           <p className="text-xl text-gray-600 mb-4 max-w-2xl mx-auto">
-            Confira os participantes inscritos na {RACE_CONFIG.edition}ª Corrida Rústica de Macuco, organizados por categoria.
+            Confira os participantes inscritos na {edition}ª Corrida Rústica de Macuco, organizados por categoria.
           </p>
           <Link
             href="/inscricao/acompanhar"
