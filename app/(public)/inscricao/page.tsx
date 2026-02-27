@@ -309,7 +309,8 @@ export default function InscricaoPage() {
     try {
       const res = await fetch(`/api/payments/status?payment_id=${encodeURIComponent(pixData.id)}`)
       const json = await res.json()
-      if (json.status === 'PAID') {
+      const status = (json.status || '').toUpperCase()
+      if (status === 'PAID') {
         setCurrentStep(4)
         setPixData(null)
       } else if (json.status === 'EXPIRED' || json.status === 'CANCELLED') {
@@ -335,13 +336,14 @@ export default function InscricaoPage() {
       try {
         const res = await fetch(`/api/payments/status?payment_id=${encodeURIComponent(pixData.id)}`)
         const json = await res.json()
-        if (json.status === 'PAID') {
+        const s = (json.status || '').toUpperCase()
+        if (s === 'PAID') {
           setCurrentStep(4)
           setPixData(null)
-        } else if (json.status === 'EXPIRED' || json.status === 'CANCELLED') {
+        } else if (s === 'EXPIRED' || s === 'CANCELLED') {
           setPixData(null)
           setSubmitError('O PIX expirou. Volte e gere um novo.')
-        } else if (json.status === 'REFUNDED') {
+        } else if (s === 'REFUNDED') {
           setPixData(null)
           setSubmitError('O pagamento foi estornado. Entre em contato para mais informações.')
         }

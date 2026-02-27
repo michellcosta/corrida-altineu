@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const status = json.data?.status || 'PENDING'
+    const rawStatus = json.data?.status || 'PENDING'
+    const status = typeof rawStatus === 'string' ? rawStatus.toUpperCase().replace('PAGO', 'PAID') : 'PENDING'
     const expiresAt = json.data?.expiresAt
 
     // Se PAID, atualiza a inscrição no DB (fallback caso webhook não tenha chegado)
