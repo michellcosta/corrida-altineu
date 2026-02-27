@@ -292,7 +292,8 @@ export default function InscricaoPage() {
         setCurrentStep(4)
         setPixData(null)
       } else {
-        setSubmitError(json.error || 'Erro ao simular')
+        const msg = json.error || json.details?.error || 'Erro ao simular'
+        setSubmitError(typeof msg === 'string' ? msg : JSON.stringify(msg))
       }
     } catch {
       setSubmitError('Erro ao simular. Tente novamente.')
