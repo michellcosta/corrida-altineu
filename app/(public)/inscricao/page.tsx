@@ -275,6 +275,32 @@ export default function InscricaoPage() {
       .finally(() => setMunicipiosLoading(false))
   }, [formData.state, formData.originType])
 
+  async function handleSimulatePayment() {
+    if (!pixData?.id) return
+    setCheckingStatus(true)
+    setSubmitError('')
+    try {
+      const res = await fetch('/api/payments/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_id: pixData.id }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        // Chama status para atualizar a inscrição no DB
+        await fetch(`/api/payments/status?payment_id=${encodeURIComponent(pixData.id)}`)
+        setCurrentStep(4)
+        setPixData(null)
+      } else {
+        setSubmitError(json.error || 'Erro ao simular')
+      }
+    } catch {
+      setSubmitError('Erro ao simular. Tente novamente.')
+    } finally {
+      setCheckingStatus(false)
+    }
+  }
+
   async function handleCheckPaymentStatus() {
     if (!pixData?.id) return
     setCheckingStatus(true)
@@ -1393,7 +1419,7 @@ export default function InscricaoPage() {
                           Aguardando pagamento...
                         </p>
                       </div>
-                      <div className="mb-6">
+                      <div className="mb-6 flex flex-col sm:flex-row gap-3 items-center">
                         <button
                           onClick={handleCheckPaymentStatus}
                           disabled={checkingStatus}
@@ -1410,6 +1436,14 @@ export default function InscricaoPage() {
                               Já fiz o pagamento
                             </>
                           )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSimulatePayment}
+                          disabled={checkingStatus}
+                          className="text-sm text-gray-500 hover:text-gray-700 underline disabled:opacity-50"
+                        >
+                          Simular pagamento (teste)
                         </button>
                       </div>
                       {submitError && (

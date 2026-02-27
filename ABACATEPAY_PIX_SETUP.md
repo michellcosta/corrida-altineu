@@ -53,6 +53,8 @@ Substitua:
 - `SEU_PIX_ID` pelo ID retornado ao criar o PIX (ex: `pix_char_ApCfnDeqDdTHm0s4XTdtZPuX`)
 - `SUA_API_KEY` pela sua chave de API (ex: `abc_dev_...`)
 
+**Ou use o botão na tela:** Na etapa de pagamento PIX, clique em "Simular pagamento (teste)" para simular sem usar o curl. O botão só funciona com chave `abc_dev_`.
+
 - [Simular Pagamento PIX](https://docs.abacatepay.com/api-reference/simular-pagamento)
 
 ## 6. Documentação
