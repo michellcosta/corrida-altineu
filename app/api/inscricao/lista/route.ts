@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
             registration_number: i.registration_number,
             full_name: i.full_name,
             birth_date: i.birth_date
-              ? new Date(i.birth_date).toLocaleDateString('pt-BR', {
+              ? new Date(i.birth_date as string | number | Date).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
             registration_number: i.registration_number,
             full_name: i.full_name,
             birth_date: i.birth_date
-              ? new Date(i.birth_date).toLocaleDateString('pt-BR', {
+              ? new Date(i.birth_date as string | number | Date).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
