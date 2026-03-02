@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, FileText, CheckCircle, AlertCircle, XCircle, Loader2, Users, Pencil, Save, X, Copy, CreditCard } from 'lucide-react'
+import { Search, CheckCircle, AlertCircle, Loader2, Users, Pencil, Save, X, Copy, CreditCard } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
 
@@ -61,8 +61,6 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Rejeitada',
   cancelled: 'Cancelada',
 }
-
-const TSHIRT_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'] as const
 
 function formatDocNumber(value: string | null | undefined): string {
   if (!value) return '-'
@@ -225,16 +223,7 @@ export default function AcompanharClient() {
                 <AlertCircle className="w-10 h-10 text-yellow-500" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Pendente</h3>
-                  <p className="text-yellow-600 text-sm">Aguardando pagamento ou documentos</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-6 border border-blue-200">
-              <div className="flex items-center gap-4 mb-4">
-                <FileText className="w-10 h-10 text-blue-500" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Em Análise</h3>
-                  <p className="text-blue-600 text-sm">Validando documentos</p>
+                  <p className="text-yellow-600 text-sm">Aguardando pagamento</p>
                 </div>
               </div>
             </div>
@@ -243,16 +232,7 @@ export default function AcompanharClient() {
                 <CheckCircle className="w-10 h-10 text-green-500" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Confirmada</h3>
-                  <p className="text-green-600 text-sm">Tudo aprovado – retire seu kit</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-6 border border-red-200">
-              <div className="flex items-center gap-4 mb-4">
-                <XCircle className="w-10 h-10 text-red-500" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Rejeitada</h3>
-                  <p className="text-red-600 text-sm">Documentos inválidos</p>
+                  <p className="text-green-600 text-sm">Tudo aprovado – Você está inscrito!</p>
                 </div>
               </div>
             </div>
@@ -356,7 +336,15 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   }
 
   function startEdit() {
+    const bd = athlete?.birth_date
+    const birthDateForInput = bd ? (bd.includes('-') ? bd.slice(0, 10) : new Date(bd).toISOString().slice(0, 10)) : ''
     setEditData({
+      full_name: athlete?.full_name ?? '',
+      birth_date: birthDateForInput || null,
+      gender: athlete?.gender ?? '',
+      city: athlete?.city ?? '',
+      state: athlete?.state ?? '',
+      country: athlete?.country ?? '',
       email: athlete?.email ?? '',
       phone: athlete?.phone ?? '',
       whatsapp: athlete?.whatsapp ?? '',
@@ -526,16 +514,54 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
           )}
         </div>
 
-        {/* Dados pessoais (somente leitura) */}
+        {/* Dados pessoais (editável exceto Documento) */}
         <div className="space-y-4">
           <h4 className="font-semibold text-gray-800 border-b pb-2">Dados Pessoais</h4>
-          <Field label="Nome completo" value={athlete?.full_name || '-'} />
-          <Field label="Data de nascimento" value={formatDate(athlete?.birth_date)} />
-          <Field label="Sexo" value={athlete?.gender === 'M' ? 'Masculino' : athlete?.gender === 'F' ? 'Feminino' : athlete?.gender || '-'} />
-          <Field label="Documento" value={athlete?.document_type ? `${athlete.document_type} ${formatDocNumber(athlete.document_number)}` : '-'} />
-          <Field label="Cidade" value={athlete?.city || '-'} />
-          <Field label="Estado" value={athlete?.state ? BRAZILIAN_STATES.find((s) => s.code === athlete.state)?.name || athlete.state : '-'} />
-          <Field label="País" value={athlete?.country || '-'} />
+          {editing ? (
+            <>
+              <EditField label="Nome completo" value={editData.full_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, full_name: v }))} />
+              <EditField label="Data de nascimento" value={editData.birth_date ?? ''} onChange={(v) => setEditData((d) => ({ ...d, birth_date: v || null }))} type="date" />
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Sexo</label>
+                <select
+                  value={editData.gender ?? ''}
+                  onChange={(e) => setEditData((d) => ({ ...d, gender: e.target.value || null }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Selecione</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Feminino</option>
+                  <option value="OUTRO">Outro</option>
+                </select>
+              </div>
+              <Field label="Documento" value={athlete?.document_type ? `${athlete.document_type} ${formatDocNumber(athlete.document_number)}` : '-'} />
+              <EditField label="Cidade" value={editData.city ?? ''} onChange={(v) => setEditData((d) => ({ ...d, city: v }))} />
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Estado</label>
+                <select
+                  value={editData.state ?? ''}
+                  onChange={(e) => setEditData((d) => ({ ...d, state: e.target.value || null }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Selecione</option>
+                  {BRAZILIAN_STATES.map((s) => (
+                    <option key={s.code} value={s.code}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <EditField label="País" value={editData.country ?? ''} onChange={(v) => setEditData((d) => ({ ...d, country: v }))} />
+            </>
+          ) : (
+            <>
+              <Field label="Nome completo" value={athlete?.full_name || '-'} />
+              <Field label="Data de nascimento" value={formatDate(athlete?.birth_date)} />
+              <Field label="Sexo" value={athlete?.gender === 'M' ? 'Masculino' : athlete?.gender === 'F' ? 'Feminino' : athlete?.gender || '-'} />
+              <Field label="Documento" value={athlete?.document_type ? `${athlete.document_type} ${formatDocNumber(athlete.document_number)}` : '-'} />
+              <Field label="Cidade" value={athlete?.city || '-'} />
+              <Field label="Estado" value={athlete?.state ? BRAZILIAN_STATES.find((s) => s.code === athlete.state)?.name || athlete.state : '-'} />
+              <Field label="País" value={athlete?.country || '-'} />
+            </>
+          )}
         </div>
 
         {/* Contato (editável) */}
@@ -545,15 +571,11 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
             <>
               <EditField label="E-mail" value={editData.email ?? ''} onChange={(v) => setEditData((d) => ({ ...d, email: v }))} type="email" />
               <EditField label="Telefone" value={editData.phone ?? ''} onChange={(v) => setEditData((d) => ({ ...d, phone: v, whatsapp: v }))} />
-              <EditField label="Contato de emergência" value={editData.emergency_contact_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, emergency_contact_name: v }))} />
-              <EditField label="Telefone emergência" value={editData.emergency_contact_phone ?? ''} onChange={(v) => setEditData((d) => ({ ...d, emergency_contact_phone: v }))} />
             </>
           ) : (
             <>
               <Field label="E-mail" value={athlete?.email || '-'} />
               <Field label="Telefone" value={athlete?.phone || athlete?.whatsapp || '-'} />
-              <Field label="Contato de emergência" value={athlete?.emergency_contact_name || '-'} />
-              <Field label="Telefone emergência" value={athlete?.emergency_contact_phone || '-'} />
             </>
           )}
         </div>
@@ -564,28 +586,10 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
           {editing ? (
             <>
               <EditField label="Equipe/Clube" value={editData.team_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, team_name: v }))} />
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Camiseta</label>
-                <select
-                  value={editData.tshirt_size ?? ''}
-                  onChange={(e) => setEditData((d) => ({ ...d, tshirt_size: e.target.value || null }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Selecione</option>
-                  {TSHIRT_SIZES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <EditField label="Endereço" value={editData.address ?? ''} onChange={(v) => setEditData((d) => ({ ...d, address: v }))} />
-              <EditField label="CEP" value={editData.zip_code ?? ''} onChange={(v) => setEditData((d) => ({ ...d, zip_code: v }))} />
             </>
           ) : (
             <>
               <Field label="Equipe/Clube" value={athlete?.team_name || '-'} />
-              <Field label="Camiseta" value={athlete?.tshirt_size || '-'} />
-              <Field label="Endereço" value={athlete?.address || '-'} />
-              <Field label="CEP" value={athlete?.zip_code ? athlete.zip_code.replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2') : '-'} />
             </>
           )}
         </div>

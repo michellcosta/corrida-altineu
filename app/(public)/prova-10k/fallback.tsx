@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { MapPin, Clock, Users, Trophy, Calendar, ChevronRight } from 'lucide-react'
 import { getEventConfig } from '@/lib/cms/event'
 import { RACE_CONFIG } from '@/lib/constants'
+import { CRONOGRAMA_ESSENCIAL_CARD } from '@/lib/programacao'
 
 export const metadata = {
   title: 'Prova 10K | 51ª Corrida de Macuco',
@@ -203,26 +204,11 @@ export default async function Prova10KPage() {
                 </div>
               </div>
               <ul className="space-y-3 text-gray-700">
-                <li>
-                  <span className="font-semibold text-primary-600">09h</span> · Encerramento das
-                  inscrições presenciais da corrida 2K
-                </li>
-                <li>
-                  <span className="font-semibold text-primary-600">10h</span> · Largada da Corrida
-                  Infanto-Juvenil 2K
-                </li>
-                <li>
-                  <span className="font-semibold text-primary-600">11h15</span> · Traslado oficial
-                  para a largada do 10K
-                </li>
-                <li>
-                  <span className="font-semibold text-primary-600">12h</span> · Largada da Prova 10K
-                  na Fábrica de Cimento Holcim
-                </li>
-                <li>
-                  <span className="font-semibold text-primary-600">13h30</span> · Início da
-                  premiação geral, local e por faixas etárias
-                </li>
+                {CRONOGRAMA_ESSENCIAL_CARD.map((item) => (
+                  <li key={item.horario}>
+                    <span className="font-semibold text-primary-600">{item.horario}</span> · {item.titulo}
+                  </li>
+                ))}
               </ul>
               <Link
                 href="/programacao"

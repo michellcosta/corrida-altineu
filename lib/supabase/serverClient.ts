@@ -9,6 +9,7 @@
  * Gerencia cookies de autenticação automaticamente
  */
 
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
@@ -47,28 +48,26 @@ export { createClient as supabaseServer }
 
 /**
  * Cliente Supabase com permissões de serviço (admin)
- * 
+ *
+ * Usa @supabase/supabase-js diretamente (recomendado para service_role).
+ * O createServerClient do SSR pode ter comportamento diferente com sb_secret_.
+ *
  * ⚠️ ATENÇÃO: Use apenas em API Routes server-side
  * NUNCA exponha a service_role key no código do navegador!
- * 
- * Use para operações administrativas que ignoram RLS:
- * - Criar usuários admin
- * - Modificar dados sensíveis
- * - Exportar relatórios completos
  */
 export function createServiceClient() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY não configurada')
   }
 
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        get() { return undefined },
-        set() {},
-        remove() {},
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
     }
   )

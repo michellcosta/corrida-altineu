@@ -243,7 +243,20 @@ export default function InscricaoClient() {
   ]
   const DAYS = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))
   const currentYear = new Date().getFullYear()
-  const YEARS = Array.from({ length: 101 }, (_, i) => ({ value: String(currentYear - i), label: String(currentYear - i) }))
+  // Para Infantil 2.5K: anos que resultam em idade entre 5 e 14 no ano da prova
+  const birthYearsForInfantil = selectedCategory?.id === 'infantil-2k' && selectedCategory?.ageMax != null
+    ? Array.from(
+        { length: selectedCategory.ageMax - selectedCategory.ageMin + 1 },
+        (_, i) => {
+          const year = eventYear - selectedCategory.ageMax! + i
+          return { value: String(year), label: String(year) }
+        }
+      )
+    : null
+  const YEARS = birthYearsForInfantil ?? Array.from(
+    { length: 101 },
+    (_, i) => ({ value: String(currentYear - i), label: String(currentYear - i) })
+  )
 
   // Calcular steps dinâmicos (sem pagamento para categorias gratuitas)
   const activeSteps = selectedCategory?.isFree 
@@ -357,9 +370,8 @@ export default function InscricaoClient() {
     }
 
     if (selectedCategory?.id === 'infantil-2k') {
-      if (!formData.childCpf || !validateDocumentNumber(formData.childCpf, 'CPF')) return false
       if (!formData.guardianName?.trim() || !formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF')) return false
-      if (!formData.guardianPhone?.trim() || !formData.guardianRelationship || !formData.authorizationFile) return false
+      if (!formData.guardianPhone?.trim() || !formData.guardianRelationship) return false
     }
 
     if (selectedCategory?.id === 'sessenta-10k') {
@@ -433,7 +445,7 @@ export default function InscricaoClient() {
         addressComplement: formData.addressComplement.trim() || undefined,
         addressNeighborhood: formData.addressNeighborhood.trim() || undefined,
         addressZipCode: formData.addressZipCode.trim() || undefined,
-        childCpf: selectedCategory.id === 'infantil-2k' ? formData.childCpf : undefined,
+        childCpf: undefined,
         guardianName: formData.guardianName.trim() || undefined,
         guardianCpf: formData.guardianCpf || undefined,
         guardianPhone: formData.guardianPhone.trim() || undefined,
@@ -449,7 +461,7 @@ export default function InscricaoClient() {
       const json = await res.json()
       if (!res.ok) {
         if (res.status === 409 && json.already_registered) {
-          const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.childCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
+          const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.guardianCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
           if (docValue) router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
           else throw new Error(json.error || 'Erro ao finalizar inscrição')
           return
@@ -502,16 +514,12 @@ export default function InscricaoClient() {
     }
 
     if (selectedCategory?.id === 'infantil-2k') {
-      if (!formData.childCpf || !validateDocumentNumber(formData.childCpf, 'CPF')) {
-        errors.childCpf = 'Informe um CPF válido da criança.'
-      }
       if (!formData.guardianName?.trim()) errors.guardianName = 'Preencha o nome do responsável.'
       if (!formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF')) {
         errors.guardianCpf = 'Informe um CPF válido do responsável.'
       }
       if (!formData.guardianPhone?.trim()) errors.guardianPhone = 'Preencha o telefone do responsável.'
       if (!formData.guardianRelationship) errors.guardianRelationship = 'Selecione o grau de parentesco.'
-      if (!formData.authorizationFile) errors.authorizationFile = 'Envie o termo de autorização assinado.'
     }
 
     if (!formData.acceptedTerms) {
@@ -586,7 +594,7 @@ export default function InscricaoClient() {
         addressComplement: formData.addressComplement.trim() || undefined,
         addressNeighborhood: formData.addressNeighborhood.trim() || undefined,
         addressZipCode: formData.addressZipCode.trim() || undefined,
-        childCpf: selectedCategory.id === 'infantil-2k' ? formData.childCpf : undefined,
+        childCpf: undefined,
         guardianName: formData.guardianName.trim() || undefined,
         guardianCpf: formData.guardianCpf || undefined,
         guardianPhone: formData.guardianPhone.trim() || undefined,
@@ -602,7 +610,7 @@ export default function InscricaoClient() {
         const jsonInsc = await resInsc.json()
         if (!resInsc.ok) {
           if (resInsc.status === 409 && jsonInsc.already_registered) {
-            const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.childCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
+            const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.guardianCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
             if (docValue) router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
             else setSubmitError(jsonInsc.error || 'Erro ao finalizar inscrição')
             return
@@ -1688,7 +1696,7 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
   return (
     <div className="border-t border-gray-200 pt-6 mt-6">
       <h3 className="font-bold text-lg mb-4 text-primary-700">
-        👶 Dados da Criança e Responsável
+        Dados do Responsável
       </h3>
       
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -1699,28 +1707,6 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
       </div>
 
       <div className="space-y-6">
-        {/* CPF da Criança */}
-        <div id="field-childCpf">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            CPF da Criança <span className="text-gray-500 font-normal">(Obrigatório)</span>
-          </label>
-          <input
-            type="text"
-            required
-            value={formData?.childCpf || ''}
-            onChange={(e) => {
-              setFormData?.({...formData, childCpf: formatDocumentNumber(e.target.value, 'CPF')})
-              clearFieldError?.('childCpf')
-            }}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.childCpf ? 'border-red-500' : 'border-gray-300'}`}
-            placeholder="000.000.000-00"
-          />
-          <p className="text-xs text-gray-500 mt-1">CPF da criança participante</p>
-          {fieldErrors.childCpf && (
-            <p className="text-xs text-red-600 mt-1">{fieldErrors.childCpf}</p>
-          )}
-        </div>
-
         {/* Dados do Responsável */}
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-4">Dados do Responsável Legal</h4>
@@ -1813,31 +1799,6 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Termo de Autorização */}
-        <div id="field-authorizationFile">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Termo de Autorização Assinado <span className="text-gray-500 font-normal">(Obrigatório)</span>
-          </label>
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => {
-              onFileUpload?.('authorizationFile', e.target.files?.[0] || null)
-              clearFieldError?.('authorizationFile')
-            }}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.authorizationFile ? 'border-red-500' : 'border-gray-300'}`}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            PDF, JPG ou PNG - Máx. 5MB | 
-            <a href="#" className="text-primary-600 hover:text-primary-700 ml-1">
-              Baixar modelo do termo
-            </a>
-          </p>
-          {fieldErrors.authorizationFile && (
-            <p className="text-xs text-red-600 mt-1">{fieldErrors.authorizationFile}</p>
-          )}
         </div>
       </div>
     </div>

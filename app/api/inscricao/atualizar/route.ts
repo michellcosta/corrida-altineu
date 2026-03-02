@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-/** Campos editáveis pelo atleta na página Acompanhar Inscrição */
+/** Campos editáveis pelo atleta na página Acompanhar Inscrição.
+ * Travados: registration_number, confirmation_code, document_type, document_number */
 const EDITABLE_FIELDS = [
+  'full_name',
+  'birth_date',
+  'gender',
+  'city',
+  'state',
+  'country',
   'email',
   'phone',
   'whatsapp',
@@ -74,10 +81,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     const athleteUpdate: Record<string, unknown> = {}
+    const requiredFields = ['full_name', 'birth_date']
     for (const key of EDITABLE_FIELDS) {
       if (key in updates && updates[key] !== undefined) {
         let val = updates[key]
         if (typeof val === 'string') val = val.trim() || null
+        if (requiredFields.includes(key) && (val === null || val === '')) continue
         athleteUpdate[key] = val
       }
     }
@@ -101,6 +110,26 @@ export async function PATCH(request: NextRequest) {
     if (updateError) {
       console.error('Erro ao atualizar atleta:', updateError)
       return NextResponse.json({ error: 'Erro ao salvar alterações' }, { status: 500 })
+    }
+
+    // Notificar admins (SITE_ADMIN e CHIP_ADMIN) sobre a alteração
+    const athleteName = (athleteUpdate.full_name as string) || 'Atleta'
+    const { data: admins } = await supabase
+      .from('admin_users')
+      .select('id')
+      .in('role', ['SITE_ADMIN', 'CHIP_ADMIN'])
+      .eq('is_active', true)
+
+    if (admins && admins.length > 0) {
+      const notifications = admins.map((a) => ({
+        admin_user_id: a.id,
+        type: 'athlete_data_updated',
+        title: 'Dados atualizados',
+        message: `${athleteName} atualizou seus dados na inscrição.`,
+        link: '/admin/site/inscritos',
+        metadata: { athlete_id: athleteId, registration_id: regId },
+      }))
+      await supabase.from('admin_notifications').insert(notifications)
     }
 
     return NextResponse.json({ success: true })

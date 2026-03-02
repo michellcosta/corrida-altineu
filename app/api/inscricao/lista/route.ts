@@ -42,17 +42,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Para admin: só categorias ativas. Para lista pública: todas (inclui Infantil mesmo se inativa por engano)
     const { data: cats } = await supabaseService
       .from('categories')
-      .select('id, name, slug')
+      .select('id, name, slug, is_active')
       .eq('event_id', event.id)
       .order('name')
 
     const { data: regs, error } = await supabaseService
       .from('registrations')
-      .select('id, athlete_id, category_id, registration_number, status, bib_number, notes')
+      .select('id, athlete_id, category_id, registration_number, confirmation_code, status, bib_number, notes')
       .eq('event_id', event.id)
       .order('registered_at', { ascending: isAdmin ? false : true })
+      .limit(10000)
 
     const athleteIds = [...new Set((regs || []).map((r: { athlete_id: string }) => r.athlete_id))]
 
@@ -82,6 +84,13 @@ export async function GET(request: NextRequest) {
     const isConfirmed = (s: string) => {
       const v = (s || '').toLowerCase().trim()
       return v === 'confirmed' || v === 'confirmado' || v.includes('confirm')
+    }
+
+    /** Extrai o sufixo numérico do registration_number (ex: "2026-GERAL-0001" -> 1) para ordenação correta */
+    const parseRegNumber = (rn: string | null): number => {
+      if (!rn || typeof rn !== 'string') return 999999
+      const match = rn.match(/-(\d+)$/)
+      return match ? parseInt(match[1], 10) : 999999
     }
 
     const allRegs = (regs || []) as RegItem[]
@@ -127,17 +136,24 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Lista pública: apenas estas categorias, na ordem definida
+    const PUBLIC_CATEGORY_SLUGS = ['geral-10k', '60-mais-10k', 'morador-10k', 'infantil-2k']
+    const CATEGORY_ORDER = ['60-mais-10k', 'geral-10k', 'infantil-2k', 'morador-10k']
     const categoriesList = (cats || []) as { id: string; name: string; slug?: string }[]
-    const categories = categoriesList
+    const categoriesRaw = categoriesList
+      .filter((c) => PUBLIC_CATEGORY_SLUGS.includes(c.slug || ''))
       .filter((c) => !categorySlug || categorySlug === (c.slug || ''))
       .map((c) => {
         const slug = c.slug || c.id
-        const items = confirmedRegs.filter((r) => r.category_id === c.id)
+        const items = confirmedRegs.filter((r) => r.category_id && String(r.category_id) === String(c.id))
+        const inscritosOrdenados = [...items].sort((a, b) =>
+          parseRegNumber(a.registration_number) - parseRegNumber(b.registration_number)
+        )
         return {
           slug,
           name: c.name,
           count: items.length,
-          inscritos: items.map((i) => ({
+          inscritos: inscritosOrdenados.map((i) => ({
             id: i.id,
             registration_number: i.registration_number,
             full_name: i.full_name,
@@ -153,16 +169,31 @@ export async function GET(request: NextRequest) {
       })
       .filter((cat) => cat.count > 0 || (categorySlug && categorySlug === cat.slug))
 
-    // Incluir registros sem category_id válido em "outros" (fallback)
-    const regsWithUnknownCategory = confirmedRegs.filter((r) => !r.category_id || !catMap.get(r.category_id))
+    // Ordenar por CATEGORY_ORDER para garantir ordem consistente
+    const categories = [...categoriesRaw].sort((a, b) => {
+      const idxA = CATEGORY_ORDER.indexOf(a.slug)
+      const idxB = CATEGORY_ORDER.indexOf(b.slug)
+      return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99)
+    })
+
+    // Incluir em "outros" todos os confirmados que não estão nas 4 categorias principais
+    const regsWithUnknownCategory = confirmedRegs.filter((r) => {
+      if (!r.category_id) return true
+      const cat = catMap.get(r.category_id)
+      if (!cat) return true
+      return !PUBLIC_CATEGORY_SLUGS.includes(cat.slug)
+    })
     if (regsWithUnknownCategory.length > 0) {
       const outrosSlug = 'outros'
       if (!categories.some((c) => c.slug === outrosSlug)) {
+        const outrosOrdenados = [...regsWithUnknownCategory].sort((a, b) =>
+          parseRegNumber(a.registration_number) - parseRegNumber(b.registration_number)
+        )
         categories.push({
           slug: outrosSlug,
           name: 'Outros',
           count: regsWithUnknownCategory.length,
-          inscritos: regsWithUnknownCategory.map((i) => ({
+          inscritos: outrosOrdenados.map((i) => ({
             id: i.id,
             registration_number: i.registration_number,
             full_name: i.full_name,
@@ -181,7 +212,10 @@ export async function GET(request: NextRequest) {
     const debug = searchParams.get('_debug') === '1'
     const payload: Record<string, unknown> = { data: categories, edition: event.edition ?? 51 }
     if (debug) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? '?'
       payload._debug = {
+        supabaseProjectRef: projectRef,
         totalRegs: allRegs.length,
         confirmedCount: confirmedRegs.length,
         categoriesFromDb: categoriesList.length,

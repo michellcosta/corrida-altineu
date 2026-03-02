@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browserClient'
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { SkeletonAdminLayout } from '@/components/ui'
 import { useAlertCount } from '@/hooks/useAlertCount'
+import { useAdminNotifications } from '@/hooks/useAdminNotifications'
 
 const iconMap: Record<string, any> = {
   LayoutDashboard, FileText, Calendar, Users, BarChart, Activity,
@@ -24,15 +25,46 @@ interface AdminLayoutProps {
   children: React.ReactNode
 }
 
+function formatNotificationDate(iso: string): string {
+  try {
+    const d = new Date(iso)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    if (diffMins < 1) return 'Agora'
+    if (diffMins < 60) return `${diffMins} min`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h`
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  } catch {
+    return ''
+  }
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
   const alertCount = useAlertCount()
+  const { notifications, unreadCount, markAsRead } = useAdminNotifications()
   const [user, setUser] = useState<AdminUser | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
+  const notificationsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false)
+      }
+    }
+    if (notificationsOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [notificationsOpen])
 
   useEffect(() => {
     checkAuth()
@@ -297,11 +329,72 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 md:gap-4 shrink-0">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative" aria-label="Notificações">
-                <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+            <div className="flex items-center gap-1 md:gap-4 shrink-0" ref={notificationsRef}>
+              <div className="relative">
+                <button
+                  onClick={() => setNotificationsOpen((o) => !o)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                  aria-label="Notificações"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 max-h-[400px] overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                    <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">Notificações</span>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={() => markAsRead(undefined, true)}
+                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                          Marcar todas como lidas
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <p className="p-4 text-sm text-gray-500 text-center">Nenhuma notificação</p>
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`p-4 border-b border-gray-50 hover:bg-gray-50 ${!n.read_at ? 'bg-primary-50/50' : ''}`}
+                          >
+                            {n.link ? (
+                              <Link
+                                href={n.link}
+                                onClick={() => {
+                                  if (!n.read_at) markAsRead([n.id])
+                                  setNotificationsOpen(false)
+                                }}
+                                className="block"
+                              >
+                                <p className="font-medium text-gray-900 text-sm">{n.title}</p>
+                                <p className="text-sm text-gray-600 mt-0.5">{n.message}</p>
+                                <p className="text-xs text-gray-400 mt-1">{formatNotificationDate(n.created_at)}</p>
+                              </Link>
+                            ) : (
+                              <div
+                                onClick={() => !n.read_at && markAsRead([n.id])}
+                                className="cursor-default"
+                              >
+                                <p className="font-medium text-gray-900 text-sm">{n.title}</p>
+                                <p className="text-sm text-gray-600 mt-0.5">{n.message}</p>
+                                <p className="text-xs text-gray-400 mt-1">{formatNotificationDate(n.created_at)}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Link
                 href="/"
                 target="_blank"

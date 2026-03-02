@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { Button, Input, Badge, Card } from '@/components/ui'
-import { Search, Download, Filter, Pencil, Trash2, Loader2, X } from 'lucide-react'
+import { Search, Download, Filter, Pencil, Trash2, Loader2, X, Copy } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browserClient'
@@ -59,6 +59,7 @@ interface RegistrationRow {
   id: string
   athlete_id: string
   registration_number: string | null
+  confirmation_code: string | null
   status: string
   bib_number: number | null
   notes: string | null
@@ -201,7 +202,7 @@ export default function SiteInscritosPage() {
     setDeleteModalOpen(true)
   }
 
-  async function handleSaveEdit(athleteData: Partial<AthleteData>, registrationData: { status: string; notes: string | null }) {
+  async function handleSaveEdit(athleteData: Partial<AthleteData>, registrationData: { status: string }) {
     if (!selectedReg) return
     setSaving(true)
     try {
@@ -218,7 +219,6 @@ export default function SiteInscritosPage() {
           state: athleteData.state || null,
           country: athleteData.country || null,
           team_name: athleteData.team_name || null,
-          tshirt_size: athleteData.tshirt_size || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedReg.athlete_id)
@@ -228,7 +228,6 @@ export default function SiteInscritosPage() {
         .from('registrations')
         .update({
           status: registrationData.status,
-          notes: registrationData.notes || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedReg.id)
@@ -490,7 +489,7 @@ export default function SiteInscritosPage() {
 interface EditInscritoModalProps {
   reg: RegistrationRow
   onClose: () => void
-  onSave: (athlete: Partial<AthleteData>, registration: { status: string; notes: string | null }) => Promise<void>
+  onSave: (athlete: Partial<AthleteData>, registration: { status: string }) => Promise<void>
   saving: boolean
 }
 
@@ -505,10 +504,8 @@ function EditInscritoModal({ reg, onClose, onSave, saving }: EditInscritoModalPr
     state: reg.athlete?.state || '',
     country: reg.athlete?.country || 'BRA',
     team_name: reg.athlete?.team_name || '',
-    tshirt_size: reg.athlete?.tshirt_size || '',
   })
   const [status, setStatus] = useState(reg.status)
-  const [notes, setNotes] = useState(reg.notes || '')
 
   useEffect(() => {
     setAthlete({
@@ -521,10 +518,8 @@ function EditInscritoModal({ reg, onClose, onSave, saving }: EditInscritoModalPr
       state: reg.athlete?.state || '',
       country: reg.athlete?.country || 'BRA',
       team_name: reg.athlete?.team_name || '',
-      tshirt_size: reg.athlete?.tshirt_size || '',
     })
     setStatus(reg.status)
-    setNotes(reg.notes || '')
   }, [reg])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -538,9 +533,8 @@ function EditInscritoModal({ reg, onClose, onSave, saving }: EditInscritoModalPr
         state: athlete.state || null,
         country: athlete.country || null,
         team_name: athlete.team_name || null,
-        tshirt_size: athlete.tshirt_size || null,
       },
-      { status, notes: notes.trim() || null }
+      { status }
     )
   }
 
@@ -648,29 +642,33 @@ function EditInscritoModal({ reg, onClose, onSave, saving }: EditInscritoModalPr
                   className="admin-input w-full"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tamanho camiseta</label>
-                <select
-                  value={athlete.tshirt_size}
-                  onChange={(e) => setAthlete((a) => ({ ...a, tshirt_size: e.target.value }))}
-                  className="admin-input w-full"
-                >
-                  <option value="">Selecione</option>
-                  <option value="PP">PP</option>
-                  <option value="P">P</option>
-                  <option value="M">M</option>
-                  <option value="G">G</option>
-                  <option value="GG">GG</option>
-                  <option value="XG">XG</option>
-                  <option value="XXG">XXG</option>
-                </select>
-              </div>
             </div>
           </div>
 
           <div>
             <h3 className="font-semibold text-gray-900 mb-4">Inscrição</h3>
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Código para acompanhar inscrição</label>
+                <div className="flex items-center gap-2">
+                  <p className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono text-gray-900">
+                    {reg.confirmation_code || '-'}
+                  </p>
+                  {reg.confirmation_code && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(reg.confirmation_code!)
+                        toast.success('Código copiado!')
+                      }}
+                      className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                      title="Copiar código"
+                    >
+                      <Copy size={20} />
+                    </button>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
@@ -682,15 +680,6 @@ function EditInscritoModal({ reg, onClose, onSave, saving }: EditInscritoModalPr
                     <option key={k} value={k}>{v}</option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="admin-input w-full min-h-[80px]"
-                  rows={3}
-                />
               </div>
             </div>
           </div>

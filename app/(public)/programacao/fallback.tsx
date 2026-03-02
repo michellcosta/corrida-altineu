@@ -1,52 +1,12 @@
 import { Calendar, Clock, MapPin, Flag, Users, Trophy } from 'lucide-react'
 import Link from 'next/link'
+import { CRONOGRAMA_DIA_PROVA } from '@/lib/programacao'
 
 export const metadata = {
   title: 'Programação | Corrida de Macuco',
   description:
     'Cronograma oficial da Corrida de Macuco: horários de largada, encerramento de inscrições e cerimônias de premiação.',
 }
-
-const CRONOGRAMA_DIA_PROVA = [
-  {
-    horario: '09:00',
-    titulo: 'Encerramento das inscrições da Corrida Infanto-Juvenil',
-    local: 'Praça Prof. João Brasil (Secretaria da Prova)',
-    descricao:
-      'Último horário para confirmar participação presencialmente na prova de 2,5 km.',
-    importante: true,
-  },
-  {
-    horario: '10:00',
-    titulo: 'Largada Corrida Infanto-Juvenil - 2,5 KM',
-    local: 'Entrada do Goiabal',
-    descricao:
-      'Percurso até a Praça Prof. João Brasil, com chegada pelo portal oficial do evento.',
-    destaque: true,
-  },
-  {
-    horario: '11:00',
-    titulo: 'Concentração Geral e Aquecimento Guiado',
-    local: 'Praça Prof. João Brasil',
-    descricao:
-      'Ponto de encontro dos atletas da prova principal com alongamento coletivo e orientações finais.',
-  },
-  {
-    horario: '12:00',
-    titulo: 'Largada Corrida de 10 KM',
-    local: 'Fábrica de Cimento Holcim',
-    descricao:
-      'Saída oficial rumo à Praça Prof. João Brasil, em Macuco, com apoio logístico completo ao longo do trajeto.',
-    destaque: true,
-  },
-  {
-    horario: '13:30',
-    titulo: 'Início da Premiação Geral, Local e por Faixas Etárias',
-    local: 'Palco Principal - Praça Prof. João Brasil',
-    descricao:
-      'Entrega de troféus, valores em dinheiro e reconhecimento às equipes com maior número de atletas.',
-  },
-]
 
 const DADOS_PROVA = [
   {
@@ -105,7 +65,7 @@ export default function ProgramacaoPage() {
                   <div className="flex items-center gap-3 mb-2">
                     <Clock className="text-red-600" size={20} />
                     <span className="font-semibold text-red-700 text-lg">
-                      {item.horario}
+                      {item.horarioCard}
                     </span>
                     {item.destaque && (
                       <span className="inline-flex items-center rounded-full bg-red-600 text-white text-xs font-semibold px-3 py-1">
