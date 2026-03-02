@@ -20,7 +20,7 @@ const navigation = [
       { name: 'Geral 10K', href: '/prova-10k' },
       { name: 'Morador 10K', href: '/morador-10k' },
       { name: '60+ 10K', href: '/60-mais-10k' },
-      { name: 'Infantil 2K', href: '/prova-kids' },
+      { name: 'Infantil 2.5K', href: '/prova-kids' },
     ],
   },
   { name: 'Evento', href: '/programacao', submenu: [

@@ -59,8 +59,8 @@ export default function PercursosPage() {
       ],
     },
     '2k': {
-      title: 'Corrida Infanto-Juvenil 2K',
-      distance: '2 quilômetros',
+      title: 'Corrida Infanto-Juvenil 2.5K',
+      distance: '2,5 quilômetros',
       elevation: '+20m / -20m',
       start: 'Entrada do Goiabal',
       finish: 'Praça Prof. João Brasil, Macuco',
@@ -109,7 +109,7 @@ export default function PercursosPage() {
             <div className="inline-flex bg-gray-100 rounded-lg p-1">
               {[
                 { key: '10k', label: '10K' },
-                { key: '2k', label: '2K - Infantil' },
+                { key: '2k', label: '2.5K - Infantil' },
               ].map((tab) => (
                 <button
                   key={tab.key}

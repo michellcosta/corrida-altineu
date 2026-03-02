@@ -807,7 +807,7 @@ begin
     (v_event_id, 'geral-10k', 'Geral 10K', 'Categoria principal para atletas a partir de 15 anos', '10 quilômetros', 20.00, false, 15, null, 'Quem completa 15 anos até 31/12/2026', false, 500, 'blue-600', 'cyan-600', '🏃'),
     (v_event_id, 'morador-10k', 'Morador de Macuco 10K', 'Categoria gratuita para moradores de Macuco', '10 quilômetros', 0, true, 15, null, 'Quem completa 15 anos até 31/12/2026', true, 200, 'green-600', 'emerald-600', '🏘️'),
     (v_event_id, '60-mais-10k', '60+ 10K', 'Categoria gratuita para atletas acima de 60 anos', '10 quilômetros', 0, true, 60, null, '60 anos ou mais até 31/12/2026', false, 100, 'purple-600', 'pink-600', '👴'),
-    (v_event_id, 'infantil-2k', 'Infantil 2K', 'Categoria gratuita para crianças de 5 a 14 anos', '2 quilômetros', 0, true, 5, 14, 'Até 14 anos completos em 2026', false, 300, 'yellow-500', 'orange-500', '👶')
+    (v_event_id, 'infantil-2k', 'Infantil 2.5K', 'Categoria gratuita para crianças de 5 a 14 anos', '2,5 quilômetros', 0, true, 5, 14, 'Até 14 anos completos em 2026', false, 300, 'yellow-500', 'orange-500', '👶')
   on conflict (event_id, slug) do nothing;
 end $$;
 

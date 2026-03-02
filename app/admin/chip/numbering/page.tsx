@@ -155,7 +155,7 @@ export default function NumberingPage() {
                       <td>{reg.category?.name ?? '-'}</td>
                       <td>
                         {reg.bib_number != null ? (
-                          <span className="font-mono font-bold text-primary-600">{reg.bib_number}</span>
+                          <span className="font-mono text-primary-600">{reg.bib_number}</span>
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}

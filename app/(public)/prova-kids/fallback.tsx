@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { Heart, Smile, Gift, Users, Clock, Trophy, MapPin, Shield } from 'lucide-react'
 
 export const metadata = {
-  title: 'Prova Kids | Corrida Infantil 2K gratuita',
+  title: 'Prova Kids | Corrida Infantil 2.5K gratuita',
   description:
-    'Percurso seguro de 2 km para crianças e adolescentes de 5 a 14 anos. Largada às 10h com chegada na Praça Prof. João Brasil.',
+    'Percurso seguro de 2,5 km para crianças e adolescentes de 5 a 14 anos. Largada às 10h com chegada na Praça Prof. João Brasil.',
 }
 
 export default function ProvaKidsPage() {
@@ -19,11 +19,11 @@ export default function ProvaKidsPage() {
               <span className="font-semibold">Para atletas de 5 a 14 anos</span>
             </div>
             <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
-              Prova Kids 2K
+              Prova Kids 2.5K
             </h1>
             <p className="text-xl text-white/90 leading-relaxed mb-8">
               A Corrida Infantil oficial da 51ª Corrida de Macuco. Inscrição gratuita, percurso seguro
-              de 2 km e chegada com festa na Praça Prof. João Brasil.
+              de 2,5 km e chegada com festa na Praça Prof. João Brasil.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
@@ -48,7 +48,7 @@ export default function ProvaKidsPage() {
             />
             <DetailCard
               icon={<MapPin className="text-orange-600 mx-auto mb-4" size={40} />}
-              title="Percurso 2 km"
+              title="Percurso 2,5 km"
               description="Saída no bairro Goiabal e chegada na Praça Prof. João Brasil."
             />
             <DetailCard
@@ -180,7 +180,7 @@ export default function ProvaKidsPage() {
             Garanta memórias inesquecíveis
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Inscreva sua criança na Prova Kids 2K e viva a energia da Corrida de Macuco em família.
+            Inscreva sua criança na Prova Kids 2.5K e viva a energia da Corrida de Macuco em família.
           </p>
           <Link
             href="/inscricao?categoria=infantil-2k"

@@ -167,7 +167,7 @@ export default function EventSettingsPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Largada 2K (Infantil)
+                Largada 2.5K (Infantil)
               </label>
               <input
                 type="time"
@@ -297,7 +297,7 @@ export default function EventSettingsPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Infantil 2K
+                Infantil 2.5K
               </label>
               <input
                 type="number"
@@ -419,7 +419,7 @@ export default function EventSettingsPage() {
             </div>
 
             <div className="bg-white rounded-lg p-4 border border-yellow-200">
-              <h3 className="font-bold text-gray-900 mb-3">Infantil 2K</h3>
+              <h3 className="font-bold text-gray-900 mb-3">Infantil 2.5K</h3>
               <p className="text-sm text-gray-700 mb-2">
                 ✅ Até <strong>14 anos completos</strong> em {config.anoProva}
               </p>

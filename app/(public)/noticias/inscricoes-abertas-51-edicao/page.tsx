@@ -103,7 +103,7 @@ export default function InscricoesAbertasPage() {
                   </div>
                   
                   <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
-                    <h3 className="font-bold text-orange-900 mb-2">Infantil 2K</h3>
+                    <h3 className="font-bold text-orange-900 mb-2">Infantil 2.5K</h3>
                     <p className="text-orange-700 text-sm mb-2">GRATUITO</p>
                     <p className="text-gray-600 text-sm">Para crianças até 14 anos</p>
                   </div>

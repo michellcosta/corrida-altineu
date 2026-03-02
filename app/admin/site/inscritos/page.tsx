@@ -122,50 +122,13 @@ export default function SiteInscritosPage() {
   async function loadData() {
     try {
       setLoading(true)
-      const supabase = createClient()
+      const res = await fetch('/api/inscricao/lista?admin=1', { credentials: 'include' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erro ao carregar inscritos')
 
-      const { data: event } = await supabase
-        .from('events')
-        .select('id')
-        .eq('year', 2026)
-        .single()
-
-      if (!event) {
-        setRegistrations([])
-        setCategories([])
-        return
-      }
-
-      const { data: cats } = await supabase
-        .from('categories')
-        .select('id, name')
-        .eq('event_id', event.id)
-        .order('name')
-      setCategories(cats || [])
-
-      const { data: regs, error } = await supabase
-        .from('registrations')
-        .select(`
-          id,
-          athlete_id,
-          registration_number,
-          status,
-          bib_number,
-          notes,
-          athlete:athletes(id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size),
-          category:categories(id, name)
-        `)
-        .eq('event_id', event.id)
-        .order('registered_at', { ascending: false })
-
-      if (error) throw error
-      setRegistrations((regs as unknown as RegistrationRow[]) || [])
-
-      const total = (regs || []).length
-      const confirmed = (regs || []).filter((r: any) => r.status === 'confirmed').length
-      const pending = (regs || []).filter((r: any) => ['pending', 'pending_payment', 'pending_documents', 'under_review'].includes(r.status)).length
-      const numerados = (regs || []).filter((r: any) => r.bib_number != null).length
-      setStats({ total, confirmed, pending, numerados })
+      setRegistrations((json.registrations as RegistrationRow[]) || [])
+      setCategories(json.categories || [])
+      setStats(json.stats || { total: 0, confirmed: 0, pending: 0, numerados: 0 })
     } catch (err: any) {
       console.error('Erro ao carregar inscritos:', err)
       toast.error(err.message || 'Erro ao carregar inscritos')
@@ -408,7 +371,7 @@ export default function SiteInscritosPage() {
                   ) : (
                     filtered.map((reg) => (
                       <tr key={reg.id}>
-                        <td className="font-mono font-bold">{reg.registration_number || '-'}</td>
+                        <td className="font-mono">{reg.registration_number || '-'}</td>
                         <td className="font-semibold">{reg.athlete?.full_name || '-'}</td>
                         <td>{reg.category?.name || '-'}</td>
                         <td>{reg.athlete?.gender || '-'}</td>
@@ -420,7 +383,7 @@ export default function SiteInscritosPage() {
                         </td>
                         <td>
                           {reg.bib_number != null ? (
-                            <span className="font-mono font-bold text-primary-600">{reg.bib_number}</span>
+                            <span className="font-mono text-primary-600">{reg.bib_number}</span>
                           ) : (
                             <span className="text-gray-400 text-sm">Não atribuído</span>
                           )}

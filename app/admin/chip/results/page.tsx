@@ -202,7 +202,7 @@ export default function ResultsPage() {
                 <tbody>
                   {results.map((r) => (
                     <tr key={r.id}>
-                      <td className="font-bold">{r.position_overall ?? '-'}</td>
+                      <td>{r.position_overall ?? '-'}</td>
                       <td className="font-mono">{r.bib_number}</td>
                       <td className="font-semibold">{r.registration?.athlete?.full_name ?? '-'}</td>
                       <td>{r.registration?.category?.name ?? '-'}</td>

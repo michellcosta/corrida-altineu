@@ -1,36 +1,13 @@
 import Link from 'next/link'
 import { MapPin, Clock, Users, Trophy, Calendar, ChevronRight } from 'lucide-react'
+import { getEventConfig } from '@/lib/cms/event'
+import { RACE_CONFIG } from '@/lib/constants'
 
 export const metadata = {
   title: 'Prova 10K | 51ª Corrida de Macuco',
   description:
     'Categoria principal da Corrida de Macuco com largada às 12h, inscrição a partir de R$ 20 e premiação oficial para os 10 primeiros colocados.',
 }
-
-const PRICING_OPTIONS = [
-  {
-    id: 'geral-10k',
-    title: 'Prova Geral 10K',
-    price: 'R$ 20,00',
-    description: 'Categoria paga para atletas que completam 15 anos até 31/12/2026.',
-    spots: '500 vagas',
-    highlight: true,
-  },
-  {
-    id: 'morador-10k',
-    title: 'Morador de Macuco 10K',
-    price: 'Gratuita',
-    description: 'Isenção para residentes com comprovante emitido nos últimos 90 dias.',
-    spots: '200 vagas',
-  },
-  {
-    id: 'sessenta-10k',
-    title: 'Categoria 60+ 10K',
-    price: 'Gratuita',
-    description: 'Inscrição sem custo para atletas que completam 60 anos até 31/12/2026.',
-    spots: '100 vagas',
-  },
-]
 
 const GENERAL_PRIZES = [
   { pos: '1º', value: 'R$ 5.000,00' },
@@ -86,7 +63,39 @@ const KIT_ITEMS = [
   { title: 'Seguro Atleta', desc: 'Cobertura durante toda a prova' },
 ]
 
-export default function Prova10KPage() {
+function buildAgeRule(ageMin: number, ageMax?: number, year?: number): string {
+  const y = year ?? RACE_CONFIG.year
+  if (ageMax != null) {
+    return `Atletas de ${ageMin} a ${ageMax} anos em ${y}.`
+  }
+  if (ageMin >= 60) {
+    return `Inscrição sem custo para atletas que completam 60 anos até 31/12/${y}.`
+  }
+  return `Categoria paga para atletas que completam ${ageMin} anos até 31/12/${y}.`
+}
+
+export default async function Prova10KPage() {
+  const config = await getEventConfig(2026)
+  const geralCategory = config?.categories?.find((c) => c.id === 'geral-10k')
+
+  const pricingOption = geralCategory
+    ? {
+        id: 'geral-10k' as const,
+        title: geralCategory.name,
+        price: geralCategory.isFree ? 'Gratuita' : `R$ ${geralCategory.price.toFixed(2)}`,
+        description: geralCategory.description || buildAgeRule(geralCategory.ageMin, geralCategory.ageMax, config?.event?.year),
+        spots: `${geralCategory.spots} vagas`,
+        highlight: !geralCategory.isFree,
+      }
+    : {
+        id: 'geral-10k' as const,
+        title: 'Prova Geral 10K',
+        price: 'R$ 20,00',
+        description: `Categoria paga para atletas que completam 15 anos até 31/12/${RACE_CONFIG.year}.`,
+        spots: '500 vagas',
+        highlight: true,
+      }
+
   return (
     <div className="pt-24">
       {/* Hero */}
@@ -152,31 +161,29 @@ export default function Prova10KPage() {
             <h2 className="section-title text-center mb-12">
               Valores e <span className="text-gradient">Categorias</span>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {PRICING_OPTIONS.map((option) => (
-                <div
-                  key={option.id}
-                  className={`card text-center ${option.highlight ? 'border-4 border-primary-500 relative' : ''}`}
-                >
-                  {option.highlight && (
+            <div className="grid grid-cols-1 gap-6 max-w-md mx-auto">
+              <div
+                key={pricingOption.id}
+                className={`card text-center ${pricingOption.highlight ? 'border-4 border-primary-500 relative' : ''}`}
+              >
+                  {pricingOption.highlight && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-bold">
                       Categoria Paga
                     </div>
                   )}
                   <div className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wide">
-                    {option.title}
+                    {pricingOption.title}
                   </div>
-                  <div className="text-4xl font-bold text-primary-600 mb-4">{option.price}</div>
-                  <p className="text-gray-600 mb-4">{option.description}</p>
-                  <p className="text-sm text-gray-500 mb-6">{option.spots}</p>
+                  <div className="text-4xl font-bold text-primary-600 mb-4">{pricingOption.price}</div>
+                  <p className="text-gray-600 mb-4">{pricingOption.description}</p>
+                  <p className="text-sm text-gray-500 mb-6">{pricingOption.spots}</p>
                   <Link
-                    href={`/inscricao?categoria=${option.id}`}
+                    href={`/inscricao?categoria=${pricingOption.id}`}
                     className="block w-full text-center py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors"
                   >
                     Fazer inscrição
                   </Link>
                 </div>
-              ))}
             </div>
           </div>
 

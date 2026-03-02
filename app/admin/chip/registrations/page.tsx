@@ -282,7 +282,7 @@ export default function ChipRegistrationsPage() {
                   ) : (
                     filtered.map((reg) => (
                       <tr key={reg.id}>
-                        <td className="font-mono font-bold">{reg.registration_number || '-'}</td>
+                        <td className="font-mono">{reg.registration_number || '-'}</td>
                         <td className="font-semibold">{reg.athlete?.full_name || '-'}</td>
                         <td>{reg.category?.name || '-'}</td>
                         <td>{reg.athlete?.gender || '-'}</td>
@@ -294,7 +294,7 @@ export default function ChipRegistrationsPage() {
                         </td>
                         <td>
                           {reg.bib_number != null ? (
-                            <span className="font-mono font-bold text-primary-600">{reg.bib_number}</span>
+                            <span className="font-mono text-primary-600">{reg.bib_number}</span>
                           ) : (
                             <span className="text-gray-400 text-sm">Não atribuído</span>
                           )}

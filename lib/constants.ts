@@ -73,14 +73,14 @@ export const CATEGORIES = {
   },
   infantil: {
     id: 'infantil',
-    name: 'Infantil 2K',
+    name: 'Infantil 2.5K',
     slug: 'infantil-2k',
-    distance: '2 quilômetros',
+    distance: '2,5 quilômetros',
     price: 0,
     isFree: true,
     ageRule: `Atletas de 5 a 14 anos em ${RACE_CONFIG.year}`,
     color: 'from-yellow-500 to-orange-500',
-    description: 'Percurso seguro de 2 km para crianças e adolescentes.',
+    description: 'Percurso seguro de 2,5 km para crianças e adolescentes.',
     requirements: [
       'RG ou certidão de nascimento',
       'Autorização assinada pelo responsável',

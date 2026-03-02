@@ -103,7 +103,7 @@ export default function RegulamentoPage() {
                     <ul className="space-y-2 text-gray-700">
                       <li>• <strong>Data:</strong> {RACE_CONFIG.raceDateFormatted}</li>
                       <li>• <strong>Local:</strong> Praça da Matriz, Macuco-RJ</li>
-                      <li>• <strong>Horário de Largada:</strong> 07:00 (10K) | 08:30 (2K)</li>
+                      <li>• <strong>Horário de Largada:</strong> 07:00 (10K) | 08:30 (2.5K)</li>
                     </ul>
                   </div>
                   
@@ -157,9 +157,9 @@ export default function RegulamentoPage() {
                   </div>
                   
                   <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
-                    <h3 className="font-semibold text-orange-900 mb-3">2.4 Infantil 2K</h3>
+                    <h3 className="font-semibold text-orange-900 mb-3">2.4 Infantil 2.5K</h3>
                     <ul className="space-y-2 text-gray-700">
-                      <li>• <strong>Distância:</strong> 2 quilômetros</li>
+                      <li>• <strong>Distância:</strong> 2,5 quilômetros</li>
                       <li>• <strong>Valor:</strong> GRATUITO</li>
                       <li>• <strong>Idade:</strong> Até 14 anos completos até 31/12/{RACE_CONFIG.year}</li>
                       <li>• <strong>Requisito:</strong> Autorização do responsável legal</li>

@@ -76,7 +76,7 @@ export async function GET() {
 
       return {
         id: SLUG_TO_FRONTEND_ID[slug] ?? slug,
-        name: c.name?.replace('Geral 10K', 'Prova Geral 10K') ?? c.name,
+        name: c.name?.replace('Infantil 2K', 'Infantil 2.5K')?.replace('Geral 10K', 'Prova Geral 10K') ?? c.name,
         price,
         isFree,
         description: c.description ?? '',
@@ -89,7 +89,15 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({
+    const CATEGORY_ORDER = ['geral-10k', 'sessenta-10k', 'morador-10k', 'infantil-2k']
+    const sorted = [...categoriesFormatted].sort((a, b) => {
+      const i = CATEGORY_ORDER.indexOf(a.id)
+      const j = CATEGORY_ORDER.indexOf(b.id)
+      return (i === -1 ? 999 : i) - (j === -1 ? 999 : j)
+    })
+
+    return NextResponse.json(
+      {
       event: {
         year: event.year,
         edition: event.edition,
@@ -110,8 +118,10 @@ export async function GET() {
         contactEmail: event.contact_email,
         contactPhone: event.contact_phone,
       },
-      categories: categoriesFormatted,
-    })
+      categories: sorted,
+    },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    )
   } catch (err: unknown) {
     console.error('Erro ao carregar config do evento:', err)
     return NextResponse.json(

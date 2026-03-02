@@ -352,7 +352,7 @@ export default function ChipAdminDashboard() {
                 ) : (
                   recentRegs.map((reg) => (
                     <tr key={reg.id}>
-                      <td className="font-mono font-bold">
+                      <td className="font-mono">
                         {reg.registration_number ?? reg.bib_number ?? '—'}
                       </td>
                       <td className="font-semibold">{reg.athlete?.full_name ?? '—'}</td>

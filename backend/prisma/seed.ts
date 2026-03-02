@@ -209,8 +209,8 @@ async function main() {
     create: {
       eventId: event2026.id,
       slug: 'infantil',
-      name: 'Infantil 2K',
-      distance: '2km',
+      name: 'Infantil 2.5K',
+      distance: '2.5km',
       price: 0,
       isFree: true,
       minAge: 5,

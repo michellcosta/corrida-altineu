@@ -144,11 +144,11 @@ BEGIN
       {
         "id": "infantil-2k",
         "icon": "👶",
-        "title": "Infantil 2K",
+        "title": "Infantil 2.5K",
         "description": "Categoria gratuita para crianças de 5 a 14 anos",
         "price": "GRATUITO",
         "isFree": true,
-        "details": ["2 quilômetros", "Medalha finisher", "Kit completo"],
+        "details": ["2,5 quilômetros", "Medalha finisher", "Kit completo"],
         "cta": {"label": "Inscrever-se", "href": "/prova-kids", "variant": "primary"}
       }
     ]
@@ -375,7 +375,7 @@ INSERT INTO public.posts (
   <li><strong>Geral 10K</strong> - R$ 20,00</li>
   <li><strong>Morador 10K</strong> - GRATUITO (requer comprovante de residência)</li>
   <li><strong>60+ 10K</strong> - GRATUITO</li>
-  <li><strong>Infantil 2K</strong> - GRATUITO</li>
+  <li><strong>Infantil 2.5K</strong> - GRATUITO</li>
 </ul>
 
 <h2>Premiação Recorde</h2>

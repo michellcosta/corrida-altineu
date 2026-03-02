@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, race_date')
+      .select('id, race_date, year')
       .eq('year', 2026)
       .single()
 
@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
       console.error('Evento não encontrado:', eventError)
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
     }
+
+    const eventYear = event.year ?? 2026
 
     const { data: category, error: catError } = await supabase
       .from('categories')
@@ -108,6 +110,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 })
     }
 
+    if (slug === '60-mais-10k' && birthDate) {
+      const birthYear = parseInt(String(birthDate).slice(0, 4), 10)
+      const age = eventYear - birthYear
+      if (age < 60) {
+        return NextResponse.json(
+          {
+            error: `A categoria 60+ 10K exige 60 anos ou mais até 31/12/${eventYear}. Sua idade seria ${age} anos.`,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     let athleteDocType = documentType || 'CPF'
     let athleteDocNumber = documentNumber ? formatDocumentNumber(documentNumber) : null
 
@@ -119,8 +134,9 @@ export async function POST(request: NextRequest) {
       athleteDocNumber = guardianDocumentNumber ? formatDocumentNumber(guardianDocumentNumber) : null
     }
 
-    // Bloquear inscrição duplicada por documento (CPF/RG) em qualquer categoria
-    if (athleteDocNumber) {
+    // Bloquear inscrição duplicada por documento (CPF/RG) - apenas para documento do atleta
+    // Estrangeiros usam documento do responsável, que pode repetir para vários atletas
+    if (athleteDocNumber && (isBrazilian || isInfant)) {
       const { data: athletesByDoc } = await supabase
         .from('athletes')
         .select('id')

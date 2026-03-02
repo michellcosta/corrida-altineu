@@ -480,24 +480,22 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
                   alt="QR Code PIX"
                   className="w-48 h-48 rounded-lg border border-gray-200"
                 />
-                <div className="w-full max-w-md">
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">Código copia e cola</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={pixData.brCode}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-gray-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => navigator.clipboard.writeText(pixData.brCode)}
-                      className="btn-secondary px-4 flex items-center gap-2 shrink-0"
-                    >
-                      <Copy size={18} />
-                      Copiar
-                    </button>
-                  </div>
+                <div className="w-full max-w-md mx-auto flex flex-col items-center gap-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 w-full text-center">Código copia e cola</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={pixData.brCode}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-gray-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(pixData.brCode)}
+                    className="btn-secondary px-4 flex items-center gap-2"
+                  >
+                    <Copy size={18} />
+                    Copiar
+                  </button>
                 </div>
               </div>
               <div className="flex justify-center pt-2">

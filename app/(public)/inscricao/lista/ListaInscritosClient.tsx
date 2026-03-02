@@ -28,7 +28,7 @@ export default function ListaInscritosClient() {
   useEffect(() => {
     async function fetchLista() {
       try {
-        const res = await fetch('/api/inscricao/lista')
+        const res = await fetch('/api/inscricao/lista', { cache: 'no-store' })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Erro ao carregar lista')
         setData(json.data || [])

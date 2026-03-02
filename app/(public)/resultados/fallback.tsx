@@ -248,7 +248,7 @@ export default function ResultadosPage() {
                         <td className="py-4 px-2 text-gray-600">{resultado.cidade}</td>
                         <td className="py-4 px-2 text-gray-600">{resultado.idade}</td>
                         <td className="py-4 px-2 text-gray-600">{resultado.faixa}</td>
-                        <td className="py-4 px-4 text-right font-bold text-primary-600">
+                        <td className="py-4 px-4 text-right text-primary-600">
                           {resultado.tempo}
                         </td>
                         <td className="py-4 px-2 text-right text-gray-600">

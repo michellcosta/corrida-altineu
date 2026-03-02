@@ -82,11 +82,11 @@ export default function InscricaoSucessoClient() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Número da inscrição</p>
-                <p className="font-bold text-lg text-primary-700">{data.registration_number}</p>
+                <p className="text-lg text-primary-700">{data.registration_number}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Código de confirmação</p>
-                <p className="font-mono font-bold text-lg text-primary-700">{data.confirmation_code}</p>
+                <p className="font-mono text-lg text-primary-700">{data.confirmation_code}</p>
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-4">

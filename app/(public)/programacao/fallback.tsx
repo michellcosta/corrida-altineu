@@ -13,12 +13,12 @@ const CRONOGRAMA_DIA_PROVA = [
     titulo: 'Encerramento das inscrições da Corrida Infanto-Juvenil',
     local: 'Praça Prof. João Brasil (Secretaria da Prova)',
     descricao:
-      'Último horário para confirmar participação presencialmente na prova de 2 km.',
+      'Último horário para confirmar participação presencialmente na prova de 2,5 km.',
     importante: true,
   },
   {
     horario: '10:00',
-    titulo: 'Largada Corrida Infanto-Juvenil - 2 KM',
+    titulo: 'Largada Corrida Infanto-Juvenil - 2,5 KM',
     local: 'Entrada do Goiabal',
     descricao:
       'Percurso até a Praça Prof. João Brasil, com chegada pelo portal oficial do evento.',
@@ -166,7 +166,7 @@ export default function ProgramacaoPage() {
                     Corrida Infanto-Juvenil
                   </h2>
                   <p className="text-gray-600">
-                    Distância oficial de 2 km, válida para atletas de 11 a 14
+                    Distância oficial de 2,5 km, válida para atletas de 11 a 14
                     anos.
                   </p>
                 </div>

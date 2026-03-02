@@ -125,7 +125,7 @@ export default function Percurso2026Page() {
                 </div>
 
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">
-                  👶 Percurso Infantil 2K
+                  👶 Percurso Infantil 2.5K
                 </h2>
                 
                 <div className="bg-orange-50 rounded-lg p-6 mb-6">

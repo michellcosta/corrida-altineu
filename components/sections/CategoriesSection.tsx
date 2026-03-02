@@ -1,7 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Clock } from 'lucide-react'
+import { Clock, Loader2 } from 'lucide-react'
 import { CATEGORIES, RACE_CONFIG } from '@/lib/constants'
 import ScrollReveal from '@/components/ui/ScrollReveal'
 
@@ -15,6 +16,69 @@ interface CardContent {
   isFree?: boolean
   details?: string[]
   cta?: { href?: string; label?: string }
+  year?: number
+}
+
+interface ApiCategory {
+  id: string
+  name: string
+  price: number
+  isFree: boolean
+  description: string
+  spots: number
+  ageMin: number
+  ageMax?: number
+  requiresResidenceProof?: boolean
+}
+
+const ID_TO_ICON: Record<string, string> = {
+  'geral-10k': 'G',
+  'morador-10k': 'M',
+  'sessenta-10k': '60+',
+  'infantil-2k': 'Kids',
+}
+
+const ID_TO_BADGE: Record<string, { text: string; color: string }> = {
+  'geral-10k': { text: 'Mais Popular', color: 'blue' },
+  'morador-10k': { text: 'Gratuito', color: 'green' },
+  'sessenta-10k': { text: 'Gratuito', color: 'purple' },
+  'infantil-2k': { text: 'Familia', color: 'yellow' },
+}
+
+const ID_TO_CTA_HREF: Record<string, string> = {
+  'geral-10k': '/prova-10k',
+  'morador-10k': '/morador-10k',
+  'sessenta-10k': '/60-mais-10k',
+  'infantil-2k': '/prova-kids',
+}
+
+/** Ordem das categorias: Prova Geral 10K / 60+ 10K / Morador Macuco 10K / Infantil 2.5K */
+const CATEGORY_ORDER = ['geral-10k', 'sessenta-10k', 'morador-10k', 'infantil-2k']
+
+function apiCategoryToCard(cat: ApiCategory, year: number): CardContent {
+  const distance = cat.id === 'infantil-2k' ? '2,5 quilômetros' : '10 quilômetros'
+  let ageRule: string
+  if (cat.ageMax != null) {
+    ageRule = `Atletas de ${cat.ageMin} a ${cat.ageMax} anos em ${year}`
+  } else if (cat.ageMin >= 60) {
+    ageRule = `60 anos ou mais até 31/12/${year}`
+  } else {
+    ageRule = `Quem completa ${cat.ageMin} anos até 31/12/${year}`
+  }
+  const thirdDetail = cat.requiresResidenceProof ? 'Comprovante de residencia' : `${cat.spots} vagas`
+
+  return {
+    id: cat.id,
+    icon: ID_TO_ICON[cat.id] ?? 'X',
+    title: cat.name,
+    description: cat.description,
+    badge: ID_TO_BADGE[cat.id] ?? { text: 'Gratuito', color: 'green' },
+    price: cat.isFree ? 'GRATUITO' : `R$ ${cat.price.toFixed(2)}`,
+    isFree: cat.isFree,
+    details: [distance, ageRule, thirdDetail],
+    cta: { href: ID_TO_CTA_HREF[cat.id] ?? '/inscricao', label: 'Ver Categoria' },
+    year,
+  }
 }
 
 interface CardsSectionContent {
@@ -28,9 +92,10 @@ interface CategoriesSectionProps {
   content?: CardsSectionContent
 }
 
+/** Ordem: Prova Geral 10K / 60+ 10K / Morador Macuco 10K / Infantil 2.5K */
 const FALLBACK_CARDS: CardContent[] = [
   {
-    id: 'geral',
+    id: 'geral-10k',
     icon: 'G',
     title: CATEGORIES.geral.name,
     description: CATEGORIES.geral.description,
@@ -38,21 +103,11 @@ const FALLBACK_CARDS: CardContent[] = [
     price: `R$ ${CATEGORIES.geral.price.toFixed(2)}`,
     isFree: CATEGORIES.geral.isFree,
     details: [CATEGORIES.geral.distance, CATEGORIES.geral.ageRule, '500 vagas'],
-    cta: { href: '/prova-10k', label: 'Inscrever-se' },
+    cta: { href: '/prova-10k', label: 'Ver Categoria' },
+    year: RACE_CONFIG.year,
   },
   {
-    id: 'morador',
-    icon: 'M',
-    title: CATEGORIES.morador.name,
-    description: CATEGORIES.morador.description,
-    badge: { text: 'Gratuito', color: 'green' },
-    price: 'GRATUITO',
-    isFree: true,
-    details: [CATEGORIES.morador.distance, CATEGORIES.morador.ageRule, 'Comprovante de residencia'],
-    cta: { href: '/morador-10k', label: 'Inscrever-se' },
-  },
-  {
-    id: 'sessenta',
+    id: 'sessenta-10k',
     icon: '60+',
     title: CATEGORIES.sessenta.name,
     description: CATEGORIES.sessenta.description,
@@ -60,10 +115,23 @@ const FALLBACK_CARDS: CardContent[] = [
     price: 'GRATUITO',
     isFree: true,
     details: [CATEGORIES.sessenta.distance, CATEGORIES.sessenta.ageRule, '100 vagas'],
-    cta: { href: '/60-mais-10k', label: 'Inscrever-se' },
+    cta: { href: '/60-mais-10k', label: 'Ver Categoria' },
+    year: RACE_CONFIG.year,
   },
   {
-    id: 'infantil',
+    id: 'morador-10k',
+    icon: 'M',
+    title: CATEGORIES.morador.name,
+    description: CATEGORIES.morador.description,
+    badge: { text: 'Gratuito', color: 'green' },
+    price: 'GRATUITO',
+    isFree: true,
+    details: [CATEGORIES.morador.distance, CATEGORIES.morador.ageRule, 'Comprovante de residencia'],
+    cta: { href: '/morador-10k', label: 'Ver Categoria' },
+    year: RACE_CONFIG.year,
+  },
+  {
+    id: 'infantil-2k',
     icon: 'Kids',
     title: CATEGORIES.infantil.name,
     description: CATEGORIES.infantil.description,
@@ -71,7 +139,8 @@ const FALLBACK_CARDS: CardContent[] = [
     price: 'GRATUITO',
     isFree: true,
     details: [CATEGORIES.infantil.distance, CATEGORIES.infantil.ageRule, '300 vagas'],
-    cta: { href: '/prova-kids', label: 'Inscrever-se' },
+    cta: { href: '/prova-kids', label: 'Ver Categoria' },
+    year: RACE_CONFIG.year,
   },
 ]
 
@@ -84,8 +153,36 @@ const BADGE_COLOR_CLASS: Record<string, string> = {
 }
 
 export default function CategoriesSection({ content }: CategoriesSectionProps) {
+  const [cards, setCards] = useState<CardContent[]>(FALLBACK_CARDS)
+  const [year, setYear] = useState(RACE_CONFIG.year)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (content?.cards && content.cards.length > 0) {
+      setCards(content.cards)
+      setLoading(false)
+      return
+    }
+    fetch('/api/event/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.categories?.length && data.event) {
+          setYear(data.event.year ?? RACE_CONFIG.year)
+          const mapped = data.categories.map((c: ApiCategory) => apiCategoryToCard(c, data.event.year ?? RACE_CONFIG.year))
+          const sorted = [...mapped].sort((a, b) => {
+            const idxA = CATEGORY_ORDER.indexOf(a.id ?? '')
+            const idxB = CATEGORY_ORDER.indexOf(b.id ?? '')
+            return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99)
+          })
+          setCards(sorted)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [content?.cards])
+
   const layout = content?.layout || 'grid-4'
-  const cards = content?.cards && content.cards.length > 0 ? content.cards : FALLBACK_CARDS
+  const displayCards = content?.cards && content.cards.length > 0 ? content.cards : cards
   const title = content?.title || 'Escolha sua Categoria'
   const subtitle =
     content?.subtitle ||
@@ -115,13 +212,18 @@ export default function CategoriesSection({ content }: CategoriesSectionProps) {
           </div>
         </ScrollReveal>
 
-        <div className={`grid gap-6 ${gridClass}`}>
-          {cards.map((card, index) => {
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
+          </div>
+        ) : (
+        <div className={`grid gap-6 ${gridClass} items-stretch`}>
+          {displayCards.map((card, index) => {
             const badgeColor = card.badge?.color ? BADGE_COLOR_CLASS[card.badge.color] ?? 'bg-primary-600' : ''
             return (
-              <ScrollReveal key={card.id || card.title} delay={index * 0.1}>
+              <ScrollReveal key={card.id || card.title} delay={index * 0.1} className="h-full">
               <div
-                className="card group relative border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:border-primary-600/30 hover:shadow-lg"
+                className="card group relative flex h-full flex-col border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:border-primary-600/30 hover:shadow-lg"
               >
                 {card.badge?.text && (
                   <div
@@ -131,32 +233,34 @@ export default function CategoriesSection({ content }: CategoriesSectionProps) {
                   </div>
                 )}
 
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-primary-50 to-accent-50 text-xl font-bold group-hover:scale-110 transition-transform">
-                  {card.icon || 'X'}
-                </div>
+                <div className="flex flex-1 flex-col">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-primary-50 to-accent-50 text-xl font-bold group-hover:scale-110 transition-transform">
+                    {card.icon || 'X'}
+                  </div>
 
-                <h3 className="mb-2 font-display text-2xl font-bold text-gray-900">{card.title}</h3>
-                <p className="mb-4 text-gray-600">{card.description}</p>
+                  <h3 className="mb-2 font-display text-2xl font-bold text-gray-900">{card.title}</h3>
+                  <p className="mb-4 text-gray-600">{card.description}</p>
 
-                <div className="mb-4 space-y-2">
-                  {card.details?.map((detail, index) => (
-                    <div key={index} className="flex items-center text-sm text-gray-700">
-                      <Clock size={16} className="mr-2 text-primary-600" />
-                      <span>{detail}</span>
+                  <div className="mb-4 flex-1 space-y-2">
+                    {card.details?.map((detail, index) => (
+                      <div key={index} className="flex items-center text-sm text-gray-700">
+                        <Clock size={16} className="mr-2 shrink-0 text-primary-600" />
+                        <span>{detail}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <span
+                        className={`text-3xl font-bold ${card.isFree ? 'text-accent-600' : 'text-primary-600'}`}
+                      >
+                        {card.price || 'R$ 0,00'}
+                      </span>
+                      {!card.isFree && (
+                        <span className="text-sm text-gray-500">Inscricao {card.year ?? year}</span>
+                      )}
                     </div>
-                  ))}
-                </div>
-
-                <div className="mb-4 border-t border-gray-200 pt-4">
-                  <div className="mb-2 flex items-baseline justify-between">
-                    <span
-                      className={`text-3xl font-bold ${card.isFree ? 'text-accent-600' : 'text-primary-600'}`}
-                    >
-                      {card.price || 'R$ 0,00'}
-                    </span>
-                    {!card.isFree && (
-                      <span className="text-sm text-gray-500">Inscricao {RACE_CONFIG.year}</span>
-                    )}
                   </div>
                 </div>
 
@@ -173,6 +277,7 @@ export default function CategoriesSection({ content }: CategoriesSectionProps) {
             )
           })}
         </div>
+        )}
       </div>
     </section>
   )
