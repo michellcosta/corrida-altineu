@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Clock, Loader2 } from 'lucide-react'
 import { CATEGORIES, RACE_CONFIG } from '@/lib/constants'
 import ScrollReveal from '@/components/ui/ScrollReveal'
+import { useEventConfigRealtime } from '@/hooks/useEventConfigRealtime'
 
 interface CardContent {
   id?: string
@@ -26,6 +27,8 @@ interface ApiCategory {
   isFree: boolean
   description: string
   spots: number
+  spotsTaken?: number
+  spotsAvailable?: number
   ageMin: number
   ageMax?: number
   requiresResidenceProof?: boolean
@@ -65,7 +68,11 @@ function apiCategoryToCard(cat: ApiCategory, year: number): CardContent {
   } else {
     ageRule = `Quem completa ${cat.ageMin} anos até 31/12/${year}`
   }
-  const thirdDetail = cat.requiresResidenceProof ? 'Comprovante de residencia' : `${cat.spots} vagas`
+  const thirdDetail = cat.requiresResidenceProof
+    ? 'Comprovante de residencia'
+    : cat.spotsAvailable != null
+      ? `${cat.spotsAvailable} de ${cat.spots} vagas`
+      : `${cat.spots} vagas`
 
   return {
     id: cat.id,
@@ -152,10 +159,50 @@ const BADGE_COLOR_CLASS: Record<string, string> = {
   red: 'bg-red-500',
 }
 
+function loadEventConfig(
+  setCards: (c: CardContent[]) => void,
+  setYear: (y: number) => void,
+  setLoading: (l: boolean) => void
+) {
+  setLoading(true)
+  fetch(`/api/event/config?t=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.categories?.length && data.event) {
+        if (process.env.NODE_ENV === 'development') {
+          const sessenta = data.categories.find((c: ApiCategory) => c.id === 'sessenta-10k')
+          console.log('[CategoriesSection] API retornou:', sessenta ? `60+ = ${sessenta.spots} vagas` : 'sem 60+')
+        }
+        setYear(data.event.year ?? RACE_CONFIG.year)
+        const mapped = data.categories.map((c: ApiCategory) => apiCategoryToCard(c, data.event.year ?? RACE_CONFIG.year))
+        const sorted = [...mapped].sort((a, b) => {
+          const idxA = CATEGORY_ORDER.indexOf(a.id ?? '')
+          const idxB = CATEGORY_ORDER.indexOf(b.id ?? '')
+          return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99)
+        })
+        setCards(sorted)
+      }
+    })
+    .catch(() => {})
+    .finally(() => setLoading(false))
+}
+
 export default function CategoriesSection({ content }: CategoriesSectionProps) {
   const [cards, setCards] = useState<CardContent[]>(FALLBACK_CARDS)
   const [year, setYear] = useState(RACE_CONFIG.year)
   const [loading, setLoading] = useState(true)
+
+  const refetch = useCallback(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[CategoriesSection] Refetch disparado - buscando /api/event/config')
+    }
+    loadEventConfig(setCards, setYear, setLoading)
+  }, [])
+
+  useEventConfigRealtime(refetch)
 
   useEffect(() => {
     if (content?.cards && content.cards.length > 0) {
@@ -163,22 +210,7 @@ export default function CategoriesSection({ content }: CategoriesSectionProps) {
       setLoading(false)
       return
     }
-    fetch('/api/event/config')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.categories?.length && data.event) {
-          setYear(data.event.year ?? RACE_CONFIG.year)
-          const mapped = data.categories.map((c: ApiCategory) => apiCategoryToCard(c, data.event.year ?? RACE_CONFIG.year))
-          const sorted = [...mapped].sort((a, b) => {
-            const idxA = CATEGORY_ORDER.indexOf(a.id ?? '')
-            const idxB = CATEGORY_ORDER.indexOf(b.id ?? '')
-            return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99)
-          })
-          setCards(sorted)
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    loadEventConfig(setCards, setYear, setLoading)
   }, [content?.cards])
 
   const layout = content?.layout || 'grid-4'

@@ -96,7 +96,7 @@ function AddSectionModal({
       await onCreate({ type: selectedType, content: parsedContent })
       onClose()
     } catch (err: any) {
-      setError(err?.message ?? 'Nao foi possivel criar a secao.')
+      setError(err?.message ?? 'Não foi possível criar a seção.')
     }
   }
 
@@ -106,9 +106,9 @@ function AddSectionModal({
         onSubmit={handleSubmit}
         className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl my-auto max-h-[90vh] overflow-y-auto"
       >
-        <h2 className="text-2xl font-semibold text-gray-900">Adicionar secao</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Adicionar seção</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Selecione o tipo de secao e, opcionalmente, informe um JSON com os dados iniciais.
+          Selecione o tipo de seção e, opcionalmente, informe um JSON com os dados iniciais.
         </p>
 
         <div className="mt-6 space-y-4">
@@ -132,7 +132,7 @@ function AddSectionModal({
 
           <div>
             <label className="block text-sm font-semibold text-gray-700">
-              Conteudo (JSON opcional)
+              Conteúdo (JSON opcional)
             </label>
             <textarea
               value={contentText}
@@ -142,7 +142,7 @@ function AddSectionModal({
               placeholder='{"headline": "Titulo"}'
             />
             <p className="mt-1 text-xs text-gray-500">
-              Deixe em branco para usar valores padrao. Campos obrigatorios sao validados automaticamente.
+              Deixe em branco para usar valores padrão. Campos obrigatórios são validados automaticamente.
             </p>
           </div>
         </div>
@@ -169,7 +169,7 @@ function AddSectionModal({
             disabled={loading}
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : <FilePlus size={18} />}
-            Criar secao
+            Criar seção
           </button>
         </div>
       </form>
@@ -223,7 +223,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
       setSectionEditMode((prev) => ({ ...modeState, ...prev }))
       setSectionErrors({})
     } catch (err: any) {
-      setError(err?.message ?? 'Nao foi possivel carregar a pagina.')
+      setError(err?.message ?? 'Não foi possível carregar a página.')
     } finally {
       setLoading(false)
     }
@@ -250,9 +250,9 @@ export default function PageEditor({ params }: { params: { id: string } }) {
         status: pageForm.status,
       })
       setPage(updated)
-      notify('Pagina atualizada com sucesso.', 'success')
+      notify('Página atualizada com sucesso.', 'success')
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel atualizar a pagina.', 'error')
+      notify(err?.message ?? 'Não foi possível atualizar a página.', 'error')
     } finally {
       setSaving(false)
     }
@@ -263,9 +263,9 @@ export default function PageEditor({ params }: { params: { id: string } }) {
       setSaving(true)
       await createSection(pageId, payload.type as CMSSection['component_type'], payload.content)
       await refreshData()
-      notify('Secao criada com sucesso.', 'success')
+      notify('Seção criada com sucesso.', 'success')
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel criar a secao.', 'error')
+      notify(err?.message ?? 'Não foi possível criar a seção.', 'error')
       throw err
     } finally {
       setSaving(false)
@@ -278,11 +278,11 @@ export default function PageEditor({ params }: { params: { id: string } }) {
       const text = sectionTexts[section.id] ?? '{}'
       const parsed = JSON.parse(text)
       await updateSection(section.id, { content: parsed })
-      notify('Secao atualizada com sucesso.', 'success')
+      notify('Seção atualizada com sucesso.', 'success')
       setSectionErrors((prev) => ({ ...prev, [section.id]: null }))
       await refreshData()
     } catch (err: any) {
-      const message = err?.message ?? 'Nao foi possivel salvar a secao.'
+      const message = err?.message ?? 'Não foi possível salvar a seção.'
       setSectionErrors((prev) => ({ ...prev, [section.id]: message }))
       notify(message, 'error')
     } finally {
@@ -297,23 +297,23 @@ export default function PageEditor({ params }: { params: { id: string } }) {
       await refreshData()
       notify('Visibilidade atualizada.', 'success')
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel atualizar a visibilidade.', 'error')
+      notify(err?.message ?? 'Não foi possível atualizar a visibilidade.', 'error')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteSection = async (section: CMSSection) => {
-    const confirmation = window.confirm('Deseja realmente remover esta secao?')
+    const confirmation = window.confirm('Deseja realmente remover esta seção?')
     if (!confirmation) return
 
     try {
       setSaving(true)
       await deleteSection(section.id, pageId)
       await refreshData()
-      notify('Secao removida com sucesso.', 'success')
+      notify('Seção removida com sucesso.', 'success')
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel remover a secao.', 'error')
+      notify(err?.message ?? 'Não foi possível remover a seção.', 'error')
     } finally {
       setSaving(false)
     }
@@ -325,7 +325,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
       await moveSection(pageId, section.id, direction)
       await refreshData()
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel reordenar as secoes.', 'error')
+      notify(err?.message ?? 'Não foi possível reordenar as seções.', 'error')
     } finally {
       setSaving(false)
     }
@@ -354,7 +354,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-widest text-primary-600">
-                  Editor de pagina
+                  Editor de página
                 </p>
                 <h1 className="text-3xl font-display font-bold text-gray-900">
                   {page.title}
@@ -369,21 +369,21 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                   className="admin-button-primary flex items-center gap-2"
                 >
                   <FilePlus size={18} />
-                  Nova secao
+                  Nova seção
                 </button>
               </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="admin-card lg:col-span-1">
-                <h2 className="text-lg font-semibold text-gray-900">Detalhes da pagina</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Detalhes da página</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Atualize titulo, slug ou status de publicacao.
+                  Atualize título, slug ou status de publicação.
                 </p>
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700">Titulo</label>
+                    <label className="block text-sm font-semibold text-gray-700">Título</label>
                     <input
                       type="text"
                       className="admin-input mt-1"
@@ -405,7 +405,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                         onChange={(event) => setPageForm((prev) => ({ ...prev, slug: event.target.value }))}
                       />
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Use letras minusculas e hifen.</p>
+                    <p className="mt-1 text-xs text-gray-500">Use letras minúsculas e hífen.</p>
                   </div>
 
                   <div>
@@ -432,26 +432,26 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                   disabled={saving}
                 >
                   {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                  Salvar pagina
+                  Salvar página
                 </button>
               </div>
 
               <div className="lg:col-span-2">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Secoes ({sections.length})</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Seções ({sections.length})</h2>
                   <button
                     onClick={() => setIsAddModalOpen(true)}
                     className="admin-button-secondary flex items-center gap-2"
                   >
                     <FilePlus size={16} />
-                    Adicionar secao
+                    Adicionar seção
                   </button>
                 </div>
 
                 <div className="mt-4 space-y-5">
                   {orderedSections.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-gray-500">
-                      Nenhuma secao cadastrada. Clique em &quot;Adicionar secao&quot; para comecar.
+                      Nenhuma secao cadastrada. Clique em &quot;Adicionar seção&quot; para comecar.
                     </div>
                   ) : (
                     orderedSections.map((section, index) => {
@@ -461,7 +461,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                               <p className="text-xs uppercase tracking-widest text-gray-400">
-                                Secao {index + 1}
+                                Seção {index + 1}
                               </p>
                               <h3 className="text-xl font-semibold text-gray-900">{name}</h3>
                               <p className="text-xs text-gray-500">ID: {section.id}</p>
@@ -486,7 +486,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                               <button
                                 onClick={() => handleToggleVisibility(section)}
                                 className="rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-100"
-                                title={section.is_visible ? 'Ocultar secao' : 'Exibir secao'}
+                                title={section.is_visible ? 'Ocultar seção' : 'Exibir seção'}
                                 disabled={saving}
                               >
                                 {section.is_visible ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -494,7 +494,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                               <button
                                 onClick={() => handleDeleteSection(section)}
                                 className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50"
-                                title="Excluir secao"
+                                title="Excluir seção"
                                 disabled={saving}
                               >
                                 <Trash2 size={16} />
@@ -573,7 +573,7 @@ export default function PageEditor({ params }: { params: { id: string } }) {
                                 disabled={saving}
                               >
                                 {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                                Salvar secao
+                                Salvar seção
                               </button>
                             </div>
 

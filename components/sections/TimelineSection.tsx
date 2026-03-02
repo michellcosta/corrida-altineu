@@ -1,11 +1,11 @@
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Trophy } from 'lucide-react'
 
 interface TimelineItem {
   year?: string
   title?: string
   description?: string
   image?: string
-  highlight?: boolean
+  highlight?: boolean | 'gold'
 }
 
 interface TimelineContent {
@@ -21,8 +21,8 @@ interface TimelineSectionProps {
 const FALLBACK_TIMELINE: TimelineItem[] = [
   {
     year: '1974',
-    title: 'A primeira edicao',
-    description: 'Nasceu a tradicao que marcaria geracoes em Macuco.',
+    title: 'A primeira edição',
+    description: 'Nasceu a tradição que marcaria gerações em Macuco.',
     image: 'https://images.unsplash.com/photo-1513593771513-7b58b6c4af38?q=80&w=800',
   },
   {
@@ -34,22 +34,28 @@ const FALLBACK_TIMELINE: TimelineItem[] = [
   {
     year: '2000',
     title: 'Reconhecimento nacional',
-    description: 'Certificacao da confederacao brasileira de atletismo.',
+    description: 'Certificação da confederação brasileira de atletismo.',
     image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=80&w=800',
   },
   {
-    year: '2026',
-    title: '51ª edicao',
-    description: 'Continuando a tradicao com inovacao e sustentabilidade.',
+    year: '2025',
+    title: '50ª edição',
+    description: 'Meio século de história! Celebração dos 50 anos da corrida com recorde de participantes e festa na cidade.',
     image: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=800',
-    highlight: true,
+    highlight: 'gold',
+  },
+  {
+    year: '2026',
+    title: '51ª edição',
+    description: 'Continuando a tradição com inovação e sustentabilidade.',
+    image: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=800',
   },
 ]
 
 export default function TimelineSection({ content }: TimelineSectionProps) {
-  const title = content?.title || '51 anos de historia e tradicao'
+  const title = content?.title || '51 anos de história e tradição'
   const subtitle =
-    content?.subtitle || 'Mais de cinco decadas promovendo saude, esporte e uniao em Macuco.'
+    content?.subtitle || 'Mais de cinco décadas promovendo saúde, esporte e união em Macuco.'
   const milestones = content?.milestones && content.milestones.length > 0 ? content.milestones : FALLBACK_TIMELINE
 
   return (
@@ -77,9 +83,11 @@ export default function TimelineSection({ content }: TimelineSectionProps) {
                   <div className={index % 2 === 0 ? 'lg:text-right' : 'lg:text-left'}>
                     <div
                       className={`mb-3 inline-block rounded-full px-4 py-1 text-sm font-bold text-white ${
-                        milestone.highlight
-                          ? 'bg-gradient-to-r from-primary-600 to-accent-600'
-                          : 'bg-primary-600'
+                        milestone.highlight === 'gold'
+                          ? 'bg-gradient-to-r from-amber-500 to-yellow-600'
+                          : milestone.highlight
+                            ? 'bg-gradient-to-r from-primary-600 to-accent-600'
+                            : 'bg-primary-600'
                       }`}
                     >
                       {milestone.year}
@@ -94,12 +102,18 @@ export default function TimelineSection({ content }: TimelineSectionProps) {
                 <div className="relative hidden flex-shrink-0 lg:block">
                   <div
                     className={`relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white shadow-xl ${
-                      milestone.highlight
-                        ? 'scale-125 bg-gradient-to-br from-primary-600 to-accent-600'
-                        : 'bg-primary-600'
+                      milestone.highlight === 'gold'
+                        ? 'scale-125 bg-gradient-to-br from-amber-500 to-yellow-600'
+                        : milestone.highlight
+                          ? 'scale-125 bg-gradient-to-br from-primary-600 to-accent-600'
+                          : 'bg-primary-600'
                     }`}
                   >
-                    <CheckCircle2 className="text-white" size={28} />
+                    {milestone.highlight === 'gold' ? (
+                      <Trophy className="text-white" size={28} />
+                    ) : (
+                      <CheckCircle2 className="text-white" size={28} />
+                    )}
                   </div>
                 </div>
 

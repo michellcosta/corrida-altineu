@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import Link from 'next/link'
 import { Heart, Smile, Gift, Users, Clock, Trophy, MapPin, Shield } from 'lucide-react'
+import { getEventConfig } from '@/lib/cms/event'
 
 export const metadata = {
   title: 'Prova Kids | Corrida Infantil 2.5K gratuita',
@@ -8,7 +9,16 @@ export const metadata = {
     'Percurso seguro de 2,5 km para crianças e adolescentes de 5 a 14 anos. Largada às 10h com chegada na Praça Prof. João Brasil.',
 }
 
-export default function ProvaKidsPage() {
+export default async function ProvaKidsPage() {
+  const config = await getEventConfig(2026)
+  const infantilCategory = config?.categories?.find((c) => c.id === 'infantil-2k')
+  const vagasText =
+    infantilCategory?.spotsAvailable != null
+      ? `${infantilCategory.spotsAvailable} de ${infantilCategory.spots} vagas`
+      : infantilCategory
+        ? `${infantilCategory.spots} vagas`
+        : '300 vagas'
+
   return (
     <div className="pt-24">
       {/* Hero */}
@@ -128,7 +138,7 @@ export default function ProvaKidsPage() {
                 <div className="text-5xl mb-4">🎈</div>
                 <p className="text-4xl font-bold text-orange-600 mb-2">Gratuito</p>
                 <p className="text-gray-600 mb-6">
-                  Vagas limitadas a 300 participantes. Inscrições até 20/06 ou enquanto houver vagas.
+                  Vagas limitadas. Inscrições até 20/06 ou enquanto houver vagas.
                 </p>
                 <Link
                   href="/inscricao?categoria=infantil-2k"
@@ -188,7 +198,7 @@ export default function ProvaKidsPage() {
           >
             Inscrição gratuita
           </Link>
-          <p className="mt-6 text-white/90">300 vagas disponíveis · Até 14 anos</p>
+          <p className="mt-6 text-white/90">{vagasText} disponíveis · Até 14 anos</p>
         </div>
       </section>
     </div>

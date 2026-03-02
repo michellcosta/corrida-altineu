@@ -25,16 +25,28 @@ export async function POST(request: NextRequest) {
       taxId,
     } = body
 
-    if (!registrationId || !amount || !email?.trim()) {
+    console.log('[create-checkout] Recebido', { registrationId, amount, hasEmail: !!email?.trim(), hasFullName: !!fullName?.trim(), hasPhone: !!phone, hasTaxId: !!taxId })
+
+    if (!registrationId) {
+      console.warn('create-checkout 400: registrationId ausente', { body: { ...body, email: body?.email ? '[presente]' : '[ausente]' } })
       return NextResponse.json(
-        { error: 'Dados incompletos para pagamento' },
+        { error: 'ID da inscrição não informado' },
+        { status: 400 }
+      )
+    }
+    if (!email?.trim()) {
+      console.warn('create-checkout 400: e-mail ausente', { registrationId })
+      return NextResponse.json(
+        { error: 'E-mail é obrigatório para gerar o PIX. Edite os dados da inscrição.' },
         { status: 400 }
       )
     }
 
-    const amountInCents = Math.round(Number(amount) * 100)
+    const amountNum = Number(amount)
+    const amountInCents = Math.round((Number.isNaN(amountNum) ? 20 : amountNum) * 100)
 
     if (amountInCents < 50) {
+      console.warn('create-checkout 400: valor inválido', { amount, amountInCents, registrationId })
       return NextResponse.json(
         { error: 'Valor mínimo para PIX é R$ 0,50' },
         { status: 400 }
@@ -50,20 +62,7 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    if (fullName?.trim() && phone?.trim() && taxId) {
-      const taxIdDigits = String(taxId).replace(/\D/g, '')
-      if (taxIdDigits.length >= 11) {
-        payload.customer = {
-          name: fullName.trim(),
-          cellphone: String(phone).trim(),
-          email: email.trim().toLowerCase(),
-          taxId: taxIdDigits.length === 11
-            ? `${taxIdDigits.slice(0, 3)}.${taxIdDigits.slice(3, 6)}.${taxIdDigits.slice(6, 9)}-${taxIdDigits.slice(9, 11)}`
-            : taxIdDigits,
-        }
-      }
-    }
-
+    console.log('[create-checkout] Enviando para AbacatePay', { amount: payload.amount })
     const res = await fetch(`${ABACATEPAY_API}/pixQrCode/create`, {
       method: 'POST',
       headers: {
@@ -74,21 +73,30 @@ export async function POST(request: NextRequest) {
     })
 
     const json = await res.json()
+    console.log('[create-checkout] AbacatePay resposta', { status: res.status, ok: res.ok, hasData: !!json?.data, hasId: !!json?.data?.id, hasBrCode: !!json?.data?.brCode, hasBrCodeBase64: !!json?.data?.brCodeBase64 })
 
     if (!res.ok) {
-      console.error('AbacatePay create error:', json)
+      const abacateError = json?.error || json?.message || JSON.stringify(json)
+      console.error('AbacatePay create error:', { status: res.status, json })
       return NextResponse.json(
-        { error: json?.error || 'Erro ao criar cobrança PIX' },
+        { error: typeof abacateError === 'string' ? abacateError : 'Erro ao criar cobrança PIX' },
         { status: res.status }
       )
     }
 
     const data = json.data
     if (!data?.id || !data?.brCode || !data?.brCodeBase64) {
+      console.error('AbacatePay resposta incompleta:', JSON.stringify({ id: data?.id, hasBrCode: !!data?.brCode, hasBrCodeBase64: !!data?.brCodeBase64 }))
       return NextResponse.json(
         { error: 'Resposta inválida da AbacatePay' },
         { status: 500 }
       )
+    }
+
+    // Garantir que brCodeBase64 seja data URL válida para <img src>
+    let brCodeBase64 = String(data.brCodeBase64 || '')
+    if (brCodeBase64 && !brCodeBase64.startsWith('data:')) {
+      brCodeBase64 = `data:image/png;base64,${brCodeBase64}`
     }
 
     const supabase = createClient(
@@ -105,10 +113,11 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', registrationId)
 
+    console.log('[create-checkout] Sucesso', { paymentId: data.id, registrationId })
     return NextResponse.json({
       id: data.id,
       brCode: data.brCode,
-      brCodeBase64: data.brCodeBase64,
+      brCodeBase64,
       amount: data.amount,
       expiresAt: data.expiresAt,
     })

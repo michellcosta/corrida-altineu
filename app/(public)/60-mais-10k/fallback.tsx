@@ -3,6 +3,15 @@ import { Metadata } from 'next'
 import { Calendar, MapPin, Users, Clock, Heart, Shield, Trophy, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { RACE_CONFIG } from '@/lib/constants'
+import { getEventConfig } from '@/lib/cms/event'
+
+const AGE_GROUPS_60_PLUS = [
+  '60/64 anos',
+  '65/69 anos',
+  '70/74 anos',
+  '75/79 anos',
+  '80+ anos',
+]
 
 export const metadata: Metadata = {
   title: '60+ 10K - Categoria gratuita para atletas sênior',
@@ -10,7 +19,16 @@ export const metadata: Metadata = {
     'Prova de 10 km com largada às 12h, transporte oficial e apoio médico completo para corredores com 60 anos ou mais.',
 }
 
-export default function SessentaMais10KPage() {
+export default async function SessentaMais10KPage() {
+  const config = await getEventConfig(2026)
+  const sessentaCategory = config?.categories?.find((c) => c.id === '60-mais-10k')
+  const vagasText =
+    sessentaCategory?.spotsAvailable != null
+      ? `${sessentaCategory.spotsAvailable} de ${sessentaCategory.spots} vagas`
+      : sessentaCategory
+        ? `${sessentaCategory.spots} vagas`
+        : '100 vagas'
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50">
       {/* Hero */}
@@ -40,7 +58,7 @@ export default function SessentaMais10KPage() {
             />
             <InfoCard
               icon={<Users className="w-8 h-8 text-purple-600 mx-auto mb-3" />}
-              title="100 vagas"
+              title={vagasText}
               subtitle="Categoria exclusiva"
             />
             <InfoCard
@@ -141,6 +159,23 @@ export default function SessentaMais10KPage() {
               title="Nutrição e hidratação"
               description="Mantenha alimentação equilibrada, hidrate-se bem e chegue com antecedência."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Faixas Etárias */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Faixas Etárias (M/F)</h2>
+          <p className="text-gray-700 mb-6 text-center">
+            1º Troféu + R$ 200,00 · 2º R$ 150,00 · 3º R$ 100,00
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {AGE_GROUPS_60_PLUS.map((group) => (
+              <div key={group} className="p-4 bg-purple-50 rounded-lg border border-purple-100 text-center">
+                <p className="font-semibold text-gray-800">{group}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

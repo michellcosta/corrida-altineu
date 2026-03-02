@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unstable_noStore } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/serverClient'
+import { formatDateOnly } from '@/lib/formatDate'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,9 +11,11 @@ export const dynamic = 'force-dynamic'
  * - Admin (?admin=1 + auth SITE_ADMIN): retorna todos com dados completos.
  */
 export async function GET(request: NextRequest) {
+  unstable_noStore()
   try {
     const { searchParams } = new URL(request.url)
     const categorySlug = searchParams.get('categoria')?.trim()
+    const search = searchParams.get('search')?.trim() || ''
     const isAdmin = searchParams.get('admin') === '1'
 
     const supabaseService = createServiceClient()
@@ -59,7 +63,7 @@ export async function GET(request: NextRequest) {
     const athleteIds = [...new Set((regs || []).map((r: { athlete_id: string }) => r.athlete_id))]
 
     const { data: athletes } = athleteIds.length > 0
-      ? await supabaseService.from('athletes').select('id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size').in('id', athleteIds)
+      ? await supabaseService.from('athletes').select('id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size, document_number').in('id', athleteIds)
       : { data: [] }
 
     const athleteMap = new Map((athletes || []).map((a: Record<string, unknown>) => [a.id as string, a]))
@@ -74,6 +78,7 @@ export async function GET(request: NextRequest) {
       athlete_id: string
       category_id?: string
       registration_number: string | null
+      confirmation_code: string | null
       status: string
       bib_number: number | null
       notes: string | null
@@ -122,30 +127,48 @@ export async function GET(request: NextRequest) {
 
     // Lista pública: iterar por categorias do banco (fonte da verdade) e incluir inscritos confirmados
     const confirmedRegs = allRegs.filter((r) => isConfirmed(r.status)).map((r) => {
-      const athlete = athleteMap.get(r.athlete_id)
+      const athlete = athleteMap.get(r.athlete_id) as { full_name?: string; birth_date?: string | number; document_number?: string } | undefined
       const cat = r.category_id ? catMap.get(r.category_id) : null
       return {
         id: r.id,
         registration_number: r.registration_number,
+        confirmation_code: (r as RegItem).confirmation_code ?? null,
         status: r.status,
         full_name: athlete?.full_name ?? '',
         birth_date: athlete?.birth_date ?? null,
+        document_number: athlete?.document_number ?? null,
         category_id: r.category_id,
         category_slug: cat?.slug ?? 'outros',
         category_name: cat?.name ?? 'Outros',
       }
     })
 
+    // Filtro de busca: nome, CPF/RG ou código (document_number não é retornado na resposta)
+    let regsToUse = confirmedRegs
+    if (search) {
+      const term = search.toLowerCase().trim()
+      const termDigits = search.replace(/\D/g, '')
+      regsToUse = confirmedRegs.filter((r) => {
+        if (r.full_name?.toLowerCase().includes(term)) return true
+        if (r.confirmation_code?.toLowerCase() === term) return true
+        if (termDigits.length >= 4 && r.document_number) {
+          const docDigits = String(r.document_number).replace(/\D/g, '')
+          if (docDigits.includes(termDigits) || termDigits.includes(docDigits)) return true
+        }
+        return false
+      })
+    }
+
     // Lista pública: apenas estas categorias, na ordem definida
     const PUBLIC_CATEGORY_SLUGS = ['geral-10k', '60-mais-10k', 'morador-10k', 'infantil-2k']
-    const CATEGORY_ORDER = ['60-mais-10k', 'geral-10k', 'infantil-2k', 'morador-10k']
+    const CATEGORY_ORDER = ['geral-10k', '60-mais-10k', 'morador-10k', 'infantil-2k']
     const categoriesList = (cats || []) as { id: string; name: string; slug?: string }[]
     const categoriesRaw = categoriesList
       .filter((c) => PUBLIC_CATEGORY_SLUGS.includes(c.slug || ''))
       .filter((c) => !categorySlug || categorySlug === (c.slug || ''))
       .map((c) => {
         const slug = c.slug || c.id
-        const items = confirmedRegs.filter((r) => r.category_id && String(r.category_id) === String(c.id))
+        const items = regsToUse.filter((r) => r.category_id && String(r.category_id) === String(c.id))
         const inscritosOrdenados = [...items].sort((a, b) =>
           parseRegNumber(a.registration_number) - parseRegNumber(b.registration_number)
         )
@@ -157,13 +180,7 @@ export async function GET(request: NextRequest) {
             id: i.id,
             registration_number: i.registration_number,
             full_name: i.full_name,
-            birth_date: i.birth_date
-              ? new Date(i.birth_date as string | number | Date).toLocaleDateString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                })
-              : null,
+            birth_date: formatDateOnly(i.birth_date) || null,
           })),
         }
       })
@@ -177,7 +194,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Incluir em "outros" todos os confirmados que não estão nas 4 categorias principais
-    const regsWithUnknownCategory = confirmedRegs.filter((r) => {
+    const regsWithUnknownCategory = regsToUse.filter((r) => {
       if (!r.category_id) return true
       const cat = catMap.get(r.category_id)
       if (!cat) return true
@@ -197,13 +214,7 @@ export async function GET(request: NextRequest) {
             id: i.id,
             registration_number: i.registration_number,
             full_name: i.full_name,
-            birth_date: i.birth_date
-              ? new Date(i.birth_date as string | number | Date).toLocaleDateString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                })
-              : null,
+            birth_date: formatDateOnly(i.birth_date) || null,
           })),
         })
       }
@@ -230,7 +241,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(payload, {
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        Pragma: 'no-cache',
+      },
     })
   } catch (err: unknown) {
     console.error('Erro:', err)

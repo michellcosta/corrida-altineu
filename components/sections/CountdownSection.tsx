@@ -77,7 +77,7 @@ export default function CountdownSection({ eventData, content }: CountdownSectio
 
   const title = content?.title || 'Faltam Apenas'
   const subtitle =
-    content?.subtitle || `Para a largada da ${edition}ª Corrida Rustica de Macuco`
+    content?.subtitle || `Para a largada da ${edition}ª Corrida Rústica de São João Batista`
 
   const backgroundClass =
     content?.backgroundColor === 'gradient-accent'

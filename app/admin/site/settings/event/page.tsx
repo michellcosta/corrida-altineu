@@ -9,6 +9,7 @@ export default function EventSettingsPage() {
   const { settings, loading, saving, saveSettings } = useEventSettings()
   const [config, setConfig] = useState<any>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string>('Configurações salvas com sucesso!')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function EventSettingsPage() {
     const result = await saveSettings(config)
     
     if (result.success) {
+      setSuccessMessage(result.message)
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
     } else {
@@ -56,7 +58,7 @@ export default function EventSettingsPage() {
             <CheckCircle size={24} />
             <div>
               <p className="font-semibold">Sucesso!</p>
-              <p className="text-sm">Configurações salvas com sucesso</p>
+              <p className="text-sm">{successMessage}</p>
             </div>
           </div>
         )}

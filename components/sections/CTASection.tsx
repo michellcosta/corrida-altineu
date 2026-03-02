@@ -21,26 +21,26 @@ interface CTASectionProps {
 }
 
 const FALLBACK_FEATURES: CTAFeature[] = [
-  { text: 'Inscricao 100% online' },
-  { text: 'Confirmacao imediata' },
+  { text: 'Inscrição 100% online' },
+  { text: 'Confirmação imediata' },
   { text: 'Pagamento seguro' },
 ]
 
 export default function CTASection({ content }: CTASectionProps) {
-  const title = content?.title || 'Garanta sua vaga na 51ª edicao'
+  const title = content?.title || 'Garanta sua vaga na 51ª edição'
   const subtitle =
     content?.subtitle ||
-    'Nao perca a chance de fazer parte dessa tradicao. Inscreva-se agora antes que o lote atual esgote.'
+    'Não perca a chance de fazer parte dessa tradição. Inscreva-se agora antes que o lote atual esgote.'
   const primaryCTA = content?.ctaPrimary || { href: '/inscricao', label: 'Inscrever-se agora' }
   const secondaryCTA = content?.ctaSecondary || {
     href: '/inscricao/acompanhar',
-    label: 'Acompanhar inscricao',
+    label: 'Acompanhar inscrição',
   }
   const features = content?.features && content.features.length > 0 ? content.features : FALLBACK_FEATURES
   const badge = content?.badge || 'Vagas limitadas'
   const backgroundImage =
     content?.backgroundImage?.url ||
-    'https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=2070'
+    'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?q=80&w=2070'
 
   return (
     <section className="relative overflow-hidden py-20">

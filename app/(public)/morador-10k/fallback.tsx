@@ -3,6 +3,20 @@ import { Metadata } from 'next'
 import { Calendar, MapPin, Users, Clock, FileText, CheckCircle, Gift, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { RACE_CONFIG } from '@/lib/constants'
+import { getEventConfig } from '@/lib/cms/event'
+
+const LOCAL_PRIZES = [
+  { pos: '1º', value: 'R$ 1.000,00' },
+  { pos: '2º', value: 'R$ 500,00' },
+  { pos: '3º', value: 'R$ 400,00' },
+  { pos: '4º', value: 'R$ 300,00' },
+  { pos: '5º', value: 'R$ 200,00' },
+  { pos: '6º', value: 'R$ 200,00' },
+  { pos: '7º', value: 'R$ 200,00' },
+  { pos: '8º', value: 'R$ 100,00' },
+  { pos: '9º', value: 'R$ 100,00' },
+  { pos: '10º', value: 'R$ 100,00' },
+]
 
 export const metadata: Metadata = {
   title: 'Morador de Macuco 10K - Categoria gratuita',
@@ -10,7 +24,16 @@ export const metadata: Metadata = {
     'Largada às 12h, chegada na Praça Prof. João Brasil e inscrição sem custo para moradores com comprovante recente.',
 }
 
-export default function Morador10KPage() {
+export default async function Morador10KPage() {
+  const config = await getEventConfig(2026)
+  const moradorCategory = config?.categories?.find((c) => c.id === 'morador-10k')
+  const vagasText =
+    moradorCategory?.spotsAvailable != null
+      ? `${moradorCategory.spotsAvailable} de ${moradorCategory.spots} vagas`
+      : moradorCategory
+        ? `${moradorCategory.spots} vagas`
+        : '200 vagas'
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       {/* Hero */}
@@ -42,7 +65,7 @@ export default function Morador10KPage() {
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm border border-green-200">
               <Users className="w-8 h-8 text-green-600 mx-auto mb-3" />
-              <p className="font-semibold text-gray-900">200 vagas</p>
+              <p className="font-semibold text-gray-900">{vagasText}</p>
               <p className="text-sm text-gray-600">Categoria exclusiva</p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm border border-green-200">
@@ -161,6 +184,33 @@ export default function Morador10KPage() {
               title="Ambiente da cidade"
               description="Corra ao lado de vizinhos, familiares e equipes locais em um evento tradicional da cidade."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Premiação */}
+      <section className="py-16 px-4 bg-green-50">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Premiação</h2>
+          <div className="bg-white rounded-lg p-8 shadow-sm border border-green-200">
+            <div className="flex items-center gap-4 mb-6">
+              <Trophy className="w-8 h-8 text-green-600" />
+              <h3 className="text-xl font-semibold text-gray-900">Atletas de Macuco</h3>
+            </div>
+            <p className="text-gray-700 mb-6">
+              Premiação exclusiva para os 10 primeiros moradores que concluírem a prova.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {LOCAL_PRIZES.map((item) => (
+                <div
+                  key={item.pos}
+                  className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-100"
+                >
+                  <span className="font-semibold text-gray-800">{item.pos} lugar</span>
+                  <span className="font-bold text-green-600">{item.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

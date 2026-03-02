@@ -40,7 +40,7 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
     eventData?.registrations_open !== undefined ? eventData.registrations_open : true
 
   const headline =
-    content?.headline || `51ª Corrida Rústica de Macuco`
+    content?.headline || `51ª Corrida Rústica de São João Batista`
   const subheadline = content?.subheadline || `Tradição de ${edition} anos`
   const description =
     content?.description || 'Junte-se a milhares de atletas na corrida mais querida da região.'

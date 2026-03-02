@@ -6,15 +6,12 @@ import { Loader2, FileSpreadsheet } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
 import { toast } from 'sonner'
 import { getCountryLabel } from '@/lib/countries'
+import { formatDateOnly } from '@/lib/formatDate'
 import ExcelJS from 'exceljs'
 
 function formatDate(val: string | null | undefined): string {
   if (!val) return ''
-  try {
-    return new Date(val).toLocaleDateString('pt-BR')
-  } catch {
-    return String(val)
-  }
+  return formatDateOnly(val) || String(val)
 }
 
 const CATEGORY_ORDER = ['geral-10k', '60-mais-10k', 'morador-10k', 'infantil-2k']

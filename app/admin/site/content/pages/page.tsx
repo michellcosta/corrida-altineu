@@ -97,7 +97,7 @@ function CreatePageModal({
     setError(null)
 
     if (!title.trim()) {
-      setError('Informe o titulo da pagina.')
+      setError('Informe o título da página.')
       return
     }
 
@@ -113,7 +113,7 @@ function CreatePageModal({
         status,
       })
     } catch (err: any) {
-      setError(err?.message ?? 'Nao foi possivel criar a pagina.')
+      setError(err?.message ?? 'Não foi possível criar a página.')
     }
   }
 
@@ -123,15 +123,15 @@ function CreatePageModal({
         onSubmit={handleSubmit}
         className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl my-auto max-h-[90vh] overflow-y-auto"
       >
-        <h2 className="text-2xl font-semibold text-gray-900">Nova pagina</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Nova página</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Crie uma nova pagina para o site. Voce podera editar as secoes logo em seguida.
+          Crie uma nova página para o site. Você poderá editar as seções logo em seguida.
         </p>
 
         <div className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700">
-              Titulo
+              Título
             </label>
             <input
               type="text"
@@ -159,7 +159,7 @@ function CreatePageModal({
               />
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Use letras minusculas e hifen para separar palavras.
+              Use letras minúsculas e hífen para separar palavras.
             </p>
           </div>
 
@@ -210,7 +210,7 @@ function CreatePageModal({
             ) : (
               <>
                 <Plus size={18} />
-                Criar pagina
+                Criar página
               </>
             )}
           </button>
@@ -242,7 +242,7 @@ export default function PagesManagementPage() {
       const data = await listPages()
       setPages(data)
     } catch (err: any) {
-      setError(err?.message ?? 'Nao foi possivel carregar as paginas.')
+      setError(err?.message ?? 'Não foi possível carregar as páginas.')
     } finally {
       setLoading(false)
     }
@@ -254,7 +254,7 @@ export default function PagesManagementPage() {
       const page = await createPage(payload)
       setPages((prev) => [page, ...prev])
       setIsCreateModalOpen(false)
-      notify('Pagina criada com sucesso.', 'success')
+      notify('Página criada com sucesso.', 'success')
       router.push(`/admin/site/content/pages/${page.id}`)
     } finally {
       setSaving(false)
@@ -263,7 +263,7 @@ export default function PagesManagementPage() {
 
   const handleDeletePage = async (page: CMSPage) => {
     const confirmation = window.confirm(
-      `Deseja realmente excluir a pagina "${page.title}"? Essa acao nao pode ser desfeita.`
+      `Deseja realmente excluir a página "${page.title}"? Essa ação não pode ser desfeita.`
     )
     if (!confirmation) return
 
@@ -271,9 +271,9 @@ export default function PagesManagementPage() {
       setSaving(true)
       await deletePage(page.id)
       setPages((prev) => prev.filter((item) => item.id !== page.id))
-      notify('Pagina removida com sucesso.', 'success')
+      notify('Página removida com sucesso.', 'success')
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel remover a pagina.', 'error')
+      notify(err?.message ?? 'Não foi possível remover a página.', 'error')
     } finally {
       setSaving(false)
     }
@@ -287,7 +287,7 @@ export default function PagesManagementPage() {
       setPages((prev) => prev.map((item) => (item.id === page.id ? { ...item, status: updated.status } : item)))
       notify('Status atualizado com sucesso.', 'success')
     } catch (err: any) {
-      notify(err?.message ?? 'Nao foi possivel atualizar o status.', 'error')
+      notify(err?.message ?? 'Não foi possível atualizar o status.', 'error')
     } finally {
       setSaving(false)
     }
@@ -321,10 +321,10 @@ export default function PagesManagementPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold text-gray-900">
-              Conteudo do site
+              Conteúdo do site
             </h1>
             <p className="mt-1 text-gray-600">
-              Gerencie as paginas publicas, altere status e edite secoes em tempo real.
+              Gerencie as páginas públicas, altere status e edite seções em tempo real.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -341,7 +341,7 @@ export default function PagesManagementPage() {
               className="admin-button-primary flex items-center gap-2"
             >
               <Plus size={18} />
-              Nova pagina
+              Nova página
             </button>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function PagesManagementPage() {
               <input
                 type="text"
                 className="admin-input pl-9"
-                placeholder="Buscar por titulo ou slug..."
+                placeholder="Buscar por título ou slug..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
@@ -397,7 +397,7 @@ export default function PagesManagementPage() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th className="w-[28%]">Titulo</th>
+                  <th className="w-[28%]">Título</th>
                   <th className="w-[18%]">Slug</th>
                   <th className="w-[14%]">Status</th>
                   <th className="w-[10%]">Secoes</th>

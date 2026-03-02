@@ -196,12 +196,16 @@ export default function Header() {
               Acompanhar Inscrição
               <ArrowRight size={16} />
             </Link>
-            <Link
+            <a
               href="/inscricao"
+              onClick={(e) => {
+                e.preventDefault()
+                window.location.href = '/inscricao'
+              }}
               className="relative overflow-hidden inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-accent-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:bg-accent-600 hover:shadow-xl active:scale-[0.98] before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/10 before:to-transparent before:pointer-events-none sm:px-6 sm:text-base"
             >
               Inscrever-se
-            </Link>
+            </a>
             <Link
               href="/admin/login"
               className="inline-flex items-center justify-center rounded-lg p-1.5 text-white/50 transition-colors hover:text-white/80 hover:bg-white/10"
@@ -276,13 +280,17 @@ export default function Header() {
                 >
                   Acompanhar Inscrição
                 </Link>
-                <Link
+                <a
                   href="/inscricao"
                   className="block whitespace-nowrap rounded-lg bg-accent-500 py-2.5 px-4 text-center font-semibold text-white transition-all hover:bg-accent-600"
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setIsOpen(false)
+                    window.location.href = '/inscricao'
+                  }}
                 >
                   Inscrever-se
-                </Link>
+                </a>
               </div>
             </div>
           </div>

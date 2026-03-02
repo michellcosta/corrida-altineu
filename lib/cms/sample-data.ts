@@ -6,8 +6,8 @@ import { Page, GlobalConfigSchema } from './schemas'
 export const HOME_PAGE_DATA: Page = {
   id: 'home-2026',
   slug: '',
-  title: '51ª Corrida Rústica de Macuco | Inscrições Abertas',
-  metaDescription: 'Participe da 51ª edição da tradicional Corrida Rústica de Macuco. 4 categorias: Geral 10K (R$ 20), Morador 10K, 60+ e Infantil 2.5K (gratuitas). Inscreva-se já!',
+  title: '51ª Corrida Rústica de São João Batista | Inscrições Abertas',
+  metaDescription: 'Participe da 51ª edição da tradicional Corrida Rústica de São João Batista. 4 categorias: Geral 10K (R$ 20), Morador 10K, 60+ e Infantil 2.5K (gratuitas). Inscreva-se já!',
   ogImage: 'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?q=80&w=2574',
   status: 'published',
   publishedAt: new Date().toISOString(),
@@ -17,7 +17,7 @@ export const HOME_PAGE_DATA: Page = {
     // Hero
     {
       type: 'hero',
-      headline: '51ª Corrida Rústica de Macuco',
+      headline: '51ª Corrida Rústica de São João Batista',
       subheadline: 'Tradição de 51 anos',
       description: 'Junte-se a milhares de atletas na corrida mais querida da região.',
       backgroundImage: {
@@ -51,7 +51,7 @@ export const HOME_PAGE_DATA: Page = {
     {
       type: 'countdown',
       title: 'Faltam Apenas',
-      subtitle: 'Para a largada da 51ª Corrida Rústica de Macuco',
+      subtitle: 'Para a largada da 51ª Corrida Rústica de São João Batista',
       targetDate: '2026-06-24T07:00:00',
       backgroundColor: 'gradient-primary',
     },
@@ -190,7 +190,7 @@ export const HOME_PAGE_DATA: Page = {
       title: 'Garanta Sua Vaga na 51ª Edição',
       subtitle: 'Não perca a chance de fazer parte dessa tradição. Inscreva-se agora antes que o lote atual esgote!',
       backgroundImage: {
-        url: 'https://images.unsplash.com/photo-1551958219-acbc608c6377?q=80&w=2070',
+        url: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?q=80&w=2070',
         alt: 'Atletas correndo',
       },
       ctaPrimary: {
@@ -226,7 +226,7 @@ export const GLOBAL_CONFIG_DATA: z.infer<typeof GlobalConfigSchema> = {
     instagram: 'https://www.instagram.com/corridademacuco/',
   },
   footer: {
-    copyrightText: 'Corrida Rústica de Macuco. Todos os direitos reservados.',
+    copyrightText: 'Corrida Rústica de São João Batista. Todos os direitos reservados.',
     links: [
       { label: 'Termos', href: '/termos' },
       { label: 'Privacidade', href: '/privacidade' },

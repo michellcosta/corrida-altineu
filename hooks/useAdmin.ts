@@ -104,46 +104,46 @@ export function useEventSettings() {
   async function saveSettings(data: any) {
     setSaving(true)
     setError(null)
-    
     try {
-      // Importar cliente Supabase dinamicamente
-      const { createClient } = await import('@/lib/supabase/browserClient')
-      const supabase = createClient()
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Admin] Enviando vagasSessenta:', data.vagasSessenta)
+      }
+      const res = await fetch('/api/admin/event/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
 
-      // Atualizar evento no Supabase
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({
-          edition: data.edicao,
-          race_date: data.dataProva,
-          start_time_10k: data.horaLargada10K,
-          start_time_2k: data.horaLargada2K,
-          location: data.localLargada,
-          city: data.cidade,
-          state: data.estado,
-          slots_geral: data.vagasGeral,
-          slots_morador: data.vagasMorador,
-          slots_60plus: data.vagasSessenta,
-          slots_infantil: data.vagasInfantil,
-          price_geral: data.valorGeral,
-          registrations_open: data.inscricoesAbertas,
-          registration_open_date: data.dataAberturaInscricoes ? new Date(data.dataAberturaInscricoes).toISOString() : null,
-          registration_close_date: data.dataEncerramentoInscricoes ? new Date(data.dataEncerramentoInscricoes).toISOString() : null,
-          total_prize: data.premiacaoTotal,
-          contact_email: data.contatoEmail,
-          contact_phone: data.contatoTelefone,
-          social_instagram: data.instagram,
-        })
-        .eq('year', data.anoProva)
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(json.error || `Erro ${res.status}`)
+      }
+      if (process.env.NODE_ENV === 'development' && json.slots_60plus != null) {
+        console.log('[Admin] API confirmou slots_60plus salvo:', json.slots_60plus)
+      }
 
-      if (updateError) {
-        throw new Error(updateError.message)
+      // Notificar outras abas no mesmo navegador (BroadcastChannel)
+      try {
+        const { notifyEventConfigUpdated } = await import('@/lib/event-config-channel')
+        notifyEventConfigUpdated()
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Admin] API atualizou evento, BroadcastChannel enviado')
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Admin] Erro ao notificar BroadcastChannel:', e)
+        }
       }
 
       // Recarregar dados atualizados
       await loadSettings()
 
-      return { success: true, message: 'Configurações salvas com sucesso!' }
+      return {
+        success: true,
+        message: 'Configurações salvas com sucesso!',
+        revalidationFailed: false,
+      }
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
       return { success: false, message: error.message }

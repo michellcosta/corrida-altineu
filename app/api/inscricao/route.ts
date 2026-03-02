@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { normalizeDocument } from '@/lib/document'
+import { isValidCPF, isValidRG } from '@/lib/document-validation'
 
 const CATEGORY_SLUG_MAP: Record<string, string> = {
   'geral-10k': 'geral-10k',
@@ -18,7 +20,14 @@ function generateConfirmationCode(): string {
 }
 
 function formatDocumentNumber(value: string): string {
-  return value.replace(/\D/g, '')
+  return normalizeDocument(value)
+}
+
+function validateDocument(value: string, type: 'CPF' | 'RG'): boolean {
+  const digits = value.replace(/\D/g, '')
+  if (type === 'CPF') return digits.length === 11 && isValidCPF(value)
+  if (type === 'RG') return digits.length === 9 && isValidRG(value)
+  return false
 }
 
 export async function POST(request: NextRequest) {
@@ -50,6 +59,7 @@ export async function POST(request: NextRequest) {
       guardianCpf,
       guardianPhone,
       guardianRelationship,
+      isMacucoResident,
       // Estrangeiro
       guardianDocumentType,
       guardianDocumentNumber,
@@ -78,6 +88,14 @@ export async function POST(request: NextRequest) {
 
     const slug = CATEGORY_SLUG_MAP[categoryId] || categoryId
     const isInfant = categoryId === 'infantil-2k'
+    console.log('[inscricao] POST recebido', { categoryId, slug, originType: body?.originType })
+
+    if (isInfant && typeof isMacucoResident !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Informe se o atleta é morador(a) de Macuco.' },
+        { status: 400 }
+      )
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, race_date, year')
+      .select('id, race_date, year, price_geral')
       .eq('year', 2026)
       .single()
 
@@ -100,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     const { data: category, error: catError } = await supabase
       .from('categories')
-      .select('id, name, is_free')
+      .select('id, name, is_free, price')
       .eq('event_id', event.id)
       .eq('slug', slug)
       .single()
@@ -123,19 +141,63 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (slug === 'infantil-2k' && birthDate) {
+      const birthYear = parseInt(String(birthDate).slice(0, 4), 10)
+      const age = eventYear - birthYear
+      if (age < 5 || age > 14) {
+        return NextResponse.json(
+          {
+            error: `A categoria Infantil 2.5K exige idade entre 5 e 14 anos até 31/12/${eventYear}.`,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     let athleteDocType = documentType || 'CPF'
     let athleteDocNumber = documentNumber ? formatDocumentNumber(documentNumber) : null
 
     if (isInfant) {
       athleteDocType = 'CPF'
       athleteDocNumber = childCpf ? formatDocumentNumber(childCpf) : null
+      if (athleteDocNumber && !validateDocument(childCpf || '', 'CPF')) {
+        return NextResponse.json(
+          { error: 'Informe um CPF válido da criança.' },
+          { status: 400 }
+        )
+      }
+      if (guardianCpf && !validateDocument(guardianCpf, 'CPF')) {
+        return NextResponse.json(
+          { error: 'Informe um CPF válido do responsável.' },
+          { status: 400 }
+        )
+      }
     } else if (country !== 'BRA') {
       athleteDocType = (guardianDocumentType as string) || 'CPF'
       athleteDocNumber = guardianDocumentNumber ? formatDocumentNumber(guardianDocumentNumber) : null
+      if (athleteDocNumber) {
+        const docType = (athleteDocType === 'RG' ? 'RG' : 'CPF') as 'CPF' | 'RG'
+        if (!validateDocument(guardianDocumentNumber || '', docType)) {
+          return NextResponse.json(
+            { error: `Informe um ${docType} válido do responsável.` },
+            { status: 400 }
+          )
+        }
+      }
+    } else if (athleteDocNumber) {
+      const docType = (athleteDocType === 'RG' ? 'RG' : 'CPF') as 'CPF' | 'RG'
+      if (!validateDocument(documentNumber || '', docType)) {
+        return NextResponse.json(
+          { error: `Informe um ${docType} válido.` },
+          { status: 400 }
+        )
+      }
     }
 
-    // Bloquear inscrição duplicada por documento (CPF/RG) - apenas para documento do atleta
-    // Estrangeiros usam documento do responsável, que pode repetir para vários atletas
+    // Bloquear inscrição duplicada por documento (CPF/RG) - apenas para documento do atleta.
+    // O documento do responsável (guardians) NÃO bloqueia: um pai que inscreveu o filho na infantil
+    // pode se inscrever normalmente nas categorias adultas com seu próprio CPF.
+    // Estrangeiros usam documento do responsável, que pode repetir para vários atletas.
     if (athleteDocNumber && (isBrazilian || isInfant)) {
       const { data: athletesByDoc } = await supabase
         .from('athletes')
@@ -152,11 +214,23 @@ export async function POST(request: NextRequest) {
           .limit(1)
           .maybeSingle()
         if (existingByDoc) {
+          console.warn('[inscricao] 409: duplicata por documento', {
+            motivo: 'documento_ja_inscrito',
+            categoryId,
+            athleteDocNumberLen: athleteDocNumber?.length,
+            docAthleteIds,
+            existingRegId: existingByDoc?.id,
+          })
+          const docHint = athleteDocNumber.length === 11 ? 'cpf' : 'rg'
+          const consultHint =
+            docHint === 'cpf'
+              ? 'Use o CPF do atleta na consulta. Em inscrições infantis, use o CPF da criança.'
+              : 'Use o RG do atleta na consulta.'
           return NextResponse.json(
             {
-              error: 'Você já possui uma inscrição neste evento. Consulte em Acompanhar Inscrição para editar ou concluir o pagamento.',
+              error: `Você já possui uma inscrição neste evento. ${consultHint} Consulte em Acompanhar Inscrição para editar ou concluir o pagamento.`,
               already_registered: true,
-              document_hint: athleteDocNumber.length === 11 ? 'cpf' : 'rg',
+              document_hint: docHint,
             },
             { status: 409 }
           )
@@ -177,6 +251,7 @@ export async function POST(request: NextRequest) {
       city: isBrazilian && city ? city.trim() : null,
       state: isBrazilian && state ? state : null,
       country: country || (isBrazilian ? 'BRA' : null),
+      is_macuco_resident: isInfant && typeof isMacucoResident === 'boolean' ? isMacucoResident : null,
       address: addressStreet
         ? [addressStreet, addressNumber, addressComplement, addressNeighborhood]
             .filter(Boolean)
@@ -230,6 +305,7 @@ export async function POST(request: NextRequest) {
           document_type: 'CPF',
           document_number: formatDocumentNumber(guardianCpf),
           phone: guardianPhone?.trim() || '',
+          email: email?.trim() || null,
           relationship: guardianRelationship || 'Responsável Legal',
         })
         .select('id')
@@ -247,8 +323,17 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existingReg) {
+      console.warn('[inscricao] 409: duplicata por categoria', {
+        motivo: 'mesma_categoria',
+        categoryId,
+        athleteId,
+        existingRegId: existingReg?.id,
+      })
       return NextResponse.json(
-        { error: 'Você já possui uma inscrição nesta categoria' },
+        {
+          error: 'Você já possui uma inscrição nesta categoria. Consulte em Acompanhar Inscrição para editar ou concluir o pagamento.',
+          already_registered: true,
+        },
         { status: 409 }
       )
     }
@@ -265,6 +350,10 @@ export async function POST(request: NextRequest) {
     const prefix = slug.replace(/-10k|-2k/g, '').toUpperCase().replace('-', '')
     const registrationNumber = `2026-${prefix}-${String(seq).padStart(4, '0')}`
 
+    const priceGeral = Number(event.price_geral) ?? 20
+    const categoryPrice = Number(category.price) || priceGeral
+    const paymentAmount = category.is_free ? 0 : categoryPrice
+
     const { data: registration, error: regErr } = await supabase
       .from('registrations')
       .insert({
@@ -276,19 +365,29 @@ export async function POST(request: NextRequest) {
         confirmation_code: confirmationCode,
         status: category.is_free ? 'confirmed' : 'pending_payment',
         payment_status: category.is_free ? 'free' : 'pending',
-        payment_amount: category.is_free ? 0 : 20,
+        payment_amount: paymentAmount,
       })
       .select('id')
       .single()
 
     if (regErr) {
       if (regErr.code === '23505') {
+        console.warn('[inscricao] 409: constraint única (23505)', {
+          motivo: 'unique_constraint',
+          categoryId,
+          athleteId,
+          regErrCode: regErr.code,
+          regErrDetail: regErr.details,
+        })
         return NextResponse.json(
-          { error: 'Já existe uma inscrição com este e-mail para esta categoria' },
+          {
+            error: 'Já existe uma inscrição com este e-mail para esta categoria. Consulte em Acompanhar Inscrição.',
+            already_registered: true,
+          },
           { status: 409 }
         )
       }
-      console.error('Erro ao criar inscrição:', regErr)
+      console.error('[inscricao] Erro ao criar inscrição:', regErr)
       return NextResponse.json({ error: 'Erro ao finalizar inscrição' }, { status: 500 })
     }
 

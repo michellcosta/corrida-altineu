@@ -101,7 +101,7 @@ BEGIN
   (home_id, 'countdown', 2, '{
     "type": "countdown",
     "title": "Contagem Regressiva",
-    "subtitle": "Para a 51ª Corrida de Macuco",
+    "subtitle": "Para a largada da 51ª Corrida Rústica de São João Batista",
     "targetDate": "2026-06-24T08:00:00.000Z"
   }'::jsonb, true),
   

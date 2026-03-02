@@ -8,15 +8,21 @@ import {
   Calendar,
   PieChart,
   Loader2,
+  Globe,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
 import { getCountryLabel } from '@/lib/countries'
 
-function formatOrigin(athlete: { city?: string | null; state?: string | null; country?: string | null }): string {
-  if (athlete?.country && athlete.country !== 'BRA') return getCountryLabel(athlete.country)
+function formatCity(athlete: { city?: string | null; state?: string | null; country?: string | null }): string | null {
+  if (athlete?.country && athlete.country !== 'BRA') return null
   if (athlete?.city && athlete?.state) return `${athlete.city} - ${athlete.state}`
   if (athlete?.city) return athlete.city
-  return 'Não informado'
+  return null
+}
+
+function formatCountry(athlete: { country?: string | null }): string | null {
+  if (!athlete?.country) return null
+  return getCountryLabel(athlete.country)
 }
 
 const AGE_RANGES = [
@@ -49,11 +55,13 @@ function getAgeRange(age: number): string {
 export default function OrgAdminDashboard() {
   const [total, setTotal] = useState(0)
   const [citiesCount, setCitiesCount] = useState(0)
+  const [countriesCount, setCountriesCount] = useState(0)
   const [daysToEvent, setDaysToEvent] = useState<number | null>(null)
   const [ageDistribution, setAgeDistribution] = useState<
     { range: string; male: number; female: number }[]
   >([])
   const [topCities, setTopCities] = useState<{ city: string; count: number }[]>([])
+  const [topCountries, setTopCountries] = useState<{ country: string; count: number }[]>([])
   const [paymentStats, setPaymentStats] = useState({
     paid: 0,
     pending: 0,
@@ -83,9 +91,11 @@ export default function OrgAdminDashboard() {
       if (!event) {
         setTotal(0)
         setCitiesCount(0)
+        setCountriesCount(0)
         setDaysToEvent(null)
         setAgeDistribution([])
         setTopCities([])
+        setTopCountries([])
         setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
         return
       }
@@ -112,19 +122,33 @@ export default function OrgAdminDashboard() {
       const list = (regs || []) as unknown as RegistrationWithAthlete[]
       setTotal(list.length)
 
-      const origins = new Set(list.map((r) => formatOrigin(r.athlete)))
-      setCitiesCount(origins.size)
+      const citySet = new Set(list.map((r) => formatCity(r.athlete)).filter((c): c is string => c != null))
+      setCitiesCount(citySet.size)
 
-      const byOrigin = list.reduce<Record<string, number>>((acc, r) => {
-        const origin = formatOrigin(r.athlete)
-        acc[origin] = (acc[origin] || 0) + 1
+      const countrySet = new Set(list.map((r) => formatCountry(r.athlete)).filter((c): c is string => c != null))
+      setCountriesCount(countrySet.size)
+
+      const byCity = list.reduce<Record<string, number>>((acc, r) => {
+        const city = formatCity(r.athlete)
+        if (city) acc[city] = (acc[city] || 0) + 1
         return acc
       }, {})
-      const top = Object.entries(byOrigin)
+      const topC = Object.entries(byCity)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([city, count]) => ({ city, count }))
-      setTopCities(top)
+      setTopCities(topC)
+
+      const byCountry = list.reduce<Record<string, number>>((acc, r) => {
+        const country = formatCountry(r.athlete)
+        if (country) acc[country] = (acc[country] || 0) + 1
+        return acc
+      }, {})
+      const topP = Object.entries(byCountry)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([country, count]) => ({ country, count }))
+      setTopCountries(topP)
 
       const ageByRange: Record<string, { male: number; female: number }> = {}
       AGE_RANGES.forEach((r) => {
@@ -165,9 +189,11 @@ export default function OrgAdminDashboard() {
       console.error('Erro ao carregar dashboard:', err)
       setTotal(0)
       setCitiesCount(0)
+      setCountriesCount(0)
       setDaysToEvent(null)
       setAgeDistribution([])
       setTopCities([])
+      setTopCountries([])
       setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
     } finally {
       setLoading(false)
@@ -218,6 +244,15 @@ export default function OrgAdminDashboard() {
               <div className="admin-card">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Globe className="text-green-600" size={24} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 mb-1">{countriesCount}</p>
+                <p className="text-sm text-gray-600">Países Representados</p>
+              </div>
+              <div className="admin-card">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <Calendar className="text-green-600" size={24} />
                   </div>
                 </div>
@@ -226,22 +261,11 @@ export default function OrgAdminDashboard() {
                 </p>
                 <p className="text-sm text-gray-600">Dias para o Evento</p>
               </div>
-              <div className="admin-card">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <MapPin className="text-green-600" size={24} />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">
-                  {total > 0 ? `${((paymentStats.paid / total) * 100).toFixed(1)}%` : '0%'}
-                </p>
-                <p className="text-sm text-gray-600">Pagamentos Confirmados</p>
-              </div>
             </>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Age Distribution */}
           <div className="admin-card">
             <div className="flex items-center justify-between mb-6">
@@ -319,6 +343,43 @@ export default function OrgAdminDashboard() {
                           {index + 1}
                         </span>
                         <span className="text-sm font-medium text-gray-700">{item.city}</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full transition-all"
+                        style={{ width: `${total > 0 ? (item.count / total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Top Countries */}
+          <div className="admin-card">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-gray-900">Principais Países</h3>
+              <Globe size={20} className="text-gray-400" />
+            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="animate-spin text-green-600" size={24} />
+              </div>
+            ) : topCountries.length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhuma inscrição ainda.</p>
+            ) : (
+              <div className="space-y-4">
+                {topCountries.map((item, index) => (
+                  <div key={item.country}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm font-medium text-gray-700">{item.country}</span>
                       </div>
                       <span className="text-sm font-bold text-gray-900">{item.count}</span>
                     </div>

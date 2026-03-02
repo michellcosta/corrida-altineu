@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useEventConfigRealtime } from '@/hooks/useEventConfigRealtime'
 import { Check, ChevronRight, CreditCard, User, FileText, CheckCircle, Upload, AlertCircle, Loader2, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
+import { toQrCodeDataUrl } from '@/lib/utils'
+import { isValidCPF, isValidRG } from '@/lib/document-validation'
 
 // ============================================================
 // TIPOS E INTERFACES
@@ -54,14 +57,12 @@ function formatDocumentNumber(value: string, type: DocumentType) {
 }
 
 function validateDocumentNumber(value: string, type: DocumentType) {
-  switch (type) {
-    case 'CPF':
-      return CPF_REGEX.test(value)
-    case 'RG':
-      return RG_REGEX.test(value)
-    default:
-      return false
-  }
+  if (!value?.trim()) return false
+  const formatOk = type === 'CPF' ? CPF_REGEX.test(value) : RG_REGEX.test(value)
+  if (!formatOk) return false
+  if (type === 'CPF') return isValidCPF(value)
+  if (type === 'RG') return isValidRG(value)
+  return false
 }
 
 function getDocumentHelper(type: DocumentType) {
@@ -81,6 +82,8 @@ interface Category {
   isFree: boolean
   description: string
   spots: number
+  spotsTaken?: number
+  spotsAvailable?: number
   ageMin: number
   ageMax?: number
   documents: string[]
@@ -114,6 +117,9 @@ export default function InscricaoClient() {
   const [configError, setConfigError] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  // Pré-filtro por data de nascimento (quando vem da home sem ?categoria=)
+  const [preFilterBirth, setPreFilterBirth] = useState<{ day: string; month: string; year: string } | null>(null)
+  const [skipPreFilter, setSkipPreFilter] = useState(false)
   const [documentType, setDocumentType] = useState<DocumentType>('CPF')
   const [documentNumber, setDocumentNumber] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -127,6 +133,7 @@ export default function InscricaoClient() {
     })
   }
   const [submitError, setSubmitError] = useState('')
+  const [submitError409NoRedirect, setSubmitError409NoRedirect] = useState(false)
   const [registrationResult, setRegistrationResult] = useState<{
     registration_number: string
     confirmation_code: string
@@ -141,35 +148,63 @@ export default function InscricaoClient() {
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [pendingRegistrationId, setPendingRegistrationId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetch('/api/event/config')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.event && data.categories) {
-          setEventConfig({
-            year: data.event.year,
-            edition: data.event.edition,
-            raceDateFormatted: data.event.raceDateFormatted,
-            location: data.event.location || 'Praça de Macuco',
-            registrationsOpen: data.event.registrationsOpen ?? true,
-          })
-          setCategories(data.categories)
-          // Pré-selecionar categoria da URL (?categoria=geral-10k) e ir direto para Dados Pessoais
-          const categoriaParam = searchParams.get('categoria')
-          if (categoriaParam) {
-            const cat = data.categories.find((c: Category) => c.id === categoriaParam)
-            if (cat) {
-              setSelectedCategory(cat)
-              setCurrentStep(2)
-            }
-          }
-        } else {
-          setConfigError('Não foi possível carregar as categorias.')
-        }
+  const loadEventConfig = useCallback(
+    (applyUrlPreselect = false) => {
+      fetch(`/api/event/config?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       })
-      .catch(() => setConfigError('Erro ao carregar configurações.'))
-      .finally(() => setConfigLoading(false))
-  }, [searchParams])
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.event && data.categories) {
+            setEventConfig({
+              year: data.event.year,
+              edition: data.event.edition,
+              raceDateFormatted: data.event.raceDateFormatted,
+              location: data.event.location || 'Praça de Macuco',
+              registrationsOpen: data.event.registrationsOpen ?? true,
+            })
+            setCategories(data.categories)
+            if (applyUrlPreselect) {
+              const categoriaParam = searchParams.get('categoria')
+              if (categoriaParam) {
+                const cat = data.categories.find((c: Category) => c.id === categoriaParam)
+                if (cat) {
+                  setSelectedCategory(cat)
+                  setCurrentStep(2)
+                }
+              }
+            } else {
+              setSelectedCategory((prev) => {
+                if (!prev) return null
+                const updated = data.categories.find((c: Category) => c.id === prev.id)
+                return updated ?? prev
+              })
+            }
+            setConfigError(null)
+          } else {
+            setConfigError('Não foi possível carregar as categorias.')
+          }
+        })
+        .catch(() => setConfigError('Erro ao carregar configurações.'))
+        .finally(() => setConfigLoading(false))
+    },
+    [searchParams]
+  )
+
+  const handleConfigUpdate = useCallback(() => loadEventConfig(false), [loadEventConfig])
+  useEventConfigRealtime(handleConfigUpdate)
+
+  useEffect(() => {
+    loadEventConfig(true)
+  }, [loadEventConfig])
+
+  // Quando morador-10k é selecionado (incluindo via URL ?categoria=morador-10k), pré-marcar brasileiro
+  useEffect(() => {
+    if (selectedCategory?.id === 'morador-10k') {
+      setFormData((prev) => ({ ...prev, state: 'RJ', city: 'Macuco', originType: 'brazilian' }))
+    }
+  }, [selectedCategory?.id])
 
   const [formData, setFormData] = useState({
     // Dados pessoais básicos
@@ -180,6 +215,7 @@ export default function InscricaoClient() {
     gender: '',
     email: '',
     phone: '',
+    hasTeam: null as boolean | null,
     teamName: '',
     // Origem: brasileiro ou estrangeiro (obrigatório escolher)
     originType: null as 'brazilian' | 'foreign' | null,
@@ -206,6 +242,7 @@ export default function InscricaoClient() {
     guardianCpf: '',
     guardianPhone: '',
     guardianRelationship: '',
+    isMacucoResident: null as boolean | null,
     authorizationFile: null as File | null,
     
     // Termos
@@ -222,6 +259,11 @@ export default function InscricaoClient() {
   const documentGridClass = 'md:grid-cols-[160px_1fr]'
 
   const getBirthDate = (): string => {
+    if (preFilterBirth?.day && preFilterBirth?.month && preFilterBirth?.year) {
+      const d = preFilterBirth.day.padStart(2, '0')
+      const m = preFilterBirth.month.padStart(2, '0')
+      return `${preFilterBirth.year}-${m}-${d}`
+    }
     if (!formData.birthDay || !formData.birthMonth || !formData.birthYear) return ''
     const d = formData.birthDay.padStart(2, '0')
     const m = formData.birthMonth.padStart(2, '0')
@@ -235,6 +277,21 @@ export default function InscricaoClient() {
     return year - birthYear
   }
 
+  const categoriaParam = searchParams.get('categoria')
+  const showPreFilterStep = !categoriaParam && preFilterBirth === null && !skipPreFilter
+  const preFilterAge = preFilterBirth?.year
+    ? getAgeByDec31(`${preFilterBirth.year}-${preFilterBirth.month.padStart(2, '0')}-${preFilterBirth.day.padStart(2, '0')}`, eventYear)
+    : null
+  const filteredCategories = (() => {
+    if (!preFilterBirth?.year || preFilterAge == null) return categories
+    if (preFilterAge >= 5 && preFilterAge <= 14) return categories.filter((c) => c.id === 'infantil-2k')
+    if (preFilterAge >= 15 && preFilterAge <= 59) return categories.filter((c) => c.id === 'geral-10k' || c.id === 'morador-10k')
+    if (preFilterAge >= 60 && preFilterAge <= 100) return categories.filter((c) => c.id === 'sessenta-10k' || c.id === 'morador-10k')
+    return []
+  })()
+  const categoriesToShow = skipPreFilter ? categories : (preFilterBirth ? filteredCategories : categories)
+  const isBirthDateLocked = preFilterBirth !== null
+
   const MONTHS = [
     { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
     { value: '4', label: 'Abril' }, { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
@@ -244,16 +301,35 @@ export default function InscricaoClient() {
   const DAYS = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))
   const currentYear = new Date().getFullYear()
   // Para Infantil 2.5K: anos que resultam em idade entre 5 e 14 no ano da prova
+  // Anos de nascimento por categoria (idade em 31/12 do ano da prova)
   const birthYearsForInfantil = selectedCategory?.id === 'infantil-2k' && selectedCategory?.ageMax != null
     ? Array.from(
         { length: selectedCategory.ageMax - selectedCategory.ageMin + 1 },
         (_, i) => {
-          const year = eventYear - selectedCategory.ageMax! + i
+          const year = eventYear - selectedCategory.ageMin! - i
           return { value: String(year), label: String(year) }
         }
       )
     : null
-  const YEARS = birthYearsForInfantil ?? Array.from(
+  const birthYearsForGeral = selectedCategory?.id === 'geral-10k'
+    ? Array.from({ length: 45 }, (_, i) => ({
+        value: String(eventYear - 15 - i),
+        label: String(eventYear - 15 - i),
+      }))
+    : null
+  const birthYearsForSessenta = selectedCategory?.id === 'sessenta-10k'
+    ? Array.from({ length: 41 }, (_, i) => ({
+        value: String(eventYear - 60 - i),
+        label: String(eventYear - 60 - i),
+      }))
+    : null
+  const birthYearsForMorador = selectedCategory?.id === 'morador-10k'
+    ? Array.from({ length: 86 }, (_, i) => ({
+        value: String(eventYear - 15 - i),
+        label: String(eventYear - 15 - i),
+      }))
+    : null
+  const YEARS = birthYearsForInfantil ?? birthYearsForGeral ?? birthYearsForSessenta ?? birthYearsForMorador ?? Array.from(
     { length: 101 },
     (_, i) => ({ value: String(currentYear - i), label: String(currentYear - i) })
   )
@@ -370,7 +446,7 @@ export default function InscricaoClient() {
     }
 
     if (selectedCategory?.id === 'infantil-2k') {
-      if (!formData.guardianName?.trim() || !formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF')) return false
+      if (!formData.guardianName?.trim() || !formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF') || formData.isMacucoResident === null) return false
       if (!formData.guardianPhone?.trim() || !formData.guardianRelationship) return false
     }
 
@@ -406,8 +482,13 @@ export default function InscricaoClient() {
   }
 
   const handleCategorySelect = (category: Category) => {
+    const isSwitching = selectedCategory != null && selectedCategory.id !== category.id
     setSelectedCategory(category)
     setFieldErrors({})
+    // Resetar data de nascimento ao trocar de categoria (evita bypass Infantil)
+    if (isSwitching) {
+      setFormData((prev) => ({ ...prev, birthDay: '', birthMonth: '', birthYear: '' }))
+    }
     if (category.id === 'morador-10k') {
       setFormData((prev) => ({ ...prev, state: 'RJ', city: 'Macuco', originType: 'brazilian' }))
     } else if (selectedCategory?.id === 'morador-10k') {
@@ -419,6 +500,31 @@ export default function InscricaoClient() {
     if (selectedCategory) {
       setCurrentStep(2)
     }
+  }
+
+  const [preFilterForm, setPreFilterForm] = useState({ day: '', month: '', year: '' })
+  const [preFilterError, setPreFilterError] = useState<string | null>(null)
+  const handlePreFilterSubmit = () => {
+    const { day, month, year } = preFilterForm
+    if (!day || !month || !year) {
+      setPreFilterError('Informe a data de nascimento completa.')
+      return
+    }
+    const birthStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    const age = getAgeByDec31(birthStr, eventYear)
+    if (age < 0 || age > 100) {
+      setPreFilterError('Data de nascimento inválida.')
+      return
+    }
+    if (age >= 0 && age <= 4) {
+      setPreFilterBirth({ day, month, year })
+      setPreFilterError(null)
+      return
+    }
+    setPreFilterBirth({ day, month, year })
+    setPreFilterError(null)
+    setFormData((prev) => ({ ...prev, birthDay: day, birthMonth: month, birthYear: year }))
+    setCurrentStep(1)
   }
 
   const submitRegistration = async () => {
@@ -433,7 +539,7 @@ export default function InscricaoClient() {
         gender: formData.gender || undefined,
         email: formData.email.trim(),
         phone: formData.phone.trim(),
-        teamName: formData.teamName.trim() || undefined,
+        teamName: formData.hasTeam === true ? (formData.teamName.trim() || undefined) : undefined,
         originType: formData.originType,
         city: isBrazilian ? formData.city : undefined,
         state: isBrazilian ? formData.state : undefined,
@@ -450,6 +556,7 @@ export default function InscricaoClient() {
         guardianCpf: formData.guardianCpf || undefined,
         guardianPhone: formData.guardianPhone.trim() || undefined,
         guardianRelationship: formData.guardianRelationship || undefined,
+        isMacucoResident: selectedCategory.id === 'infantil-2k' ? formData.isMacucoResident ?? undefined : undefined,
         guardianDocumentType: shouldShowGuardianDocument ? formData.guardianDocumentType : undefined,
         guardianDocumentNumber: shouldShowGuardianDocument ? formData.guardianDocumentNumber : undefined,
       }
@@ -460,13 +567,19 @@ export default function InscricaoClient() {
       })
       const json = await res.json()
       if (!res.ok) {
-        if (res.status === 409 && json.already_registered) {
+        if (res.status === 409) {
           const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.guardianCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
-          if (docValue) router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
-          else throw new Error(json.error || 'Erro ao finalizar inscrição')
-          return
+          if (docValue && docValue.length >= 9) {
+            router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
+            return
+          }
+          if (formData.email?.trim()) {
+            router.push(`/inscricao/acompanhar?email=${encodeURIComponent(formData.email.trim())}`)
+            return
+          }
+          throw new Error((json?.error || 'Você já possui inscrição.') + ' Acesse Acompanhar Inscrição com CPF, RG ou e-mail.')
         }
-        throw new Error(json.error || 'Erro ao finalizar inscrição')
+        throw new Error(json?.error || 'Erro ao finalizar inscrição')
       }
       setRegistrationResult({
         registration_number: json.registration.registration_number,
@@ -490,7 +603,13 @@ export default function InscricaoClient() {
     }
     if (!formData.gender) errors.gender = 'Selecione o sexo.'
     if (!formData.email?.trim()) errors.email = 'Preencha o email.'
-    if (!formData.phone?.trim()) errors.phone = 'Preencha o telefone/WhatsApp.'
+    if (!formData.phone?.trim()) errors.phone = 'Preencha o WhatsApp.'
+    if (formData.hasTeam === null) {
+      errors.hasTeam = 'Informe se você participa de alguma equipe.'
+    }
+    if (formData.hasTeam === true && !formData.teamName?.trim()) {
+      errors.teamName = 'Informe o nome da equipe.'
+    }
     if (!formData.originType) {
       errors.originType = 'Selecione se você é brasileiro(a) ou estrangeiro(a).'
     }
@@ -514,12 +633,22 @@ export default function InscricaoClient() {
     }
 
     if (selectedCategory?.id === 'infantil-2k') {
+      const bd = getBirthDate()
+      if (bd) {
+        const age = getAgeByDec31(bd, eventYear)
+        if (age < 5 || age > 14) {
+          errors.birthDate = `A categoria Infantil 2.5K exige idade entre 5 e 14 anos até 31/12/${eventYear}.`
+        }
+      }
       if (!formData.guardianName?.trim()) errors.guardianName = 'Preencha o nome do responsável.'
       if (!formData.guardianCpf || !validateDocumentNumber(formData.guardianCpf, 'CPF')) {
         errors.guardianCpf = 'Informe um CPF válido do responsável.'
       }
       if (!formData.guardianPhone?.trim()) errors.guardianPhone = 'Preencha o telefone do responsável.'
       if (!formData.guardianRelationship) errors.guardianRelationship = 'Selecione o grau de parentesco.'
+      if (formData.isMacucoResident === null) {
+        errors.isMacucoResident = 'Informe se o atleta é morador(a) de Macuco.'
+      }
     }
 
     if (!formData.acceptedTerms) {
@@ -562,6 +691,7 @@ export default function InscricaoClient() {
       setSubmitError('Aceite o regulamento e as políticas para continuar.')
       return
     }
+    setSubmitError409NoRedirect(false)
     if (!selectedCategory || selectedCategory.isFree) {
       submitRegistration()
       return
@@ -582,7 +712,7 @@ export default function InscricaoClient() {
         gender: formData.gender || undefined,
         email: formData.email.trim(),
         phone: formData.phone.trim(),
-        teamName: formData.teamName.trim() || undefined,
+        teamName: formData.hasTeam === true ? (formData.teamName.trim() || undefined) : undefined,
         originType: formData.originType,
         city: isBrazilian ? formData.city : undefined,
         state: isBrazilian ? formData.state : undefined,
@@ -599,50 +729,72 @@ export default function InscricaoClient() {
         guardianCpf: formData.guardianCpf || undefined,
         guardianPhone: formData.guardianPhone.trim() || undefined,
         guardianRelationship: formData.guardianRelationship || undefined,
+        isMacucoResident: selectedCategory.id === 'infantil-2k' ? formData.isMacucoResident ?? undefined : undefined,
         guardianDocumentType: shouldShowGuardianDocument ? formData.guardianDocumentType : undefined,
         guardianDocumentNumber: shouldShowGuardianDocument ? formData.guardianDocumentNumber : undefined,
       }
+        console.log('[InscricaoClient] handleFinalizePayment: enviando inscrição', { categoryId: selectedCategory.id })
         const resInsc = await fetch('/api/inscricao', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const jsonInsc = await resInsc.json()
+        console.log('[InscricaoClient] inscrição resposta', { status: resInsc.status, ok: resInsc.ok, hasRegistration: !!jsonInsc?.registration })
         if (!resInsc.ok) {
-          if (resInsc.status === 409 && jsonInsc.already_registered) {
-            const docValue = shouldShowAthleteDocument ? documentNumber.replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.guardianCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
-            if (docValue) router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(docValue)}`)
-            else setSubmitError(jsonInsc.error || 'Erro ao finalizar inscrição')
+          if (resInsc.status === 409) {
+            console.log('[InscricaoClient] 409: redirecionando para acompanhar (inscrição duplicada)')
+            const docValue = shouldShowAthleteDocument ? (documentNumber || '').replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.guardianCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
+            const emailVal = formData.email?.trim()
+            if (docValue && docValue.length >= 9) {
+              setSubmitError('Você já possui inscrição. Redirecionando...')
+              const params = new URLSearchParams({ doc: docValue })
+              if (emailVal && emailVal.includes('@')) params.set('email', emailVal)
+              router.push(`/inscricao/acompanhar?${params.toString()}`)
+              return
+            }
+            if (emailVal && emailVal.includes('@')) {
+              setSubmitError('Você já possui inscrição. Redirecionando...')
+              router.push(`/inscricao/acompanhar?email=${encodeURIComponent(emailVal)}`)
+              return
+            }
+            setSubmitError(jsonInsc?.error || 'Você já possui inscrição neste evento.')
+            setSubmitError409NoRedirect(true)
             return
           }
-          throw new Error(jsonInsc.error || 'Erro ao finalizar inscrição')
+          throw new Error(jsonInsc?.error || 'Erro ao finalizar inscrição')
         }
         registrationId = jsonInsc.registration.id
         registrationNumber = jsonInsc.registration.registration_number
         confirmationCode = jsonInsc.registration.confirmation_code
         setPendingRegistrationId(registrationId)
+        console.log('[InscricaoClient] inscrição OK, chamando create-checkout', { registrationId })
       } else {
         if (!registrationResult) throw new Error('Dados da inscrição não encontrados. Volte e preencha novamente.')
         registrationNumber = registrationResult.registration_number
         confirmationCode = registrationResult.confirmation_code
       }
 
+      const checkoutPayload = {
+        registrationId: registrationId!,
+        amount: selectedCategory.price,
+        email: formData.email.trim(),
+        fullName: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        taxId: getTaxIdForPayment(),
+      }
+      console.log('[InscricaoClient] create-checkout payload', checkoutPayload)
       const resCheckout = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          registrationId: registrationId!,
-          amount: selectedCategory.price,
-          email: formData.email.trim(),
-          fullName: formData.fullName.trim(),
-          phone: formData.phone.trim(),
-          taxId: getTaxIdForPayment(),
-        }),
+        body: JSON.stringify(checkoutPayload),
       })
       const jsonCheckout = await resCheckout.json()
+      console.log('[InscricaoClient] create-checkout resposta', { status: resCheckout.status, ok: resCheckout.ok, hasId: !!jsonCheckout?.id, hasBrCode: !!jsonCheckout?.brCode, hasBrCodeBase64: !!jsonCheckout?.brCodeBase64, error: jsonCheckout?.error })
       if (!resCheckout.ok) throw new Error(jsonCheckout.error || 'Erro ao criar pagamento')
 
       if (jsonCheckout.id && jsonCheckout.brCode && jsonCheckout.brCodeBase64) {
+        console.log('[InscricaoClient] QR Code recebido, setando pixData')
         setRegistrationResult({
           registration_number: registrationNumber!,
           confirmation_code: confirmationCode!,
@@ -737,35 +889,157 @@ export default function InscricaoClient() {
     )
   }
 
+  // Pré-filtro: data de nascimento (quando vem da home sem ?categoria=)
+  if (showPreFilterStep) {
+    return (
+      <div className="pt-20 sm:pt-24 min-h-screen bg-gray-50 pb-8">
+        <section className="bg-gradient-to-r from-primary-600 to-accent-600 text-white py-8 sm:py-12">
+          <div className="container-custom px-4 sm:px-6">
+            <h1 className="font-display font-bold text-2xl sm:text-4xl md:text-5xl mb-2 sm:mb-4">Inscrição Online</h1>
+            <p className="text-base sm:text-xl text-primary-100">Complete sua inscrição em poucos minutos</p>
+          </div>
+        </section>
+        <section className="py-6 sm:py-12 px-4 sm:px-0">
+          <div className="container-custom">
+            <div className="max-w-2xl mx-auto">
+              <div className="card p-4 sm:p-6">
+                <h2 className="font-display font-bold text-xl sm:text-2xl mb-2">Informe sua data de nascimento</h2>
+                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
+                  Com base na sua idade, vamos mostrar as categorias disponíveis para você.
+                </p>
+                <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Dia</label>
+                    <select
+                      value={preFilterForm.day}
+                      onChange={(e) => setPreFilterForm((p) => ({ ...p, day: e.target.value }))}
+                      className="w-full px-3 sm:px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-base"
+                    >
+                      <option value="">Dia</option>
+                      {DAYS.map((d) => (
+                        <option key={d.value} value={d.value}>{d.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Mês</label>
+                    <select
+                      value={preFilterForm.month}
+                      onChange={(e) => setPreFilterForm((p) => ({ ...p, month: e.target.value }))}
+                      className="w-full px-3 sm:px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-base"
+                    >
+                      <option value="">Mês</option>
+                      {MONTHS.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Ano</label>
+                    <select
+                      value={preFilterForm.year}
+                      onChange={(e) => setPreFilterForm((p) => ({ ...p, year: e.target.value }))}
+                      className="w-full px-3 sm:px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-base"
+                    >
+                      <option value="">Ano</option>
+                      {Array.from({ length: 101 }, (_, i) => currentYear - i).map((y) => (
+                        <option key={y} value={String(y)}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {preFilterError && (
+                  <p className="text-sm text-red-600 mb-4">{preFilterError}</p>
+                )}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                  <button onClick={handlePreFilterSubmit} className="btn-primary flex items-center justify-center min-h-[44px] py-3 px-6">
+                    Continuar
+                    <ChevronRight size={20} className="ml-2" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSkipPreFilter(true)
+                      setCurrentStep(1)
+                    }}
+                    className="text-gray-600 hover:text-primary-600 text-sm font-medium underline underline-offset-2 py-2 min-h-[44px] flex items-center"
+                  >
+                    Ver todas as categorias
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  }
+
+  // Idade 0-4: sem categoria disponível
+  if (preFilterBirth && preFilterAge != null && preFilterAge <= 4) {
+    return (
+      <div className="pt-20 sm:pt-24 min-h-screen bg-gray-50 pb-8">
+        <section className="bg-gradient-to-r from-primary-600 to-accent-600 text-white py-8 sm:py-12">
+          <div className="container-custom px-4 sm:px-6">
+            <h1 className="font-display font-bold text-2xl sm:text-4xl md:text-5xl mb-4">Inscrição Online</h1>
+          </div>
+        </section>
+        <section className="py-6 sm:py-12 px-4 sm:px-0">
+          <div className="container-custom">
+            <div className="max-w-2xl mx-auto">
+              <div className="card text-center">
+                <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+                <h2 className="font-display font-bold text-2xl mb-2">Não há categoria para sua idade</h2>
+                <p className="text-gray-600 mb-6">
+                  Com {preFilterAge} anos em 31/12/{eventYear}, não há categoria disponível nesta prova.
+                  As categorias começam a partir de 5 anos (Infantil).
+                </p>
+                <button
+                  onClick={() => {
+                    setPreFilterBirth(null)
+                    setPreFilterForm({ day: '', month: '', year: '' })
+                  }}
+                  className="btn-primary"
+                >
+                  Informar outra data
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  }
+
   return (
-    <div className="pt-24 min-h-screen bg-gray-50">
+    <div className="pt-20 sm:pt-24 min-h-screen bg-gray-50 pb-8">
       {/* Hero */}
-      <section className="bg-gradient-to-r from-primary-600 to-accent-600 text-white py-12">
-        <div className="container-custom">
-          <h1 className="font-display font-bold text-4xl md:text-5xl mb-4">
+      <section className="bg-gradient-to-r from-primary-600 to-accent-600 text-white py-8 sm:py-12">
+        <div className="container-custom px-4 sm:px-6">
+          <h1 className="font-display font-bold text-2xl sm:text-4xl md:text-5xl mb-2 sm:mb-4">
             Inscrição Online
           </h1>
-          <p className="text-xl text-primary-100">
+          <p className="text-base sm:text-xl text-primary-100">
             Complete sua inscrição em poucos minutos
           </p>
         </div>
       </section>
 
       {/* Progress Steps */}
-      <section className="py-8 bg-white border-b border-gray-200">
-        <div className="container-custom">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
+      <section className="py-4 sm:py-8 bg-white border-b border-gray-200 overflow-x-auto">
+        <div className="container-custom px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto min-w-0">
+            <div className="flex items-center justify-between gap-1">
               {activeSteps.map((step, index) => {
                 const Icon = step.icon
                 const isActive = currentStep === step.id
                 const isCompleted = currentStep > step.id
 
                 return (
-                  <div key={step.id} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center flex-1">
+                  <div key={step.id} className="flex items-center flex-1 min-w-0">
+                    <div className="flex flex-col items-center flex-1 min-w-0">
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isCompleted
                             ? 'bg-green-600'
                             : isActive
@@ -774,13 +1048,13 @@ export default function InscricaoClient() {
                         } text-white transition-all duration-300`}
                       >
                         {isCompleted ? (
-                          <Check size={24} />
+                          <Check size={20} />
                         ) : (
-                          <Icon size={24} />
+                          <Icon size={20} />
                         )}
                       </div>
                       <p
-                        className={`mt-2 text-sm font-semibold ${
+                        className={`mt-1 sm:mt-2 text-xs sm:text-sm font-semibold truncate max-w-full ${
                           isActive ? 'text-primary-600' : 'text-gray-600'
                         }`}
                       >
@@ -803,7 +1077,7 @@ export default function InscricaoClient() {
       </section>
 
       {/* Form Content */}
-      <section className="py-12">
+      <section className="py-6 sm:py-12 px-4 sm:px-0">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
             
@@ -812,20 +1086,20 @@ export default function InscricaoClient() {
             {/* ================================================ */}
             {currentStep === 1 && (
               <div className="animate-fade-in">
-                <div className="card">
-                  <h2 className="font-display font-bold text-3xl mb-6">
+                <div className="card p-4 sm:p-6">
+                  <h2 className="font-display font-bold text-xl sm:text-3xl mb-4 sm:mb-6">
                     Escolha sua Categoria
                   </h2>
-                  <p className="text-gray-600 mb-8">
+                  <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">
                     Selecione a categoria que deseja participar
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {categories.map((category) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    {categoriesToShow.map((category) => (
                       <button
                         key={category.id}
                         onClick={() => handleCategorySelect(category)}
-                        className={`text-left p-6 rounded-xl border-2 transition-all ${
+                        className={`text-left p-4 sm:p-6 rounded-xl border-2 transition-all min-h-[44px] active:scale-[0.99] ${
                           selectedCategory?.id === category.id
                             ? 'border-primary-600 bg-primary-50'
                             : 'border-gray-200 hover:border-primary-300'
@@ -849,7 +1123,9 @@ export default function InscricaoClient() {
                             {category.isFree ? 'GRATUITO' : `R$ ${category.price.toFixed(2)}`}
                           </span>
                           <span className="text-sm text-accent-600 font-semibold">
-                            {category.spots} vagas
+                            {category.spotsAvailable != null
+                              ? `${category.spotsAvailable} de ${category.spots} vagas`
+                              : `${category.spots} vagas`}
                           </span>
                         </div>
 
@@ -858,7 +1134,16 @@ export default function InscricaoClient() {
                           <p className="font-semibold mb-1">Documentos necessários:</p>
                           <ul className="list-disc list-inside space-y-0.5">
                             {category.documents.map((doc, idx) => (
-                              <li key={idx}>{doc}</li>
+                              <li
+                                key={idx}
+                                className={
+                                  category.id === 'morador-10k' && doc.toLowerCase().includes('comprovante de residência')
+                                    ? 'text-red-600 font-medium'
+                                    : ''
+                                }
+                              >
+                                {doc}
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -876,11 +1161,25 @@ export default function InscricaoClient() {
                     ))}
                   </div>
 
-                  <div className="mt-8 flex justify-end">
+                  <div className="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-0">
+                    {!categoriaParam ? (
+                      <button
+                        onClick={() => {
+                          setPreFilterBirth(null)
+                          setSkipPreFilter(false)
+                          setSelectedCategory(null)
+                        }}
+                        className="btn-secondary min-h-[44px] order-2 sm:order-1"
+                      >
+                        Voltar
+                      </button>
+                    ) : (
+                      <div />
+                    )}
                     <button
                       onClick={handleContinueFromCategory}
                       disabled={!selectedCategory}
-                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-h-[44px] order-1 sm:order-2"
                     >
                       Continuar
                       <ChevronRight size={20} className="ml-2" />
@@ -895,16 +1194,16 @@ export default function InscricaoClient() {
             {/* ================================================ */}
             {currentStep === 2 && (
               <div className="animate-fade-in">
-                <div className="card">
-                  <h2 className="font-display font-bold text-3xl mb-6">
+                <div className="card p-4 sm:p-6">
+                  <h2 className="font-display font-bold text-xl sm:text-3xl mb-4 sm:mb-6">
                     Dados Pessoais
                   </h2>
-                  <p className="text-gray-600 mb-2">
+                  <p className="text-gray-600 mb-2 text-sm sm:text-base">
                     Preencha suas informações pessoais
                   </p>
                   
                   {/* Alerta com categoria selecionada */}
-                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-8 flex items-start gap-3">
+                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8 flex items-start gap-3">
                     <AlertCircle className="text-primary-600 mt-0.5" size={20} />
                     <div>
                       <p className="font-semibold text-primary-900">
@@ -930,7 +1229,7 @@ export default function InscricaoClient() {
                           setFormData({...formData, fullName: e.target.value.toUpperCase()})
                           clearFieldError('fullName')
                         }}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 min-h-[44px] border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="Seu nome completo"
                       />
                       {fieldErrors.fullName && (
@@ -1110,6 +1409,9 @@ export default function InscricaoClient() {
                           />
                         </div>
                         <p className="text-xs text-gray-500 mt-2">{documentHelper}</p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Documento válido necessário para consultar sua inscrição em Acompanhar Inscrição.
+                        </p>
                         {fieldErrors.documentNumber && (
                           <p className="text-xs text-red-600 mt-1">{fieldErrors.documentNumber}</p>
                         )}
@@ -1185,6 +1487,9 @@ export default function InscricaoClient() {
                                 placeholder={formData.guardianDocumentType === 'CPF' ? '000.000.000-00' : '00.000.000-0'}
                               />
                             </div>
+                            <p className="text-xs text-blue-600 mt-1">
+                              Documento válido necessário para consultar sua inscrição em Acompanhar Inscrição.
+                            </p>
                             {(fieldErrors.guardianDocumentType || fieldErrors.guardianDocumentNumber) && (
                               <p className="text-xs text-red-600 mt-1">{fieldErrors.guardianDocumentType || fieldErrors.guardianDocumentNumber}</p>
                             )}
@@ -1193,20 +1498,21 @@ export default function InscricaoClient() {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_160px] gap-4 sm:gap-6">
                       <div id="field-birthDate">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                           Data de Nascimento <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-2">
                           <select
                             required
-                            value={formData.birthDay}
+                            value={isBirthDateLocked ? (preFilterBirth?.day ?? formData.birthDay) : formData.birthDay}
                             onChange={(e) => {
                               setFormData({ ...formData, birthDay: e.target.value })
                               clearFieldError('birthDate')
                             }}
-                            className={`px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.birthDate ? 'border-red-500' : 'border-gray-300'}`}
+                            disabled={isBirthDateLocked}
+                            className={`px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base min-h-[44px] disabled:opacity-70 disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.birthDate ? 'border-red-500' : 'border-gray-300'}`}
                           >
                             <option value="">Dia</option>
                             {DAYS.map((d) => (
@@ -1215,12 +1521,13 @@ export default function InscricaoClient() {
                           </select>
                           <select
                             required
-                            value={formData.birthMonth}
+                            value={isBirthDateLocked ? (preFilterBirth?.month ?? formData.birthMonth) : formData.birthMonth}
                             onChange={(e) => {
                               setFormData({ ...formData, birthMonth: e.target.value })
                               clearFieldError('birthDate')
                             }}
-                            className={`px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.birthDate ? 'border-red-500' : 'border-gray-300'}`}
+                            disabled={isBirthDateLocked}
+                            className={`px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base min-h-[44px] disabled:opacity-70 disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.birthDate ? 'border-red-500' : 'border-gray-300'}`}
                           >
                             <option value="">Mês</option>
                             {MONTHS.map((m) => (
@@ -1229,12 +1536,13 @@ export default function InscricaoClient() {
                           </select>
                           <select
                             required
-                            value={formData.birthYear}
+                            value={isBirthDateLocked ? (preFilterBirth?.year ?? formData.birthYear) : formData.birthYear}
                             onChange={(e) => {
                               setFormData({ ...formData, birthYear: e.target.value })
                               clearFieldError('birthDate')
                             }}
-                            className={`px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.birthDate ? 'border-red-500' : 'border-gray-300'}`}
+                            disabled={isBirthDateLocked}
+                            className={`px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base min-h-[44px] disabled:opacity-70 disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.birthDate ? 'border-red-500' : 'border-gray-300'}`}
                           >
                             <option value="">Ano</option>
                             {YEARS.map((y) => (
@@ -1253,6 +1561,20 @@ export default function InscricaoClient() {
                           <p className="text-xs text-red-600 mt-2 font-medium">{fieldErrors.birthDate || ageValidationError}</p>
                         )}
                       </div>
+                      <div id="field-age" className="md:w-24 md:min-w-0">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Idade
+                        </label>
+                        <div className="px-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[48px] flex items-center justify-center text-sm">
+                          {(() => {
+                            const bd = getBirthDate()
+                            if (!bd) return '—'
+                            const age = getAgeByDec31(bd, eventYear)
+                            return `${age} anos`
+                          })()}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Idade em {eventYear}</p>
+                      </div>
                       <div id="field-gender">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Sexo <span className="text-gray-500 font-normal">(Obrigatório)</span>
@@ -1264,7 +1586,7 @@ export default function InscricaoClient() {
                             setFormData({...formData, gender: e.target.value})
                             clearFieldError('gender')
                           }}
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.gender ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`w-full px-4 py-3 min-h-[44px] border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.gender ? 'border-red-500' : 'border-gray-300'}`}
                         >
                           <option value="">Selecione</option>
                           <option value="M">Masculino</option>
@@ -1291,6 +1613,9 @@ export default function InscricaoClient() {
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.email ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="seu@email.com"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Informe um e-mail válido com @ (ex: seu@email.com)
+                      </p>
                       {fieldErrors.email && (
                         <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>
                       )}
@@ -1299,7 +1624,7 @@ export default function InscricaoClient() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div id="field-phone">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Telefone/WhatsApp (Brasil) <span className="text-gray-500 font-normal">(Obrigatório)</span>
+                          WhatsApp (Brasil) <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
                         <input
                           type="tel"
@@ -1317,20 +1642,63 @@ export default function InscricaoClient() {
                           <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>
                         )}
                       </div>
-                      <div>
+                      <div id="field-hasTeam">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Equipe (opcional)
+                          Você participa de alguma equipe? <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
-                        <input
-                          type="text"
-                          value={formData.teamName}
-                          onChange={(e) => setFormData({...formData, teamName: e.target.value.toUpperCase()})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Informe o nome da equipe, se houver"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Deixe em branco caso não participe de uma equipe.
-                        </p>
+                        <div className="flex flex-wrap gap-4 mt-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="hasTeam"
+                              checked={formData.hasTeam === true}
+                              onChange={() => {
+                                setFormData((prev) => ({ ...prev, hasTeam: true }))
+                                clearFieldError('hasTeam')
+                                clearFieldError('teamName')
+                              }}
+                              className="w-5 h-5 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                            />
+                            <span>Sim, participo de uma equipe</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="hasTeam"
+                              checked={formData.hasTeam === false}
+                              onChange={() => {
+                                setFormData((prev) => ({ ...prev, hasTeam: false, teamName: '' }))
+                                clearFieldError('hasTeam')
+                                clearFieldError('teamName')
+                              }}
+                              className="w-5 h-5 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                            />
+                            <span>Não, corro individualmente</span>
+                          </label>
+                        </div>
+                        {fieldErrors.hasTeam && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.hasTeam}</p>
+                        )}
+                        {formData.hasTeam === true && (
+                          <div id="field-teamName" className="mt-4">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Nome da equipe <span className="text-gray-500 font-normal">(Obrigatório)</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.teamName}
+                              onChange={(e) => {
+                                setFormData((prev) => ({ ...prev, teamName: e.target.value.toUpperCase() }))
+                                clearFieldError('teamName')
+                              }}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.teamName ? 'border-red-500' : 'border-gray-300'}`}
+                              placeholder="Informe o nome da equipe"
+                            />
+                            {fieldErrors.teamName && (
+                              <p className="text-xs text-red-600 mt-1">{fieldErrors.teamName}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1369,11 +1737,11 @@ export default function InscricaoClient() {
                   {submitError && (
                     <p className="mt-4 text-sm text-red-600">{submitError}</p>
                   )}
-                  <div className="mt-8 flex justify-between">
+                  <div className="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-0">
                     <button
                       onClick={() => setCurrentStep(1)}
                       disabled={submitLoading}
-                      className="btn-secondary disabled:opacity-50"
+                      className="btn-secondary disabled:opacity-50 min-h-[44px] order-2 sm:order-1"
                     >
                       Voltar
                     </button>
@@ -1381,7 +1749,7 @@ export default function InscricaoClient() {
                       onClick={handleContinueFromPersonalData}
                       disabled={submitLoading}
                       title={!isPersonalDataComplete() ? 'Clique para ver quais campos faltam' : undefined}
-                      className={`btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`btn-primary flex items-center justify-center min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 ${
                         !submitLoading && !isPersonalDataComplete()
                           ? 'opacity-70 hover:opacity-90 transition-opacity cursor-pointer'
                           : ''
@@ -1409,8 +1777,8 @@ export default function InscricaoClient() {
             {/* ================================================ */}
             {currentStep === 3 && !selectedCategory?.isFree && (
               <div className="animate-fade-in">
-                <div className="card">
-                  <h2 className="font-display font-bold text-3xl mb-6">
+                <div className="card p-4 sm:p-6">
+                  <h2 className="font-display font-bold text-xl sm:text-3xl mb-4 sm:mb-6">
                     Pagamento
                   </h2>
 
@@ -1443,7 +1811,17 @@ export default function InscricaoClient() {
                       </div>
 
                       {submitError && (
-                        <p className="mt-4 text-sm text-red-600">{submitError}</p>
+                        <div className="mt-4 space-y-2">
+                          <p className="text-sm text-red-600">{submitError}</p>
+                          {submitError409NoRedirect && (
+                            <Link
+                              href="/inscricao/acompanhar"
+                              className="inline-block text-sm font-semibold text-primary-600 hover:text-primary-700 underline"
+                            >
+                              Ir para Acompanhar Inscrição →
+                            </Link>
+                          )}
+                        </div>
                       )}
                       <div className="mt-8 flex justify-between">
                         <button
@@ -1478,7 +1856,7 @@ export default function InscricaoClient() {
                         <p className="font-bold text-lg mb-4">Escaneie o QR Code ou copie o código PIX</p>
                         <div className="flex flex-col items-center gap-4">
                           <img
-                            src={pixData.brCodeBase64}
+                            src={toQrCodeDataUrl(pixData.brCodeBase64)}
                             alt="QR Code PIX"
                             className="w-48 h-48 rounded-lg border border-gray-200"
                           />
@@ -1695,6 +2073,43 @@ function SeniorFields({ year = 2026 }: { year?: number }) {
 function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {}, clearFieldError }: FieldsProps) {
   return (
     <div className="border-t border-gray-200 pt-6 mt-6">
+      <div id="field-isMacucoResident" className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          O atleta é morador(a) de Macuco? <span className="text-gray-500 font-normal">(Obrigatório)</span>
+        </label>
+        <div className="flex flex-wrap gap-4 mt-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="isMacucoResident"
+              checked={formData?.isMacucoResident === true}
+              onChange={() => {
+                setFormData?.({ ...formData, isMacucoResident: true })
+                clearFieldError?.('isMacucoResident')
+              }}
+              className="w-5 h-5 text-primary-600 focus:ring-2 focus:ring-primary-500"
+            />
+            <span>Sim</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="isMacucoResident"
+              checked={formData?.isMacucoResident === false}
+              onChange={() => {
+                setFormData?.({ ...formData, isMacucoResident: false })
+                clearFieldError?.('isMacucoResident')
+              }}
+              className="w-5 h-5 text-primary-600 focus:ring-2 focus:ring-primary-500"
+            />
+            <span>Não</span>
+          </label>
+        </div>
+        {fieldErrors.isMacucoResident && (
+          <p className="text-xs text-red-600 mt-1">{fieldErrors.isMacucoResident}</p>
+        )}
+      </div>
+
       <h3 className="font-bold text-lg mb-4 text-primary-700">
         Dados do Responsável
       </h3>

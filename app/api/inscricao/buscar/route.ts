@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { normalizeDocument } from '@/lib/document'
 
 /**
- * Busca inscrição por CPF, RG ou código de confirmação.
+ * Busca inscrição por CPF, RG, código de confirmação ou e-mail.
  * Retorna todos os dados do formulário para exibição e edição.
  */
 export async function POST(request: NextRequest) {
   try {
-    const { cpf, rg, codigo } = (await request.json()) as {
+    const { cpf, rg, codigo, email } = (await request.json()) as {
       cpf?: string
       rg?: string
       codigo?: string
+      email?: string
     }
 
     const searchCodigo = codigo?.toString().trim()
-    const searchDoc = (cpf?.toString().trim() || rg?.toString().trim() || '').replace(/\D/g, '')
+    const searchEmail = email?.toString().trim().toLowerCase()
+    const rawDoc = cpf?.toString().trim() || rg?.toString().trim() || ''
+    const searchDoc = rawDoc ? normalizeDocument(rawDoc) : ''
 
-    if (!searchCodigo && !searchDoc) {
-      return NextResponse.json({ error: 'Informe CPF, RG ou código' }, { status: 400 })
+    if (!searchCodigo && !searchDoc && !searchEmail) {
+      return NextResponse.json({ error: 'Informe CPF, RG, código ou e-mail' }, { status: 400 })
     }
 
     const supabase = createClient(
@@ -26,9 +30,20 @@ export async function POST(request: NextRequest) {
       { auth: { persistSession: false } }
     )
 
-    const { data: event } = await supabase.from('events').select('id').eq('year', 2026).single()
+    const { data: event } = await supabase.from('events').select('id, price_geral').eq('year', 2026).single()
     if (!event) {
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
+    }
+
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('slug, price, is_free')
+      .eq('event_id', event.id)
+    const priceBySlug = new Map<string, number>()
+    const priceGeral = Number(event.price_geral) ?? 20
+    for (const c of categories || []) {
+      const p = Number(c.price) || priceGeral
+      priceBySlug.set(c.slug, c.is_free ? 0 : p)
     }
 
     const athleteSelect = `
@@ -58,11 +73,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
       }
       regs = data || []
-    } else {
+    } else if (searchEmail) {
+      // Busca por e-mail do atleta
       const { data: athletes } = await supabase
         .from('athletes')
         .select('id')
-        .eq('document_number', searchDoc)
+        .ilike('email', searchEmail)
         .limit(10)
       const athleteIds = (athletes || []).map((a) => a.id)
       if (athleteIds.length === 0) {
@@ -80,12 +96,78 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
       }
       regs = data || []
+    } else {
+      // Busca por documento do atleta (normalizado: dígitos, RG com 9 dígitos)
+      const docVariants = [searchDoc]
+      if (searchDoc.length === 9 && searchDoc.startsWith('0')) {
+        docVariants.push(searchDoc.slice(1))
+      }
+      let athleteIds: string[] = []
+      for (const doc of docVariants) {
+        const { data: athletes, error: athletesErr } = await supabase
+          .from('athletes')
+          .select('id')
+          .eq('document_number', doc)
+          .limit(10)
+        athleteIds = (athletes || []).map((a) => a.id)
+        if (athleteIds.length > 0) break
+      }
+      if (athleteIds.length === 0) {
+        console.log('[buscar] Nenhum atleta com document_number=', searchDoc, '(docVariants:', docVariants.join(', '), ')')
+      }
+
+      // Se não encontrou por atleta, tenta por documento do responsável (inscrições infantis)
+      let regIdsToFetch: string[] = []
+      if (athleteIds.length > 0) {
+        const { data: regsByAthlete } = await supabase
+          .from('registrations')
+          .select('id')
+          .eq('event_id', event.id)
+          .in('athlete_id', athleteIds)
+        regIdsToFetch = (regsByAthlete || []).map((r: { id: string }) => r.id)
+      }
+      if (regIdsToFetch.length === 0) {
+        for (const doc of docVariants) {
+          const { data: guardians } = await supabase
+            .from('guardians')
+            .select('id')
+            .eq('document_number', doc)
+            .limit(10)
+          const guardianIds = (guardians || []).map((g: { id: string }) => g.id)
+          if (guardianIds.length > 0) {
+            const { data: regsByGuardian } = await supabase
+              .from('registrations')
+              .select('id')
+              .eq('event_id', event.id)
+              .in('guardian_id', guardianIds)
+            regIdsToFetch = (regsByGuardian || []).map((r: { id: string }) => r.id)
+            break
+          }
+        }
+      }
+      if (regIdsToFetch.length === 0) {
+        console.log('[buscar] Nenhuma inscrição para doc=', searchDoc, '(athleteIds:', athleteIds.length, ', guardianIds tentados)')
+        return NextResponse.json({ data: [] })
+      }
+      const { data, error } = await supabase
+        .from('registrations')
+        .select(regSelect)
+        .in('id', regIdsToFetch)
+        .order('registered_at', { ascending: false })
+        .limit(5)
+      if (error) {
+        console.error('Erro ao buscar inscrição:', error)
+        return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
+      }
+      regs = data || []
     }
 
     const list = regs.map((r: any) => {
       const athlete = Array.isArray(r.athlete) ? r.athlete[0] : r.athlete
       const guardian = Array.isArray(r.guardian) ? r.guardian[0] : r.guardian
       const category = Array.isArray(r.category) ? r.category[0] : r.category
+      const slug = category?.slug
+      const correctAmount = slug && priceBySlug.has(slug) ? priceBySlug.get(slug)! : (Number(r.payment_amount) || priceGeral)
       return {
         id: r.id,
         registration_number: r.registration_number,
@@ -93,7 +175,7 @@ export async function POST(request: NextRequest) {
         status: r.status,
         bib_number: r.bib_number,
         kit_picked_at: r.kit_picked_at,
-        payment_amount: r.payment_amount,
+        payment_amount: correctAmount,
         payment_id: r.payment_id,
         category_name: category?.name,
         category_slug: category?.slug,

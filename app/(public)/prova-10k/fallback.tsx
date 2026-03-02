@@ -23,19 +23,6 @@ const GENERAL_PRIZES = [
   { pos: '10º', value: 'R$ 200,00' },
 ]
 
-const LOCAL_PRIZES = [
-  { pos: '1º', value: 'R$ 1.000,00' },
-  { pos: '2º', value: 'R$ 500,00' },
-  { pos: '3º', value: 'R$ 400,00' },
-  { pos: '4º', value: 'R$ 300,00' },
-  { pos: '5º', value: 'R$ 200,00' },
-  { pos: '6º', value: 'R$ 200,00' },
-  { pos: '7º', value: 'R$ 200,00' },
-  { pos: '8º', value: 'R$ 100,00' },
-  { pos: '9º', value: 'R$ 100,00' },
-  { pos: '10º', value: 'R$ 100,00' },
-]
-
 const AGE_GROUPS = [
   '15/19 anos',
   '20/24 anos',
@@ -46,11 +33,6 @@ const AGE_GROUPS = [
   '45/49 anos',
   '50/54 anos',
   '55/59 anos',
-  '60/64 anos',
-  '65/69 anos',
-  '70/74 anos',
-  '75/79 anos',
-  '80+ anos',
 ]
 
 const KIT_ITEMS = [
@@ -85,7 +67,10 @@ export default async function Prova10KPage() {
         title: geralCategory.name,
         price: geralCategory.isFree ? 'Gratuita' : `R$ ${geralCategory.price.toFixed(2)}`,
         description: geralCategory.description || buildAgeRule(geralCategory.ageMin, geralCategory.ageMax, config?.event?.year),
-        spots: `${geralCategory.spots} vagas`,
+        spots:
+          geralCategory.spotsAvailable != null
+            ? `${geralCategory.spotsAvailable} de ${geralCategory.spots} vagas`
+            : `${geralCategory.spots} vagas`,
         highlight: !geralCategory.isFree,
       }
     : {
@@ -243,26 +228,7 @@ export default async function Prova10KPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="card bg-gradient-to-br from-amber-50 to-yellow-100">
-                  <h3 className="font-display font-bold text-2xl mb-6">Atletas de Macuco</h3>
-                  <p className="text-gray-700 mb-4">
-                    Premiação exclusiva para os 10 primeiros moradores que concluírem a prova.
-                  </p>
-                  <div className="space-y-3">
-                    {LOCAL_PRIZES.map((item) => (
-                      <div
-                        key={item.pos}
-                        className="flex justify-between items-center p-4 bg-white rounded-lg border border-amber-100"
-                      >
-                        <span className="font-semibold text-gray-800">{item.pos} lugar</span>
-                        <span className="font-bold text-amber-600">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="card bg-gradient-to-br from-blue-50 to-indigo-100">
+              <div className="card bg-gradient-to-br from-blue-50 to-indigo-100">
                   <h3 className="font-display font-bold text-2xl mb-4">
                     Faixas Etárias (M/F)
                   </h3>
@@ -277,7 +243,6 @@ export default async function Prova10KPage() {
                     ))}
                   </div>
                 </div>
-              </div>
 
               <div className="card bg-gray-50 border border-gray-100">
                 <h3 className="font-display font-bold text-2xl mb-4">Premiação por Equipes</h3>

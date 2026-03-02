@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { unstable_noStore } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/serverClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,7 @@ const SLUG_TO_EVENT_SLOTS: Record<string, keyof { slots_geral: number; slots_mor
 
 const DEFAULT_DOCUMENTS: Record<string, string[]> = {
   'geral-10k': ['Documento oficial com foto'],
-  'morador-10k': ['Documento oficial com foto', 'Comprovante de residência emitido nos últimos 90 dias'],
+  'morador-10k': ['Documento oficial com foto', 'Apresentar comprovante de residência no local da prova (emitido nos últimos 90 dias)'],
   '60-mais-10k': ['Documento oficial com foto'],
   'infantil-2k': ['Documento da criança (certidão ou RG)', 'Termo de autorização assinado pelo responsável'],
 }
@@ -29,12 +30,9 @@ const DEFAULT_DOCUMENTS: Record<string, string[]> = {
  * Alimentado pelos dados da página /admin/site/settings/event.
  */
 export async function GET() {
+  unstable_noStore()
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    )
+    const supabase = createServiceClient()
 
     const { data: event, error: eventError } = await supabase
       .from('events')
@@ -58,6 +56,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Erro ao carregar categorias' }, { status: 500 })
     }
 
+    // Contar inscrições confirmadas por categoria
+    const { data: regs } = await supabase
+      .from('registrations')
+      .select('category_id, status')
+      .eq('event_id', event.id)
+
+    const isConfirmed = (s: string) => {
+      const v = (s || '').toLowerCase().trim()
+      return v === 'confirmed' || v === 'confirmado' || v.includes('confirm')
+    }
+    const confirmedCountByCategory = new Map<string, number>()
+    for (const r of regs || []) {
+      if (r.category_id && isConfirmed((r as { status: string }).status ?? '')) {
+        const id = String(r.category_id)
+        confirmedCountByCategory.set(id, (confirmedCountByCategory.get(id) ?? 0) + 1)
+      }
+    }
+
     const year = event.year
     const slotsMap = {
       slots_geral: event.slots_geral ?? 500,
@@ -71,6 +87,8 @@ export async function GET() {
       const slug = c.slug
       const slotsKey = SLUG_TO_EVENT_SLOTS[slug]
       const spots = slotsKey ? slotsMap[slotsKey] : c.total_slots ?? 500
+      const spotsTaken = confirmedCountByCategory.get(c.id) ?? 0
+      const spotsAvailable = Math.max(0, spots - spotsTaken)
       const isFree = c.is_free ?? (slug !== 'geral-10k')
       const price = slug === 'geral-10k' ? priceGeral : 0
 
@@ -81,6 +99,8 @@ export async function GET() {
         isFree,
         description: c.description ?? '',
         spots,
+        spotsTaken,
+        spotsAvailable,
         ageMin: c.min_age ?? 15,
         ageMax: c.max_age ?? undefined,
         documents: DEFAULT_DOCUMENTS[slug] ?? ['Documento oficial com foto'],
@@ -120,7 +140,12 @@ export async function GET() {
       },
       categories: sorted,
     },
-    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        Pragma: 'no-cache',
+      },
+    }
     )
   } catch (err: unknown) {
     console.error('Erro ao carregar config do evento:', err)

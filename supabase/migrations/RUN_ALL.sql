@@ -94,3 +94,7 @@ create policy "Leitura pública de media"
 -- 5. Coluna country em athletes (origem do atleta)
 alter table public.athletes add column if not exists country text;
 comment on column public.athletes.country is 'Código ISO do país (ex: BRA, ARG). Para brasileiros sempre BRA.';
+
+-- 6. Coluna is_macuco_resident em athletes (categoria Infantil)
+alter table public.athletes add column if not exists is_macuco_resident boolean;
+comment on column public.athletes.is_macuco_resident is 'Se o atleta (criança) é morador de Macuco - usado na categoria Infantil';

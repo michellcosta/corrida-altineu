@@ -31,6 +31,8 @@ export interface EventConfigCategory {
   isFree: boolean
   description: string
   spots: number
+  spotsTaken?: number
+  spotsAvailable?: number
   ageMin: number
   ageMax?: number
 }
@@ -62,6 +64,23 @@ export async function getEventConfig(year = 2026): Promise<EventConfig | null> {
 
     if (catError) return null
 
+    const { data: regs } = await supabase
+      .from('registrations')
+      .select('category_id, status')
+      .eq('event_id', event.id)
+
+    const isConfirmed = (s: string) => {
+      const v = (s || '').toLowerCase().trim()
+      return v === 'confirmed' || v === 'confirmado' || v.includes('confirm')
+    }
+    const confirmedCountByCategory = new Map<string, number>()
+    for (const r of regs || []) {
+      if (r.category_id && isConfirmed((r as { status: string }).status ?? '')) {
+        const id = String(r.category_id)
+        confirmedCountByCategory.set(id, (confirmedCountByCategory.get(id) ?? 0) + 1)
+      }
+    }
+
     const slotsMap = {
       slots_geral: event.slots_geral ?? 500,
       slots_morador: event.slots_morador ?? 200,
@@ -74,6 +93,8 @@ export async function getEventConfig(year = 2026): Promise<EventConfig | null> {
       const slug = c.slug
       const slotsKey = SLUG_TO_SLOTS[slug]
       const spots = slotsKey ? slotsMap[slotsKey as keyof typeof slotsMap] : 500
+      const spotsTaken = confirmedCountByCategory.get(c.id) ?? 0
+      const spotsAvailable = Math.max(0, spots - spotsTaken)
       const isFree = c.is_free ?? (slug !== 'geral-10k')
       const price = slug === 'geral-10k' ? priceGeral : 0
 
@@ -84,6 +105,8 @@ export async function getEventConfig(year = 2026): Promise<EventConfig | null> {
         isFree,
         description: c.description ?? '',
         spots,
+        spotsTaken,
+        spotsAvailable,
         ageMin: c.min_age ?? 15,
         ageMax: c.max_age ?? undefined,
       }

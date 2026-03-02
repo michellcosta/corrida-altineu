@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useEventConfigRealtime } from '@/hooks/useEventConfigRealtime'
 import Link from 'next/link'
 import { Search, CheckCircle, AlertCircle, Loader2, Users, Pencil, Save, X, Copy, CreditCard } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
+import { toQrCodeDataUrl } from '@/lib/utils'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
+import { formatDateOnly } from '@/lib/formatDate'
 
 interface AthleteData {
   full_name: string
@@ -76,11 +79,8 @@ function formatDocNumber(value: string | null | undefined): string {
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '-'
-  try {
-    return new Date(value).toLocaleDateString('pt-BR')
-  } catch {
-    return value
-  }
+  const formatted = formatDateOnly(value)
+  return formatted || value
 }
 
 function formatDocForSearch(digits: string): string {
@@ -101,8 +101,11 @@ export default function AcompanharClient() {
   const [results, setResults] = useState<RegistrationResult[]>([])
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetch('/api/event/config')
+  const loadEventConfig = useCallback(() => {
+    fetch(`/api/event/config?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.event?.edition != null) setEdition(data.event.edition)
@@ -110,28 +113,50 @@ export default function AcompanharClient() {
       .catch(() => {})
   }, [])
 
+  useEventConfigRealtime(loadEventConfig)
+
+  useEffect(() => {
+    loadEventConfig()
+  }, [loadEventConfig])
+
   const hasSearchedDoc = useRef(false)
+  const fallbackEmailRef = useRef<string | null>(null)
   useEffect(() => {
     const doc = searchParams.get('doc')
-    if (!doc || hasSearchedDoc.current) return
-    const digits = doc.replace(/\D/g, '')
-    if (digits.length < 9) return
-    hasSearchedDoc.current = true
-    setSearch(formatDocForSearch(digits))
-    doSearch(formatDocForSearch(digits))
+    const email = searchParams.get('email')
+    if (hasSearchedDoc.current) return
+    if (doc) {
+      const digits = doc.replace(/\D/g, '')
+      if (digits.length >= 9) {
+        hasSearchedDoc.current = true
+        if (email?.trim() && email.includes('@')) fallbackEmailRef.current = email.trim()
+        const formatted = digits.length === 11 ? formatDocForSearch(digits) : digits.length === 9 ? formatDocForSearch(digits) : doc
+        setSearch(formatted)
+        doSearch(formatted, true)
+      }
+    } else if (email?.trim() && email.includes('@')) {
+      hasSearchedDoc.current = true
+      setSearch(email.trim())
+      doSearch(email.trim(), false)
+    }
   }, [searchParams])
 
-  async function doSearch(searchValue: string) {
+  async function doSearch(searchValue: string, tryEmailFallback = false) {
     if (!searchValue.trim()) return
     setError('')
     setLoading(true)
     setResults([])
     try {
-      const digits = searchValue.replace(/\D/g, '')
+      const trimmed = searchValue.trim()
       const body: Record<string, string> = {}
-      if (digits.length === 11) body.cpf = searchValue.trim()
-      else if (digits.length === 9) body.rg = searchValue.trim()
-      else body.codigo = searchValue.trim()
+      if (trimmed.includes('@')) {
+        body.email = trimmed
+      } else {
+        const digits = trimmed.replace(/\D/g, '')
+        if (digits.length === 11) body.cpf = trimmed
+        else if (digits.length === 9) body.rg = trimmed
+        else body.codigo = trimmed
+      }
 
       const res = await fetch('/api/inscricao/buscar', {
         method: 'POST',
@@ -140,8 +165,22 @@ export default function AcompanharClient() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao buscar')
-      setResults(json.data || [])
-      if (!json.data?.length) setError('Nenhuma inscrição encontrada.')
+      const data = json.data || []
+      setResults(data)
+      if (!data.length) {
+        console.log('[AcompanharClient] Busca retornou 0 resultados', { searchValue: trimmed.slice(0, 20) + (trimmed.length > 20 ? '...' : '') })
+        if (tryEmailFallback && fallbackEmailRef.current) {
+          const fallback = fallbackEmailRef.current
+          fallbackEmailRef.current = null
+          console.log('[AcompanharClient] Tentando fallback por e-mail')
+          setSearch(fallback)
+          await doSearch(fallback, false)
+          return
+        }
+        setError('Nenhuma inscrição encontrada.')
+      } else {
+        console.log('[AcompanharClient] Busca retornou', data.length, 'inscrição(ões)')
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao buscar')
     } finally {
@@ -151,7 +190,7 @@ export default function AcompanharClient() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    doSearch(search)
+    doSearch(search, false)
   }
 
   return (
@@ -162,7 +201,7 @@ export default function AcompanharClient() {
             Acompanhar <span className="text-primary-600">Inscrição</span>
           </h1>
           <p className="text-xl text-gray-600 mb-4 max-w-2xl mx-auto">
-            Digite seu CPF, RG ou código de confirmação para consultar o status da sua inscrição na {edition}ª Corrida Rústica de Macuco.
+            Digite seu CPF, RG, e-mail ou código de confirmação para consultar o status da sua inscrição na {edition}ª Corrida Rústica de Macuco.
           </p>
           <Link
             href="/inscricao/lista"
@@ -180,12 +219,13 @@ export default function AcompanharClient() {
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">CPF, RG ou Código</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">CPF, RG, e-mail ou código</label>
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="000.000.000-00, 00.000.000-0 ou código"
+                    maxLength={50}
+                    placeholder="000.000.000-00, 00.000.000-0, e-mail ou código"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -264,9 +304,13 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   const isConfirmed = localReg.status === 'confirmed'
   const isPendingPayment = localReg.status === 'pending_payment'
   const athlete = localReg.athlete
+  const guardian = localReg.guardian
+  const pixEmail = athlete?.email?.trim() || guardian?.email?.trim() || ''
+  const pixPhone = athlete?.phone || athlete?.whatsapp || guardian?.phone || ''
+  const pixName = athlete?.full_name || guardian?.full_name || ''
 
   function getTaxId(): string {
-    const doc = athlete?.document_number
+    const doc = athlete?.document_number || guardian?.document_number
     if (!doc) return ''
     const d = String(doc).replace(/\D/g, '')
     if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
@@ -275,28 +319,60 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   }
 
   async function handleGeneratePix() {
-    if (!athlete?.email) return
+    console.log('[AcompanharClient] handleGeneratePix chamado', { hasPixEmail: !!pixEmail, hasLocalRegId: !!localReg?.id, pixEmail: pixEmail ? '[presente]' : '[ausente]' })
+    if (!pixEmail) {
+      setPixError('E-mail não encontrado. Edite os dados da inscrição e adicione um e-mail para gerar o PIX.')
+      return
+    }
+    if (!localReg?.id) {
+      setPixError('Dados da inscrição incompletos. Recarregue a página e tente novamente.')
+      return
+    }
+    let amount = Math.max(0.5, Number(localReg.payment_amount) || 20)
+    try {
+      const configRes = await fetch(`/api/event/config?t=${Date.now()}`, { cache: 'no-store' })
+      const config = await configRes.json()
+      const slug = localReg.category_slug
+      const slugToId: Record<string, string> = { 'geral-10k': 'geral-10k', '60-mais-10k': 'sessenta-10k', 'morador-10k': 'morador-10k', 'infantil-2k': 'infantil-2k' }
+      const catId = slug ? (slugToId[slug] || slug) : null
+      const cat = (config.categories || []).find((c: { id: string }) => c.id === catId)
+      if (cat && typeof cat.price === 'number' && cat.price > 0) {
+        amount = cat.price
+      }
+    } catch {
+      // mantém amount do localReg
+    }
     setPixLoading(true)
     setPixError('')
     try {
-      const amount = Number(localReg.payment_amount) || 20
+      const payload = {
+        registrationId: localReg.id,
+        amount,
+        email: pixEmail,
+        fullName: pixName || '',
+        phone: pixPhone || '',
+        taxId: getTaxId() || '',
+      }
+      console.log('[AcompanharClient] create-checkout payload', payload)
       const res = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          registrationId: localReg.id,
-          amount,
-          email: athlete.email,
-          fullName: athlete.full_name,
-          phone: athlete.phone || athlete.whatsapp || '',
-          taxId: getTaxId(),
-        }),
+        body: JSON.stringify(payload),
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Erro ao gerar PIX')
+      const json = await res.json().catch(() => ({}))
+      console.log('[AcompanharClient] create-checkout resposta', { status: res.status, ok: res.ok, hasId: !!json?.id, hasBrCode: !!json?.brCode, hasBrCodeBase64: !!json?.brCodeBase64, error: json?.error })
+      if (!res.ok) {
+        const msg = json?.error || json?.message || `Erro ao gerar PIX (${res.status})`
+        console.error('[AcompanharClient] create-checkout erro:', msg, '\nPayload:', JSON.stringify(payload), '\nResposta:', JSON.stringify(json))
+        throw new Error(msg)
+      }
       if (json.id && json.brCode && json.brCodeBase64) {
+        console.log('[AcompanharClient] QR Code recebido, setando pixData')
         setPixData({ id: json.id, brCode: json.brCode, brCodeBase64: json.brCodeBase64 })
-      } else throw new Error('Resposta inválida')
+      } else {
+        console.error('[AcompanharClient] Resposta inválida - faltando id/brCode/brCodeBase64', json)
+        throw new Error('Resposta inválida')
+      }
     } catch (err: unknown) {
       setPixError(err instanceof Error ? err.message : 'Erro ao gerar PIX')
     } finally {
@@ -448,23 +524,31 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
           </h4>
           {!pixData ? (
             <div className="space-y-3">
-              <p className="text-sm text-amber-800">Gere o QR Code PIX para concluir sua inscrição.</p>
-              <button
-                type="button"
-                onClick={handleGeneratePix}
-                disabled={pixLoading}
-                className="btn-primary flex items-center gap-2"
-              >
-                {pixLoading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-                {pixLoading ? 'Gerando PIX...' : 'Gerar QR Code PIX'}
-              </button>
+              {pixEmail ? (
+                <>
+                  <p className="text-sm text-amber-800">Gere o QR Code PIX para concluir sua inscrição.</p>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePix}
+                    disabled={pixLoading}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    {pixLoading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
+                    {pixLoading ? 'Gerando PIX...' : 'Gerar QR Code PIX'}
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-amber-800">
+                  Adicione um e-mail nos dados da inscrição (edite abaixo) para gerar o PIX.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
               <p className="font-bold text-lg">Escaneie o QR Code ou copie o código PIX</p>
               <div className="flex flex-col items-center gap-4">
                 <img
-                  src={pixData.brCodeBase64}
+                  src={toQrCodeDataUrl(pixData.brCodeBase64)}
                   alt="QR Code PIX"
                   className="w-48 h-48 rounded-lg border border-gray-200"
                 />
@@ -498,7 +582,7 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
               </div>
             </div>
           )}
-          {pixError && <p className="mt-3 text-sm text-red-600">{pixError}</p>}
+          {pixError && <p className="mt-3 text-sm text-red-600 font-medium text-center">{pixError}</p>}
         </div>
       )}
 

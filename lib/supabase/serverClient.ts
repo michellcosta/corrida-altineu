@@ -1,11 +1,11 @@
 /**
  * Cliente Supabase para uso em Server Components e API Routes
- * 
+ *
  * Este cliente é usado em:
  * - Server Components (componentes sem "use client")
  * - API Routes (app/api/*)
  * - Server Actions
- * 
+ *
  * Gerencia cookies de autenticação automaticamente
  */
 
@@ -13,31 +13,58 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+function createCookieHandlers(cookieStore: ReturnType<typeof cookies>) {
+  return {
+    get(name: string) {
+      return cookieStore.get(name)?.value
+    },
+    set(name: string, value: string, options: CookieOptions) {
+      try {
+        cookieStore.set({ name, value, ...options })
+      } catch {
+        // Route Handler - cookies já foram enviados
+      }
+    },
+    remove(name: string, options: CookieOptions) {
+      try {
+        cookieStore.set({ name, value: '', ...options })
+      } catch {
+        // Route Handler - cookies já foram enviados
+      }
+    },
+  }
+}
+
 export function createClient() {
   const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: createCookieHandlers(cookieStore) }
+  )
+}
 
+/**
+ * Cliente para Route Handlers - usa cookies do Request (mais confiável em API routes)
+ */
+export function createClientFromRequest(request: Request) {
+  const cookieHeader = request.headers.get('cookie') ?? ''
+  const cookieStore = {
+    get(name: string) {
+      const match = cookieHeader.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+      return match ? decodeURIComponent(match[1]) : undefined
+    },
+    set: () => {},
+    remove: () => {},
+  }
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Server component - cookies já foram enviados
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // Server component - cookies já foram enviados
-          }
-        },
+        get: (name: string) => cookieStore.get(name),
+        set: () => {},
+        remove: () => {},
       },
     }
   )
