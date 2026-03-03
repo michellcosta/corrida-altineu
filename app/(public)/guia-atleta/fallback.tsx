@@ -263,9 +263,8 @@ export default function GuiaAtletaPage() {
                   >
                     <span className="font-semibold text-lg text-gray-900">{faq.q}</span>
                     <ChevronDown
-                      className={`text-primary-600 flex-shrink-0 transition-transform ${
-                        openFaq === index ? 'rotate-180' : ''
-                      }`}
+                      className={`text-primary-600 flex-shrink-0 transition-transform ${openFaq === index ? 'rotate-180' : ''
+                        }`}
                       size={24}
                     />
                   </button>
@@ -285,22 +284,31 @@ export default function GuiaAtletaPage() {
               Nossa equipe está pronta para ajudar. Entre em contato:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <p className="font-semibold mb-3">WhatsApp Suporte</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Organização</span>
+                    <a href="https://wa.me/5521983821217" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 font-medium">Thiago - Organização: (21) 98382-1217</a>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Organização</span>
+                    <a href="https://wa.me/5521988862910" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 font-medium">Felipe - Organização: (21) 98886-2910</a>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Cronometragem</span>
+                    <a href="https://wa.me/5521982267030" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 font-medium">Mário - Cronometragem: (21) 98226-7030</a>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Suporte Site</span>
+                    <a href="https://wa.me/5521968686880" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 font-medium">Michell - Site: (21) 96868-6880</a>
+                  </div>
+                </div>
+              </div>
               <div>
                 <p className="font-semibold mb-2">Email</p>
                 <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary-600 hover:text-primary-700">
                   {CONTACT_EMAIL}
-                </a>
-              </div>
-              <div>
-                <p className="font-semibold mb-2">WhatsApp</p>
-                <a href="https://wa.me/5522999999999" className="text-primary-600 hover:text-primary-700">
-                  (22) 99999-9999
-                </a>
-              </div>
-              <div>
-                <p className="font-semibold mb-2">Telefone</p>
-                <a href="tel:+552232678000" className="text-primary-600 hover:text-primary-700">
-                  (22) 3267-8000
                 </a>
               </div>
             </div>

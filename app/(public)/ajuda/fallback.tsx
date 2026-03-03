@@ -6,7 +6,6 @@ import { CONTACT_EMAIL } from '@/lib/constants'
 import {
   LifeBuoy,
   MessageSquare,
-  Phone,
   Clock,
   Mail,
   ArrowRight,
@@ -25,18 +24,32 @@ const quickLinks = [
 
 const supportChannels = [
   {
-    icon: Phone,
-    title: 'Telefone',
-    description: 'Segunda a sexta, 9h às 17h',
-    value: '(22) 3267-8000',
-    href: 'tel:+552232678000',
+    icon: MessageSquare,
+    title: 'Thiago - Organização',
+    description: 'Suporte Geral / Inscrições',
+    value: '(21) 98382-1217',
+    href: 'https://wa.me/5521983821217',
   },
   {
     icon: MessageSquare,
-    title: 'WhatsApp',
-    description: 'Resposta em até 2h úteis',
-    value: '(22) 99999-9999',
-    href: 'https://wa.me/5522999999999',
+    title: 'Felipe - Organização',
+    description: 'Suporte Geral / Inscrições',
+    value: '(21) 98886-2910',
+    href: 'https://wa.me/5521988862910',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Mário - Cronometragem',
+    description: 'Cronometragem e Chips',
+    value: '(21) 98226-7030',
+    href: 'https://wa.me/5521982267030',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Michell - Site',
+    description: 'Suporte Técnico do Site',
+    value: '(21) 96868-6880',
+    href: 'https://wa.me/5521968686880',
   },
   {
     icon: Mail,
@@ -299,7 +312,7 @@ export default function AjudaFallback() {
                 Enviar e-mail
               </Link>
               <Link
-                href="https://wa.me/5522999999999"
+                href="https://wa.me/5521983821217"
                 className="btn-secondary inline-flex items-center justify-center gap-2"
               >
                 <MessageSquare size={18} />

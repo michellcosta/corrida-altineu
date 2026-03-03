@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Instagram, Mail, MapPin, Phone } from 'lucide-react'
+import { Instagram, Mail, MapPin, MessageCircle } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
 
 export default function Footer() {
@@ -102,11 +102,17 @@ export default function Footer() {
                   Centro, Macuco - RJ
                 </span>
               </li>
-              <li className="flex items-center space-x-3">
-                <Phone size={20} className="text-primary-400 flex-shrink-0" />
-                <a href="tel:+552232678000" className="text-sm hover:text-primary-400">
-                  (22) 3267-8000
-                </a>
+              <li className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-3">
+                  <MessageCircle size={20} className="text-primary-400 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-white">WhatsApp Suporte:</span>
+                </div>
+                <div className="flex flex-col space-y-1.5 pl-8">
+                  <a href="https://wa.me/5521983821217" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-primary-400">Thiago - Organização</a>
+                  <a href="https://wa.me/5521988862910" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-primary-400">Felipe - Organização</a>
+                  <a href="https://wa.me/5521982267030" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-primary-400">Mário - Cronometragem</a>
+                  <a href="https://wa.me/5521968686880" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-primary-400">Michell - Site</a>
+                </div>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail size={20} className="text-primary-400 flex-shrink-0" />

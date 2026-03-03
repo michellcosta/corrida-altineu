@@ -60,49 +60,51 @@ export default function ContatoPage() {
                     >
                       {CONTACT_EMAIL}
                     </a>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Respondemos em até 24 horas úteis
-                    </p>
+
                   </div>
                 </div>
 
-                {/* Telefone */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Phone className="text-green-600" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">Telefone</h3>
-                    <a
-                      href="tel:+552232678000"
-                      className="text-primary-600 hover:text-primary-700"
-                    >
-                      (22) 3267-8000
-                    </a>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Segunda a sexta, 8h às 18h
-                    </p>
-                  </div>
-                </div>
 
-                {/* WhatsApp */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="text-emerald-600" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">WhatsApp</h3>
-                    <a
-                      href="https://wa.me/5522999999999"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:text-primary-700"
-                    >
-                      (22) 99999-9999
-                    </a>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Atendimento instantâneo
-                    </p>
+
+                {/* WhatsApp Section */}
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="text-emerald-600" size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-2">WhatsApp</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="border border-emerald-100 rounded-lg p-3 bg-emerald-50/50">
+                          <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Organização</p>
+                          <p className="font-bold text-gray-900">Thiago - Organização</p>
+                          <a href="https://wa.me/5521983821217" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            (21) 98382-1217
+                          </a>
+                        </div>
+                        <div className="border border-emerald-100 rounded-lg p-3 bg-emerald-50/50">
+                          <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Organização</p>
+                          <p className="font-bold text-gray-900">Felipe - Organização</p>
+                          <a href="https://wa.me/5521988862910" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            (21) 98886-2910
+                          </a>
+                        </div>
+                        <div className="border border-blue-100 rounded-lg p-3 bg-blue-50/50">
+                          <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Cronometragem / Chip</p>
+                          <p className="font-bold text-gray-900">Mário - Cronometragem</p>
+                          <a href="https://wa.me/5521982267030" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            (21) 98226-7030
+                          </a>
+                        </div>
+                        <div className="border border-purple-100 rounded-lg p-3 bg-purple-50/50">
+                          <p className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">Suporte Site</p>
+                          <p className="font-bold text-gray-900">Michell - Site</p>
+                          <a href="https://wa.me/5521968686880" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            (21) 96868-6880
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -114,11 +116,11 @@ export default function ContatoPage() {
                   <div>
                     <h3 className="font-bold text-lg mb-1">Endereço</h3>
                     <p className="text-gray-700">
-                      Prefeitura Municipal de Macuco
+                      Praça da Cooperativa
                       <br />
-                      Praça da Matriz, s/n - Centro
+                      R. Dr. Mario Freire Martins, 194 - Centro
                       <br />
-                      Macuco - RJ, CEP 28680-000
+                      Macuco - RJ, CEP 28545-000
                     </p>
                   </div>
                 </div>
@@ -131,9 +133,9 @@ export default function ContatoPage() {
                   <div>
                     <h3 className="font-bold text-lg mb-1">Horário de Atendimento</h3>
                     <p className="text-gray-700">
-                      Segunda a Sexta: 8h às 18h
+                      Segunda a Sexta: 9h às 18h
                       <br />
-                      Sábado: 9h às 13h
+                      Sábado: Fechado
                       <br />
                       Domingo: Fechado
                     </p>
@@ -275,18 +277,43 @@ export default function ContatoPage() {
               Nossa <span className="text-gradient">Localização</span>
             </h2>
             <div className="max-w-5xl mx-auto">
-              <div className="card">
-                <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="text-gray-400 mx-auto mb-4" size={64} />
-                    <p className="text-gray-600 font-semibold mb-2">
-                      Mapa da Localização
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Praça da Matriz - Centro, Macuco - RJ
-                    </p>
-                  </div>
+              <div className="card overflow-hidden p-0 shadow-lg border border-gray-100">
+                <div className="aspect-square md:aspect-video w-full relative">
+                  <iframe
+                    src="https://www.google.com/maps?q=Praça+Central+de+Macuco+Praca+da+Cooperativa+R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ&z=17&output=embed"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen={true}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Mapa da Praça da Cooperativa - Macuco RJ"
+                  ></iframe>
                 </div>
+              </div>
+
+              {/* Botões de Navegação */}
+              <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                <a
+                  href="https://www.google.com/maps/dir/?api=1&destination=R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-white border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-3 rounded-xl font-bold transition-all shadow-sm hover:shadow-md"
+                >
+                  <MapPin size={20} />
+                  Abrir no Google Maps
+                </a>
+                <a
+                  href="https://waze.com/ul?q=R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ&navigate=yes"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-[#33ccff] hover:bg-[#2bb8e6] text-white px-8 py-3 rounded-xl font-bold transition-all shadow-sm hover:shadow-md"
+                >
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M19.333 13.667c1.334 0 2.667 1.333 2.667 2.666 0 1.334-1.333 2.667-2.667 2.667-1.333 0-2.666-1.333-2.666-2.667 0-1.333 1.332-2.666 2.666-2.666zm-14.666 0c1.333 0 2.666 1.333 2.666 2.666 0 1.334-1.333 2.667-2.666 2.666-1.334 0-2.667-1.333-2.667-2.667 0-1.333 1.333-2.666 2.667-2.666zm14.666 1.333a1.334 1.334 0 00-1.333 1.334c0 .736.597 1.333 1.333 1.333.737 0 1.334-.597 1.334-1.333 0-.737-.597-1.334-1.334-1.334zm-14.666 0a1.334 1.334 0 00-1.333 1.334c0 .736.597 1.333 1.333 1.333.736 0 1.333-.597 1.333-1.333a1.334 1.334 0 00-1.333-1.334zM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18.667c-4.787 0-8.667-3.88-8.667-8.667S7.213 3.333 12 3.333s8.667 3.88 8.667 8.667-3.88 8.667-8.667 8.667zM12 5.333c-3.682 0-6.667 2.985-6.667 6.667 0 3.682 2.985 6.667 6.667 6.667 3.682 0 6.667-2.985 6.667-6.667 0-3.682-2.985-6.667-6.667-6.667zm0 1.334a5.333 5.333 0 110 10.666 5.333 5.333 0 010-10.666zm0 1.333a4 4 0 100 8A4 4 0 0012 8z" />
+                  </svg>
+                  Abrir no Waze
+                </a>
               </div>
             </div>
           </div>

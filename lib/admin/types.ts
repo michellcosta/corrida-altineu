@@ -48,12 +48,15 @@ export const ROLE_NAVIGATION: Record<UserRole, NavItem[]> = {
       ],
     },
     { name: 'Regulamentos', href: '/admin/site/regulations', icon: 'FileCheck' },
-    { name: 'Inscritos', href: '/admin/site/inscritos', icon: 'Users' },
+    { name: 'Inscritos', href: '/admin/inscritos', icon: 'Users' },
+    { name: 'Financeiro', href: '/admin/financeiro', icon: 'BarChart' },
+    { name: 'Comunicacao', href: '/admin/comunicacao', icon: 'MessageSquare' },
+    { name: 'Painel IA', href: '/admin/ai', icon: 'Sparkles' },
     { name: 'Usuarios', href: '/admin/site/users', icon: 'Users' },
   ],
   [UserRole.CHIP_ADMIN]: [
     { name: 'Dashboard', href: '/admin/chip', icon: 'LayoutDashboard' },
-    { name: 'Inscritos', href: '/admin/chip/registrations', icon: 'Users' },
+    { name: 'Inscritos', href: '/admin/inscritos', icon: 'Users' },
     { name: 'Exportacoes', href: '/admin/chip/exports', icon: 'Download' },
     { name: 'Numeracao', href: '/admin/chip/numbering', icon: 'Hash' },
     { name: 'Resultados', href: '/admin/chip/results', icon: 'Award' },
@@ -61,8 +64,10 @@ export const ROLE_NAVIGATION: Record<UserRole, NavItem[]> = {
   ],
   [UserRole.ORG_ADMIN]: [
     { name: 'Dashboard', href: '/admin/org', icon: 'LayoutDashboard' },
+    { name: 'Inscritos', href: '/admin/inscritos', icon: 'Users' },
+    { name: 'Financeiro', href: '/admin/financeiro', icon: 'BarChart' },
+    { name: 'Comunicacao', href: '/admin/comunicacao', icon: 'MessageSquare' },
     { name: 'Relatorios', href: '/admin/org/reports', icon: 'FileText' },
-    { name: 'Mensagens', href: '/admin/org/messages', icon: 'MessageSquare' },
   ],
 }
 
