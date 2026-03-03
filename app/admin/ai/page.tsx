@@ -123,6 +123,9 @@ export default function AIPanelPage() {
         setChatHistory(prev => [...prev, { role: 'user', content: newMessage }])
         setChatLoading(true)
 
+        // Adicionar mensagem vazia para o assistente que será preenchida via stream
+        setChatHistory(prev => [...prev, { role: 'assistant', content: '' }])
+
         try {
             const res = await fetch('/api/admin/ai/chat', {
                 method: 'POST',
@@ -135,13 +138,50 @@ export default function AIPanelPage() {
                 })
             })
 
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Erro no chat')
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || 'Erro no chat')
+            }
 
-            setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply }])
+            // Ler o stream
+            const reader = res.body?.getReader()
+            const decoder = new TextDecoder()
+            let accumulatedText = ''
+
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    const chunk = decoder.decode(value, { stream: true })
+                    accumulatedText += chunk
+
+                    // Atualizar a última mensagem no histórico
+                    setChatHistory(prev => {
+                        const newHistory = [...prev]
+                        if (newHistory.length > 0) {
+                            newHistory[newHistory.length - 1] = {
+                                role: 'assistant',
+                                content: accumulatedText
+                            }
+                        }
+                        return newHistory
+                    })
+                }
+            }
         } catch (err: any) {
-            toast.error('Ocorreu um erro ao falar com a IA')
-            setChatHistory(prev => [...prev, { role: 'assistant', content: 'Desculpe, tive um problema ao processar sua resposta.' }])
+            const msg = err.message || 'Ocorreu um erro ao falar com a IA'
+            toast.error(msg)
+            setChatHistory(prev => {
+                const newHistory = [...prev]
+                if (newHistory.length > 0) {
+                    newHistory[newHistory.length - 1] = {
+                        role: 'assistant',
+                        content: `Erro: ${msg}`
+                    }
+                }
+                return newHistory
+            })
         } finally {
             setChatLoading(false)
         }
@@ -191,9 +231,9 @@ export default function AIPanelPage() {
                                             <Sparkles className="text-primary-500" size={20} />
                                             Instruções de Sistema
                                         </h3>
-                                        <p className="text-sm text-gray-500 mb-2">
+                                        <div className="text-sm text-gray-500 mb-2">
                                             Defina como a IA deve se comportar e qual sua personalidade.
-                                        </p>
+                                        </div>
                                         <textarea
                                             className="admin-input w-full min-h-[120px] resize-none"
                                             placeholder="Ex: Você é o assistente oficial da Corrida de Macuco..."
@@ -207,9 +247,9 @@ export default function AIPanelPage() {
                                             <FileText className="text-primary-500" size={20} />
                                             Conteúdo Base (Regulamento)
                                         </h3>
-                                        <p className="text-sm text-gray-500 mb-2">
+                                        <div className="text-sm text-gray-500 mb-2">
                                             Cole aqui todo o texto do regulamento e informações do percurso.
-                                        </p>
+                                        </div>
                                         <textarea
                                             className="admin-input w-full min-h-[300px] resize-none"
                                             placeholder="Cole o regulamento completo aqui..."
@@ -236,9 +276,9 @@ export default function AIPanelPage() {
                                         <h4 className="font-bold text-primary-900 mb-2 flex items-center gap-2">
                                             <Bot size={18} /> Como funciona?
                                         </h4>
-                                        <p className="text-sm text-primary-800 leading-relaxed">
-                                            A IA utiliza o modelo <strong>Gemini 1.5 Pro</strong> para processar as informações fornecidas e responder os atletas em tempo real.
-                                        </p>
+                                        <div className="text-sm text-primary-800 leading-relaxed">
+                                            A IA utiliza o modelo <strong>Gemini 2.0 Flash</strong> para processar as informações fornecidas e responder os atletas em tempo real.
+                                        </div>
                                         <ul className="mt-4 space-y-2 text-xs text-primary-700">
                                             <li className="flex items-start gap-2">
                                                 <CheckCircle2 size={14} className="mt-0.5 shrink-0" />
@@ -260,7 +300,7 @@ export default function AIPanelPage() {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">Modelo</span>
-                                                <Badge variant="info">Gemini 1.5 Pro</Badge>
+                                                <Badge variant="info">Gemini 2.0 Flash</Badge>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">Base de Dados</span>
@@ -285,9 +325,9 @@ export default function AIPanelPage() {
                                         </div>
                                         <div>
                                             <p className="font-bold text-gray-900">Assistente IA de Teste</p>
-                                            <p className="text-xs text-emerald-600 flex items-center gap-1">
+                                            <div className="text-xs text-emerald-600 flex items-center gap-1">
                                                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" /> Online e pronto
-                                            </p>
+                                            </div>
                                         </div>
                                     </div>
                                     <button
@@ -318,7 +358,25 @@ export default function AIPanelPage() {
                                                     ? 'bg-primary-600 text-white rounded-tr-none'
                                                     : 'bg-white border text-gray-800 rounded-tl-none'
                                                     }`}>
-                                                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                                                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                                                        {msg.content.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, index) => {
+                                                            const match = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
+                                                            if (match) {
+                                                                return (
+                                                                    <a
+                                                                        key={index}
+                                                                        href={match[2]}
+                                                                        className="text-primary-600 underline font-bold hover:text-primary-700"
+                                                                        target={match[2].startsWith('http') ? '_blank' : '_self'}
+                                                                        rel="noopener noreferrer"
+                                                                    >
+                                                                        {match[1]}
+                                                                    </a>
+                                                                );
+                                                            }
+                                                            return part;
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))

@@ -228,11 +228,36 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
         setDeleting(true)
         try {
             const supabase = createClient()
-            const { error } = await supabase
+            
+            // 1. Deletar a inscrição (registration)
+            const { error: regError } = await supabase
                 .from('registrations')
                 .delete()
                 .eq('id', selectedReg.id)
-            if (error) throw error
+            if (regError) throw regError
+
+            // 2. Verificar se o atleta possui outras inscrições
+            const { data: otherRegs, error: checkError } = await supabase
+                .from('registrations')
+                .select('id')
+                .eq('athlete_id', selectedReg.athlete_id)
+                .limit(1)
+            
+            if (checkError) throw checkError
+
+            // 3. Se não houver outras inscrições, deletar o atleta (athlete)
+            if (!otherRegs || otherRegs.length === 0) {
+                const { error: athleteError } = await supabase
+                    .from('athletes')
+                    .delete()
+                    .eq('id', selectedReg.athlete_id)
+                
+                // Nota: Se falhar aqui (ex: FK em outra tabela), não travamos o processo principal
+                if (athleteError) {
+                    console.warn('Não foi possível deletar o atleta órfão:', athleteError.message)
+                }
+            }
+
             toast.success('Inscrição excluída com sucesso')
             setDeleteModalOpen(false)
             setSelectedReg(null)

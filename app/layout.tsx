@@ -2,6 +2,7 @@ import { Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
 import { getSeoMetadata } from '@/lib/seo'
+import FloatingAIChat from '@/components/layout/FloatingAIChat'
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -72,6 +73,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${outfit.variable} ${jakarta.variable}`}>
       <body className="font-sans antialiased bg-gray-50">
         {children}
+        <FloatingAIChat />
         <Toaster
           position="top-right"
           toastOptions={{
