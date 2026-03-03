@@ -24,6 +24,7 @@ corrida-macuco/
 # misc
 .DS_Store
 *.pem
+check-models-new.js
 
 # debug
 npm-debug.log*
