@@ -73,7 +73,11 @@ export async function getSiteContext(searchQuery?: string) {
 
             if (finalReg) {
                 const athleteName = (finalReg.athletes as any)?.full_name || 'Atleta'
-                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO PARA "${searchQuery}":\n- Atleta: ${athleteName}\n- Status: ${finalReg.status === 'confirmed' ? 'CONFIRMADA ✅' : 'PENDENTE ⏳'}\n- Categoria: ${finalReg.categories?.name || 'Não informada'}\n- Número de Inscrição: ${finalReg.registration_number}\n- Código de Confirmação: ${finalReg.confirmation_code || 'Não gerado'}\n`
+                const categoryName = Array.isArray(finalReg.categories) 
+                    ? (finalReg.categories[0] as any)?.name 
+                    : (finalReg.categories as any)?.name
+                
+                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO PARA "${searchQuery}":\n- Atleta: ${athleteName}\n- Status: ${finalReg.status === 'confirmed' ? 'CONFIRMADA ✅' : 'PENDENTE ⏳'}\n- Categoria: ${categoryName || 'Não informada'}\n- Número de Inscrição: ${finalReg.registration_number}\n- Código de Confirmação: ${finalReg.confirmation_code || 'Não gerado'}\n`
             } else {
                 searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO PARA "${searchQuery}":\n- Nenhuma inscrição encontrada com este documento ou código.\n`
             }
