@@ -86,9 +86,10 @@ export async function getSiteContext(searchQuery?: string) {
         // 5. Informações de Logística e FAQ (Estáticas e Detalhadas)
         const logisticsContext = `
 LOGÍSTICA E LOCALIZAÇÃO:
-- Local da Largada: Praça Central de Macuco, RJ.
-- Link Google Maps: https://maps.app.goo.gl/MacucoRJ (Exemplo)
-- Estacionamento: Gratuito nas ruas próximas ao Ginásio Municipal.
+- Local da Largada: Praça Central de Macuco, RJ (R. Dr. Mario Freire Martins, 194, Centro).
+- Link Google Maps: [Abrir no Google Maps](https://www.google.com/maps/dir/?api=1&destination=R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ)
+- Link Waze: [Abrir no Waze](https://waze.com/ul?q=R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ&navigate=yes)
+- Estacionamento: Gratuito nas ruas próximas à Praça de Macuco.
 
 CRONOGRAMA DETALHADO (2026):
 - 06:00: Abertura da Arena e Guarda-volumes.
