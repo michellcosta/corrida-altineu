@@ -23,6 +23,7 @@ const MAX_MESSAGES_PER_SESSION = 15
 
 export default function FloatingAIChat() {
     const [isOpen, setIsOpen] = useState(false)
+    const [hasInteracted, setHasInteracted] = useState(false)
     const [message, setMessage] = useState('')
     const [history, setHistory] = useState<Message[]>([])
     const [loading, setLoading] = useState(false)
@@ -42,6 +43,10 @@ export default function FloatingAIChat() {
     useEffect(() => {
         const savedCpf = localStorage.getItem('chat_user_cpf')
         const savedName = localStorage.getItem('chat_user_name')
+        const interacted = localStorage.getItem('chat_has_interacted') === 'true'
+        
+        if (interacted) setHasInteracted(true)
+
         if (savedCpf && savedName) {
             setUserCpf(savedCpf)
             setUserName(savedName)
@@ -52,6 +57,14 @@ export default function FloatingAIChat() {
             }
         }
     }, [])
+
+    const toggleChat = () => {
+        setIsOpen(!isOpen)
+        if (!hasInteracted) {
+            setHasInteracted(true)
+            localStorage.setItem('chat_has_interacted', 'true')
+        }
+    }
 
     // Auto-scroll
     useEffect(() => {
@@ -218,7 +231,7 @@ export default function FloatingAIChat() {
                                     </p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                            <button onClick={toggleChat} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -290,7 +303,17 @@ export default function FloatingAIChat() {
                                                     {msg.content.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, index) => {
                                                         const match = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
                                                         if (match) return <a key={index} href={match[2]} className="text-primary-600 underline font-bold hover:text-primary-700 inline-flex items-center gap-0.5" target={match[2].startsWith('http') ? '_blank' : '_self'} rel="noopener noreferrer">{match[1]}<ExternalLink size={10} /></a>;
-                                                        return part;
+                                                        
+                                                        // Tratar negrito simples **texto** ou *texto*
+                                                        return part.split(/(\*\*.*?\*\*|\*.*?\*)/g).map((subPart, subIndex) => {
+                                                            if (subPart.startsWith('**') && subPart.endsWith('**')) {
+                                                                return <strong key={`${index}-${subIndex}`} className="font-bold text-gray-900">{subPart.slice(2, -2)}</strong>;
+                                                            }
+                                                            if (subPart.startsWith('*') && subPart.endsWith('*')) {
+                                                                return <strong key={`${index}-${subIndex}`} className="font-bold text-gray-900">{subPart.slice(1, -1)}</strong>;
+                                                            }
+                                                            return subPart;
+                                                        });
                                                     })}
                                                 </div>
                                             </div>
@@ -345,10 +368,30 @@ export default function FloatingAIChat() {
             <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all ${isOpen ? 'bg-white text-gray-600' : 'bg-primary-600 text-white'}`}
+                onClick={toggleChat}
+                className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all relative ${isOpen ? 'bg-white text-gray-600' : 'bg-primary-600 text-white'}`}
             >
+                {/* Efeito de Pulso (Glow) */}
+                {!isOpen && !hasInteracted && (
+                    <motion.div
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="absolute inset-0 bg-primary-400 rounded-full -z-10"
+                    />
+                )}
+
                 {isOpen ? <X size={28} /> : <MessageSquare size={28} />}
+                
+                {/* Selo de Notificação */}
+                {!isOpen && !hasInteracted && (
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm"
+                    >
+                        1
+                    </motion.div>
+                )}
             </motion.button>
         </div>
     )

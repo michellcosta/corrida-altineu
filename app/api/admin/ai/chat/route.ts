@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getDynamicContext, getAiUsage, incrementAiUsage, PRIVACY_DRAWER, LOGISTICS_DRAWER, HISTORY_DRAWER } from '@/lib/admin/ai-context'
+import { getDynamicContext, getAiUsage, incrementAiUsage, PRIVACY_DRAWER, LOGISTICS_DRAWER, HISTORY_DRAWER, SITE_MAP_DRAWER } from '@/lib/admin/ai-context'
 
 const MAX_MESSAGES = 15
 
@@ -57,17 +57,12 @@ export async function POST(request: NextRequest) {
             Olá, você está falando com ${usage.full_name || 'um atleta'}.
             O CPF deste usuário logado é ${userCpf}.
 
-            ${PRIVACY_DRAWER}
+            ${PRIVACY_DRAWER.replace('${userCpf}', userCpf)}
             
-            DIRETIVA DE BUSCA DE INSCRIÇÃO:
-            1. Se o usuário perguntar "Verificar minha inscrição" ou similar, olhe para o bloco "DADOS EM TEMPO REAL" abaixo.
-            2. Se houver um "RESULTADO DA BUSCA" ou "BUSCA TEMPORÁRIA" informando que a inscrição foi ENCONTRADA, use esses dados para confirmar o status, categoria e código.
-            3. Se o resultado diz que a inscrição foi ENCONTRADA, NÃO peça o CPF novamente. Responda diretamente.
-            4. Se o resultado diz que NENHUMA inscrição foi encontrada para o CPF ${userCpf}, informe que não localizou e peça para ele conferir se o CPF informado na identificação está correto.
-
             CONHECIMENTO BASE (CACHE):
             ${LOGISTICS_DRAWER}
             ${HISTORY_DRAWER}
+            ${SITE_MAP_DRAWER}
             ${(regulationText || '').substring(0, 3000)}
 
             ${dynamicContext}
@@ -75,7 +70,7 @@ export async function POST(request: NextRequest) {
             PROMPT DO ADMIN:
             ${systemPrompt || "Seja amigável e conciso."}
             `
-        }, { apiVersion: 'v1beta' })
+        })
 
         // 4. Iniciar chat com histórico reduzido (Economia de Tokens)
         const chat = model.startChat({

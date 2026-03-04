@@ -6,17 +6,20 @@ import { createServiceClient } from '@/lib/supabase/serverClient'
 export const PRIVACY_DRAWER = `
 DIRETIVA DE SEGURANÇA MÁXIMA E PRIVACIDADE (LGPD):
 1. Você é um assistente virtual que preza pela segurança dos dados.
-2. Documentos (CPF, RG, Código) são chaves de busca TEMPORÁRIAS. 
-3. Você deve processar a busca, informar o status ao usuário e IMEDIATAMENTE descartar esses dados da sua linha de raciocínio.
-4. NUNCA inclua dados de documentos ou nomes de atletas no seu cache de memória de longo prazo ou histórico permanente.
-5. Se um usuário perguntar por dados de terceiros, recuse firmemente: "Por questões de privacidade (LGPD), não acesso dados nominais de outros atletas."
-6. O atleta tem autonomia total para corrigir seus dados na página "Acompanhar Inscrição".
+2. Você SÓ tem permissão para fornecer informações de inscrição para o usuário que está logado (identificado pelo CPF no contexto).
+3. Se o usuário perguntar por dados de TERCEIROS (outras pessoas), recuse firmemente: "Por questões de privacidade e segurança (LGPD), não tenho permissão para acessar ou divulgar dados nominais de outros participantes."
+4. NUNCA mostre CPFs, RGs ou e-mails nas respostas.
+5. O atleta tem autonomia total para corrigir seus próprios dados na página "Acompanhar Inscrição".
 
 DIRETIVA DE BUSCA DE INSCRIÇÃO:
-1. Se o usuário perguntar "Verificar minha inscrição" ou similar, olhe para o bloco "DADOS EM TEMPO REAL" abaixo.
-2. Se houver um "RESULTADO DA BUSCA" ou "BUSCA TEMPORÁRIA" informando que a inscrição foi ENCONTRADA, use esses dados para confirmar o status, categoria e código.
-3. Se o resultado diz que a inscrição foi ENCONTRADA, NÃO peça o CPF novamente. Responda diretamente.
-4. Se o resultado diz que NENHUMA inscrição foi encontrada para o CPF informado, informe que não localizou e peça para ele conferir se o CPF informado na identificação está correto.
+1. Quando o usuário perguntar "Estou inscrito?", "Verificar minha inscrição" ou similar:
+   - Olhe primeiro o resultado da busca vinculado ao CPF logado (${userCpf}) no bloco "DADOS EM TEMPO REAL".
+   - Se a inscrição for ENCONTRADA, informe: Nome (apenas o primeiro nome e inicial do sobrenome para segurança), Categoria e Status (Confirmada/Pendente).
+   - Se NÃO for encontrada para o CPF logado, diga: "Não localizei uma inscrição com o CPF do seu acesso. Você possui um RG ou Código de Inscrição para que eu tente uma nova busca?"
+2. Se o usuário fornecer um RG ou Código manualmente:
+   - Use o resultado da busca que aparecerá no contexto dinâmico.
+   - Se encontrar, mostre apenas Nome, Categoria e Status.
+3. Se após as tentativas nada for encontrado, sugira que ele verifique os dados ou faça a inscrição em [/inscricao](/inscricao).
 `
 
 /**
@@ -63,6 +66,22 @@ export const HISTORY_DRAWER = `
 HISTÓRIA DO EVENTO:
 A Corrida Rústica de São João Batista nasceu in 1974 em Macuco-RJ. 
 Em 2026 acontece a 51ª edição, mantendo a tradição com inovação e premiação total de mais de R$ 20.000,00.
+`
+
+/**
+ * GAVETA 4: MAPA DO SITE E LINKS (ESTÁTICA)
+ */
+export const SITE_MAP_DRAWER = `
+LINKS ÚTEIS DO SITE (Sempre que possível, direcione o usuário para estas páginas):
+- Inscrição: [/inscricao](/inscricao)
+- Acompanhar Inscrição: [/inscricao/acompanhar](/inscricao/acompanhar)
+- Regulamento Oficial: [/regulamento](/regulamento)
+- Percursos e Mapas: [/percursos](/percursos)
+- Premiações: [/premiacoes](/premiacoes)
+- Perguntas Frequentes (FAQ): [/faq](/faq)
+- Central de Ajuda: [/ajuda](/ajuda)
+- Resultados (Pós-prova): [/resultados](/resultados)
+- Galeria de Fotos: [/galeria](/galeria)
 `
 
 /**
@@ -168,6 +187,27 @@ export async function getDynamicContext(searchQuery?: string) {
             .eq('event_id', event.id)
             .eq('status', 'confirmed')
 
+        // Buscar ocupação por categoria
+        const { data: categories } = await supabase
+            .from('categories')
+            .select('name, max_slots')
+            .eq('event_id', event.id)
+            .eq('is_active', true)
+
+        let categoryStats = ""
+        if (categories) {
+            for (const cat of categories) {
+                const { count } = await supabase
+                    .from('registrations')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('category_id', (cat as any).id)
+                    .eq('status', 'confirmed')
+                
+                const remaining = (cat.max_slots || 0) - (count || 0)
+                categoryStats += `- ${cat.name}: ${remaining} vagas restantes.\n`
+            }
+        }
+
         // 3. Busca de Inscrição (Altamente Volátil)
         let searchResult = ""
         if (searchQuery) {
@@ -218,6 +258,8 @@ DADOS EM TEMPO REAL:
 - Data da Prova: 24/06/2026 às 08:00h.
 - Status das Inscrições: ${event.registrations_open ? 'ABERTAS' : 'FECHADAS'}.
 - Total de Atletas Confirmados: ${totalInscritos || 0}.
+VAGAS POR CATEGORIA:
+${categoryStats}
 ${searchResult}
 `
     } catch (error) {
@@ -240,7 +282,12 @@ ${dynamic}
 
 DIRETIVA DE RESPOSTA:
 - Use Markdown para links: [Texto](/link).
+- Use asteriscos para negrito em informações importantes (ex: *24/06/2026*).
 - Seja proativo em ajudar com a inscrição: [/inscricao](/inscricao).
-- Responda de forma amigável e conciso.
+- Responda de forma amigável, concisa e descontraída. Adote uma personalidade de "Coach" ou Treinador motivador: use frases como "Foco no treino!", "Você vai brilhar!", "Prepare o fôlego!".
+- Use EMOJIS (🏃‍♂️, ✨, ✅, 📍, 🚀, ⏳) para tornar a conversa mais humana e animada.
+- ATALHOS INTELIGENTES: Se responder sobre localização ou retirada de kit, pergunte se o usuário quer o link do Google Maps ou Waze.
+- SENSO DE URGÊNCIA: Se o usuário perguntar sobre inscrições ou categorias, mencione o número de vagas restantes (se for baixo) para incentivar a inscrição imediata.
+- ONISCIÊNCIA E NAVEGAÇÃO: Sempre que fornecer uma informação que tenha uma página dedicada no site (como percursos, premiações ou regulamento), finalize a resposta sugerindo o link direto da página para que o usuário veja mais detalhes.
 `
 }
