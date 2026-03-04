@@ -4,8 +4,8 @@ export const CONTACT_EMAIL = 'corridarusticamacuco@gmail.com'
 
 export const RACE_CONFIG = {
   year: 2026,
-  // Datas em fuso local (meses 0-based)
-  raceDate: new Date(2026, 5, 24), // 24 de junho de 2026
+  // Datas em fuso local (Brasília UTC-3)
+  raceDate: new Date('2026-06-24T08:00:00-03:00'),
   registrationOpenDate: '15 de outubro de 2025',
   registrationCloseDate: '20 de junho de 2026',
   edition: 51,

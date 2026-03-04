@@ -1,57 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getSiteContext } from '@/lib/admin/ai-context'
+import { getDynamicContext, getAiUsage, incrementAiUsage, PRIVACY_DRAWER, LOGISTICS_DRAWER, HISTORY_DRAWER } from '@/lib/admin/ai-context'
+
+const MAX_MESSAGES = 15
 
 export async function POST(request: NextRequest) {
     try {
-        const { message, history, regulationText, systemPrompt } = await request.json()
+        const { message, history, regulationText, systemPrompt, userCpf, userName } = await request.json()
 
         const apiKey = process.env.GEMINI_API_KEY
         if (!apiKey) {
-            return NextResponse.json(
-                { error: 'Chave de API do Gemini (GEMINI_API_KEY) não configurada.' },
-                { status: 500 }
-            )
+            return NextResponse.json({ error: 'Chave de API não configurada.' }, { status: 500 })
         }
 
-        // 1. Tentar extrair um possível documento/código da mensagem para a busca
-        // Procura por sequências de números (CPF/RG) ou códigos alfanuméricos
-        const docMatch = message.match(/(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{5,12}|[A-Z0-9]{6,10})/i)
-        const searchQuery = docMatch ? docMatch[0] : undefined
+        // 1. Validar Identificação e Limites
+        if (!userCpf) {
+            return NextResponse.json({ error: 'Identificação necessária.' }, { status: 401 })
+        }
 
-        // 2. Gerar o Contexto do Site (passando a query de busca se houver)
-        // Usar Promise.all para buscar contexto e regulamento em paralelo se necessário
-        const automatedContext = await getSiteContext(searchQuery)
+        const usage = await getAiUsage(userCpf, userName)
+        if (!usage) {
+            return NextResponse.json({ error: 'Erro ao validar acesso.' }, { status: 500 })
+        }
 
-        // 3. Preparar o Regulamento
-        const safeRegulation = (regulationText || '').substring(0, 5000) // Reduzido de 10k para 5k para acelerar
+        if (!usage.isAdmin && usage.message_count >= MAX_MESSAGES) {
+            return NextResponse.json({ 
+                error: `Limite de ${MAX_MESSAGES} mensagens diárias atingido. Sua cota renova em 24h.` 
+            }, { status: 429 })
+        }
+
+        // 2. Identificar busca de documento na mensagem (Volátil)
+        // Procura por sequências de números (CPF/RG) ou códigos alfanuméricos (ex: V567Z5CX)
+        // Ajustado para evitar pegar palavras comuns como "Verificar"
+        const docMatch = message.match(/([A-Z]{1}[0-9A-Z]{7}|\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{5,12})/i)
+        
+        // Se o usuário pedir para verificar a inscrição, usamos o CPF da sessão como busca
+        const isAskingForSelf = message.toLowerCase().includes('minha inscrição') || 
+                               message.toLowerCase().includes('meu status') ||
+                               message.toLowerCase().includes('meu cadastro') ||
+                               message.toLowerCase().includes('estou inscrito')
+
+        // Se houver um match de documento na mensagem, usamos ele. 
+        // Caso contrário, se for uma pergunta sobre si mesmo, usamos o userCpf.
+        const searchQuery = docMatch ? docMatch[0] : (isAskingForSelf ? userCpf : undefined)
+
+        console.log('DEBUG AI SEARCH:', { message, userCpf, isAskingForSelf, searchQuery, docMatch: docMatch ? docMatch[0] : null })
+
+        // 3. Buscar dados em tempo real (Nunca cacheados)
+        const dynamicContext = await getDynamicContext(searchQuery)
 
         const genAI = new GoogleGenerativeAI(apiKey)
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
             systemInstruction: `
-            ${automatedContext}
+            VOCÊ É O ASSISTENTE VIRTUAL DA 51ª CORRIDA DE MACUCO.
+            Olá, você está falando com ${usage.full_name || 'um atleta'}.
+            O CPF deste usuário logado é ${userCpf}.
 
-            REGULAMENTO DO EVENTO:
-            ${safeRegulation || 'Nenhum regulamento extra fornecido.'}
+            ${PRIVACY_DRAWER}
+            
+            DIRETIVA DE BUSCA DE INSCRIÇÃO:
+            1. Se o usuário perguntar "Verificar minha inscrição" ou similar, olhe para o bloco "DADOS EM TEMPO REAL" abaixo.
+            2. Se houver um "RESULTADO DA BUSCA" ou "BUSCA TEMPORÁRIA" informando que a inscrição foi ENCONTRADA, use esses dados para confirmar o status, categoria e código.
+            3. Se o resultado diz que a inscrição foi ENCONTRADA, NÃO peça o CPF novamente. Responda diretamente.
+            4. Se o resultado diz que NENHUMA inscrição foi encontrada para o CPF ${userCpf}, informe que não localizou e peça para ele conferir se o CPF informado na identificação está correto.
 
-            PROMPT DO ADMINISTRADOR:
+            CONHECIMENTO BASE (CACHE):
+            ${LOGISTICS_DRAWER}
+            ${HISTORY_DRAWER}
+            ${(regulationText || '').substring(0, 3000)}
+
+            ${dynamicContext}
+
+            PROMPT DO ADMIN:
             ${systemPrompt || "Seja amigável e conciso."}
             `
-        })
+        }, { apiVersion: 'v1beta' })
 
-        // Iniciar chat com histórico
+        // 4. Iniciar chat com histórico reduzido (Economia de Tokens)
         const chat = model.startChat({
-            history: (history || []).slice(-10).map((msg: any) => ({
+            history: (history || []).slice(-6).map((msg: any) => ({
                 role: msg.role === 'user' ? 'user' : 'model',
                 parts: [{ text: msg.content }],
             })),
         })
 
-        // Enviar mensagem com Streaming
+        // 5. Incrementar uso no banco (antes de enviar para a IA para garantir o controle)
+        await incrementAiUsage(userCpf)
+
+        // 6. Streaming de Resposta
         const result = await chat.sendMessageStream(message)
 
-        // Criar stream de resposta
         const stream = new ReadableStream({
             async start(controller) {
                 const encoder = new TextEncoder()
@@ -77,10 +116,7 @@ export async function POST(request: NextRequest) {
         })
 
     } catch (error: any) {
-        console.error('ERRO GEMINI STREAMING:', error)
-        return NextResponse.json(
-            { error: 'Erro ao processar mensagem com a IA.' },
-            { status: 500 }
-        )
+        console.error('ERRO GEMINI:', error)
+        return NextResponse.json({ error: 'Erro ao processar mensagem.' }, { status: 500 })
     }
 }

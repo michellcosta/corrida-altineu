@@ -13,16 +13,16 @@ const sections = [
   {
     title: '2. Inscrições e Pagamentos',
     content: [
-      'As inscrições são realizadas exclusivamente pelo site oficial. O pagamento pode ser feito por cartão de crédito, PIX ou boleto bancário.',
+      'As inscrições são realizadas exclusivamente pelo site oficial. O pagamento é realizado exclusivamente via PIX.',
       'O atleta é responsável por garantir que os dados informados no formulário estejam corretos e atualizados.',
-      'Não realizamos reembolso em caso de desistência. Situações médicas comprovadas podem ser avaliadas pela organização mediante laudo assinado por profissional habilitado.',
+      'Não realizamos reembolso em caso de desistência. Qualquer condição de saúde ou aptidão física é de inteira responsabilidade do próprio atleta, isentando a organização da corrida de qualquer ônus.',
     ],
   },
   {
     title: '3. Documentação e Retirada de Kits',
     content: [
       'A retirada de kits é realizada mediante apresentação de documento oficial com foto e comprovante de inscrição.',
-      'Atletas menores de 18 anos devem apresentar autorização do responsável legal com firma reconhecida, além de cópia do documento do responsável.',
+      'Atletas menores de 18 anos devem apresentar autorização do responsável legal assinada, além de cópia do documento do responsável.',
       'Os kits não retirados nos horários divulgados não serão entregues após o evento.',
     ],
   },
@@ -30,7 +30,7 @@ const sections = [
     title: '4. Participação no Evento',
     content: [
       'O atleta declara estar apto do ponto de vista físico e médico para a prática de corrida de rua, assumindo total responsabilidade por sua participação.',
-      'É obrigatório o uso do número de peito com chip fornecido pela organização. O atleta deve posicioná-lo na parte frontal da camiseta.',
+      'É obrigatório o uso do número de peito na parte frontal da camiseta e o chip de cronometragem deve ser obrigatoriamente fixado no tênis.',
       'Não é permitido correr com bicicletas, patins, animais ou qualquer item que possa prejudicar outros participantes.',
       'Não haverá guarda-volumes oficial. A organização não se responsabiliza por objetos pessoais perdidos ou extraviados.',
     ],
@@ -94,10 +94,10 @@ export default function TermosFallback() {
                 <strong>Evento:</strong> 51ª Corrida Rústica de São João Batista (também chamada Corrida de Macuco).
               </li>
               <li>
-                <strong>Data prevista:</strong> {new Date('2026-07-24').toLocaleDateString('pt-BR')}.
+                <strong>Data prevista:</strong> 24/06/2026 às 08:00h.
               </li>
               <li>
-                <strong>Organização:</strong> Secretaria Municipal de Esporte e Lazer de Macuco.
+                <strong>Organização:</strong> Thiago Sabóia.
               </li>
             </ul>
           </div>

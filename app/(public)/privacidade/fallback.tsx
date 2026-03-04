@@ -2,6 +2,7 @@
 
 import { Shield, Lock, Database, UserCheck } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
+import Link from 'next/link'
 
 const dataUses = [
   {
@@ -9,15 +10,14 @@ const dataUses = [
     items: [
       'Dados cadastrais: nome completo, CPF, data de nascimento, gênero, e-mail e telefone.',
       'Informações de endereço e contato para categorias especiais (Morador 10K, Infantil, etc.).',
-      'Dados médicos básicos (ex.: alergias) quando informados voluntariamente pelo atleta.',
-      'Comprovantes anexados (documento oficial, comprovante de residência, autorização de menor).',
+      'Não coletamos dados médicos sensíveis ou informações de saúde através deste site.',
+      'Não realizamos coleta de arquivos ou comprovantes digitais. Documentos de identificação e comprovantes de residência (para a categoria Morador) devem ser apresentados presencialmente no dia e local da prova.',
     ],
   },
   {
     title: '2. Finalidades',
     items: [
-      'Gerenciar inscrições, categorias e listas de largada.',
-      'Emitir recibos e notas fiscais quando aplicável.',
+      'Gerenciar inscrições e categorias do evento.',
       'Comunicar informações relevantes sobre o evento (alterações de percurso, horários, logística).',
       'Divulgar resultados e estatísticas oficiais após o término da prova.',
     ],
@@ -26,7 +26,7 @@ const dataUses = [
     title: '3. Compartilhamento',
     items: [
       'Prestadores que auxiliam na cronometragem e na infraestrutura do evento (chips, impressão de números).',
-      'Órgãos públicos quando houver exigência legal, como seguro obrigatório ou atendimento médico.',
+      'Órgãos públicos em caso de necessidade de atendimento médico de emergência durante a prova.',
       'Não vendemos nem compartilhamos seus dados com terceiros para fins comerciais.',
     ],
   },
@@ -34,17 +34,16 @@ const dataUses = [
     title: '4. Armazenamento',
     items: [
       'Os dados são armazenados em servidores com controle de acesso e criptografia em repouso.',
-      'Documentos enviados ficam disponíveis apenas para a equipe responsável pela validação das inscrições.',
-      'Mantemos os dados pelo tempo necessário para cumprir obrigações legais e estatísticas do evento.',
+      'Mantemos os dados pelo tempo necessário para cumprir obrigações estatísticas e históricas do evento.',
     ],
   },
   {
     title: '5. Direitos do Atleta',
     items: [
       'Confirmar a existência de tratamento de dados.',
-      'Solicitar correção de informações incompletas ou desatualizadas.',
+      'Corrigir informações incompletas ou desatualizadas (disponível a qualquer momento na página Acompanhar Inscrição).',
       'Requerer a exclusão dos dados pessoais após o evento, observadas obrigações legais.',
-      'Revogar o consentimento para comunicações de marketing a qualquer momento.',
+      'Revogar o consentimento para comunicações informativas a qualquer momento.',
     ],
   },
   {
@@ -52,7 +51,7 @@ const dataUses = [
     items: [
       'Utilizamos HTTPS em todo o site e restringimos o acesso administrativo por autenticação segura.',
       'Processos internos preveem revisão periódica de permissões e registros de auditoria.',
-      'Nosso time é instruído a manipular dados sensíveis apenas quando estritamente necessário.',
+      'Nosso time é instruído a manipular dados apenas quando estritamente necessário para a operação do evento.',
     ],
   },
 ]
@@ -117,10 +116,10 @@ export default function PrivacidadeFallback() {
                   <strong>Execução de contrato:</strong> processamento da inscrição e participação no evento.
                 </li>
                 <li>
-                  <strong>Obrigação legal:</strong> guarda de registros para fins fiscais e de segurança.
+                  <strong>Obrigação legal:</strong> guarda de registros para fins de segurança e histórico.
                 </li>
                 <li>
-                  <strong>Consentimento:</strong> envio de comunicações promocionais e uso de imagem.
+                  <strong>Consentimento:</strong> envio de comunicações informativas e uso de imagem.
                 </li>
                 <li>
                   <strong>Legítimo interesse:</strong> prevenção de fraudes e melhoria da experiência do participante.
@@ -134,7 +133,13 @@ export default function PrivacidadeFallback() {
                 Como exercer seus direitos
               </h3>
               <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                Para solicitar acesso, correção ou exclusão dos seus dados pessoais, envie um e-mail para{' '}
+                Você pode corrigir seus dados a qualquer momento acessando a página{' '}
+                <Link href="/inscricao/acompanhar" className="text-emerald-600 font-semibold underline">
+                  Acompanhar Inscrição
+                </Link>.
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                Para solicitar acesso ou exclusão dos seus dados pessoais, envie um e-mail para{' '}
                 <a href={`mailto:${CONTACT_EMAIL}`} className="text-emerald-600 font-semibold">
                   {CONTACT_EMAIL}
                 </a>{' '}

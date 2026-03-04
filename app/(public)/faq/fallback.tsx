@@ -19,15 +19,15 @@ const categories: FAQCategory[] = [
     items: [
       {
         q: 'Como faço minha inscrição?',
-        a: 'Acesse /inscricao, escolha a categoria desejada e complete o formulário. Após finalizar o pagamento, você receberá um e-mail de confirmação.',
+        a: 'Acesse /inscricao, escolha a categoria desejada e complete o formulário. Após finalizar o pagamento via PIX, você receberá um e-mail de confirmação.',
       },
       {
         q: 'Quais formas de pagamento são aceitas?',
-        a: 'Cartão de crédito, PIX e boleto bancário. Boletos levam até 48h para compensar.',
+        a: 'Somente PIX.',
       },
       {
         q: 'Posso alterar meus dados após a inscrição?',
-        a: 'Sim. Até 10 dias antes da prova, envie um e-mail para contato@corridamacuco.com.br informando as alterações desejadas.',
+        a: 'Sim. Você pode editar seus dados a qualquer momento na página Acompanhar Inscrição.',
       },
       {
         q: 'Há desconto para grupos ou equipes?',
@@ -35,7 +35,7 @@ const categories: FAQCategory[] = [
       },
       {
         q: 'Como acompanho o status da minha inscrição?',
-        a: 'Use a página /inscricao/acompanhar informando CPF e data de nascimento. Lá você vê status de pagamento e categoria.',
+        a: 'Use a página Acompanhar Inscrição informando seu CPF. Lá você vê status de pagamento e categoria.',
       },
     ],
   },
@@ -46,19 +46,19 @@ const categories: FAQCategory[] = [
     items: [
       {
         q: 'Onde e quando retiro meu kit?',
-        a: 'Na Praça Prof. João Brasil: sexta-feira (14h às 20h) ou sábado (5h30 às 6h30). Chegue com antecedência de 30 minutos.',
+        a: 'Na Praça de Macuco, no dia da prova (24/06/2026), das 08:00 às 11:00 da manhã.',
       },
       {
         q: 'Posso retirar o kit de outra pessoa?',
-        a: 'Somente com procuração simples, cópia do documento e comprovante de inscrição do atleta.',
+        a: 'Somente com autorização assinada, cópia do documento e comprovante de inscrição do atleta.',
       },
       {
         q: 'O que vem no kit?',
-        a: 'Camiseta, número de peito com chip, brindes dos patrocinadores e acesso aos postos de hidratação e frutas após a prova.',
+        a: 'Número de peito com chip, medalha (entregue após a prova), além de acesso aos postos de hidratação.',
       },
       {
         q: 'Posso trocar o tamanho da camiseta?',
-        a: 'As camisetas são entregues conforme o tamanho escolhido na inscrição. Trocas dependem de disponibilidade ao final da retirada.',
+        a: 'As camisetas são entregues conforme a disponibilidade ao final da retirada.',
       },
     ],
   },
@@ -69,7 +69,7 @@ const categories: FAQCategory[] = [
     items: [
       {
         q: 'Qual o horário das largadas?',
-        a: 'Corrida 10K às 12h (saída da Fábrica de Cimento Holcim) e Corrida Infanto-Juvenil 2K às 10h (entrada do Goiabal).',
+        a: 'Corrida 10K às 08:00h e Corrida Infanto-Juvenil 2K às 09:30h.',
       },
       {
         q: 'Haverá guarda-volumes?',
@@ -77,7 +77,7 @@ const categories: FAQCategory[] = [
       },
       {
         q: 'Há postos de hidratação?',
-        a: 'Sim, a cada 2,5 km e na chegada, com água e frutas. Consulte /percursos para ver os pontos exatos.',
+        a: 'Sim, a cada 2 km e na chegada.',
       },
       {
         q: 'Posso correr com fones de ouvido?',
@@ -142,17 +142,24 @@ export default function FaqFallback() {
             </h2>
             <div className="grid gap-4 md:grid-cols-2 text-sm text-gray-700">
               <p>
-                <strong>Status da inscrição:</strong> consulte em <Link href="/inscricao/acompanhar" className="text-indigo-600 font-semibold">/inscricao/acompanhar</Link>.
+                <strong>Status da inscrição:</strong> consulte na página <Link href="/inscricao/acompanhar" className="text-indigo-600 font-semibold">Acompanhar Inscrição</Link>.
               </p>
               <p>
                 <strong>Resultados:</strong> publicados em até 48h após o evento em <Link href="/resultados" className="text-indigo-600 font-semibold">/resultados</Link>.
               </p>
               <p>
-                <strong>Retirada de kits:</strong> sexta (14h-20h) e sábado (5h30-6h30) na Praça Prof. João Brasil.
+                <strong>Retirada de kits:</strong> no dia da prova (24/06/2026) das 08:00 às 11:00 na Praça de Macuco.
               </p>
-              <p>
-                <strong>Suporte:</strong> WhatsApp (22) 99999-9999 – atendimento em até 2h úteis.
-              </p>
+              <div className="space-y-1">
+                <p><strong>Suporte WhatsApp:</strong></p>
+                <ul className="list-none space-y-1 ml-0">
+                  <li>• Thiago (Org.): <a href="https://wa.me/5521983821217" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">(21) 98382-1217</a></li>
+                  <li>• Felipe (Org.): <a href="https://wa.me/5521988862910" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">(21) 98886-2910</a></li>
+                  <li>• Mário (Cron.): <a href="https://wa.me/5521982267030" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">(21) 98226-7030</a></li>
+                  <li>• Michell (Site): <a href="https://wa.me/5521968686880" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">(21) 96868-6880</a></li>
+                </ul>
+                <p className="text-[10px] text-gray-500 mt-1">Atendimento em até 24h úteis.</p>
+              </div>
             </div>
           </div>
 
@@ -199,11 +206,28 @@ export default function FaqFallback() {
               <AlertTriangle size={22} />
               Emergências e situações especiais
             </h2>
-            <p className="text-sm text-gray-700 leading-relaxed">
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">
               No dia da prova, situações médicas ou logísticas urgentes devem ser comunicadas diretamente ao posto de
-              comando na Praça Prof. João Brasil. Fora do horário da prova, utilize os canais oficiais listados na página
-              /ajuda para um atendimento mais rápido.
+              comando na Praça de Macuco. Fora do horário da prova, utilize os canais oficiais abaixo para um atendimento mais rápido.
             </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="flex flex-col">
+                <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Thiago (Org.)</span>
+                <a href="https://wa.me/5521983821217" target="_blank" rel="noopener noreferrer" className="text-red-700 font-semibold hover:underline">(21) 98382-1217</a>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Felipe (Org.)</span>
+                <a href="https://wa.me/5521988862910" target="_blank" rel="noopener noreferrer" className="text-red-700 font-semibold hover:underline">(21) 98886-2910</a>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Mário (Cron.)</span>
+                <a href="https://wa.me/5521982267030" target="_blank" rel="noopener noreferrer" className="text-red-700 font-semibold hover:underline">(21) 98226-7030</a>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Michell (Site)</span>
+                <a href="https://wa.me/5521968686880" target="_blank" rel="noopener noreferrer" className="text-red-700 font-semibold hover:underline">(21) 96868-6880</a>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -66,7 +66,7 @@ const faqGroups = [
     items: [
       {
         q: 'Como confirmar minha inscrição?',
-        a: 'Após finalizar o pagamento, você receberá um e-mail de confirmação. Também é possível consultar o status em /inscricao/acompanhar usando CPF e data de nascimento.',
+        a: 'Após finalizar o pagamento, você receberá um e-mail de confirmação. Também é possível consultar o status na página Acompanhar Inscrição usando seu CPF.',
       },
       {
         q: 'Posso transferir minha inscrição para outra pessoa?',
@@ -74,11 +74,11 @@ const faqGroups = [
       },
       {
         q: 'Quais formas de pagamento são aceitas?',
-        a: 'Cartão de crédito, PIX e boleto. Pagamentos por boleto levam até 48h para compensar.',
+        a: 'Somente PIX.',
       },
       {
         q: 'Existe reembolso em caso de desistência?',
-        a: 'Não realizamos reembolso. Em situações médicas comprovadas, fale com a organização através do e-mail para avaliarmos caso a caso.',
+        a: 'Não realizamos reembolso. Qualquer condição de saúde ou aptidão física é de inteira responsabilidade do próprio atleta, isentando a organização da corrida de qualquer ônus.',
       },
     ],
   },
@@ -87,15 +87,19 @@ const faqGroups = [
     items: [
       {
         q: 'Quais documentos preciso levar?',
-        a: 'Documento oficial com foto e comprovante de inscrição. Menores devem levar autorização do responsável com firma reconhecida.',
+        a: 'Documento oficial com foto e comprovante de inscrição.',
+      },
+      {
+        q: 'Onde e quando retiro meu kit?',
+        a: 'Na Praça de Macuco, no dia da prova (24/06/2026), das 08:00 às 11:00 da manhã.',
       },
       {
         q: 'Posso retirar o kit de outra pessoa?',
-        a: 'Somente com procuração simples, cópia do documento e comprovante de inscrição do atleta.',
+        a: 'Somente com autorização assinada, cópia do documento e comprovante de inscrição do atleta.',
       },
       {
         q: 'O que vem no kit?',
-        a: 'Camiseta, número de peito com chip, medalha (entregue após a prova) e brindes dos parceiros, além de acesso aos postos de hidratação.',
+        a: 'Número de peito com chip, medalha (entregue após a prova), além de acesso aos postos de hidratação.',
       },
     ],
   },
@@ -108,7 +112,7 @@ const faqGroups = [
       },
       {
         q: 'Há postos de hidratação?',
-        a: 'Sim, a cada 2,5 km e na chegada, com água e frutas.',
+        a: 'Sim, a cada 2 km e na chegada.',
       },
       {
         q: 'O que acontece se chover?',
@@ -208,7 +212,7 @@ export default function AjudaFallback() {
                 </h3>
                 <p className="text-gray-600 mb-6">
                   Nosso time está disponível para ajudar de segunda a sexta-feira. No dia da prova, a equipe de suporte
-                  fica concentrada na Praça Prof. João Brasil a partir das 8h.
+                  fica concentrada na Praça de Macuco a partir das 8h.
                 </p>
                 <div className="space-y-4">
                   {supportChannels.map(({ icon: Icon, title, description, value, href }) => (
@@ -234,16 +238,19 @@ export default function AjudaFallback() {
                 </h3>
                 <ul className="space-y-3 text-sm text-gray-600">
                   <li>
-                    <span className="font-semibold text-gray-900">Retirada de kits:</span> sexta-feira (14h às 20h) e
-                    sábado (5h30 às 6h30) na Praça Prof. João Brasil.
+                    <span className="font-semibold text-gray-900">Retirada de kits:</span> no dia da prova (24/06/2026) das 08:00 às 11:00 na Praça de Macuco.
                   </li>
                   <li>
-                    <span className="font-semibold text-gray-900">Resultados oficiais:</span> publicados em até 48h após a
-                    prova.
+                    <span className="font-semibold text-gray-900">Resultados oficiais:</span> publicados em até 48h após a prova.
                   </li>
-                  <li>
-                    <span className="font-semibold text-gray-900">Contato direto no dia da prova:</span> tenda de suporte
-                    ao lado da área de largada.
+                  <li className="space-y-2">
+                    <span className="font-semibold text-gray-900">Suporte WhatsApp:</span>
+                    <ul className="list-none space-y-1 ml-2 text-xs">
+                      <li>• Thiago (Org.): <a href="https://wa.me/5521983821217" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">(21) 98382-1217</a></li>
+                      <li>• Felipe (Org.): <a href="https://wa.me/5521988862910" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">(21) 98886-2910</a></li>
+                      <li>• Mário (Cron.): <a href="https://wa.me/5521982267030" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">(21) 98226-7030</a></li>
+                      <li>• Michell (Site): <a href="https://wa.me/5521968686880" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">(21) 96868-6880</a></li>
+                    </ul>
                   </li>
                 </ul>
               </div>

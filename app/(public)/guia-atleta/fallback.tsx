@@ -34,7 +34,7 @@ const guiaSections: GuiaSection[] = [
       {
         subtitle: 'Menores de 18 anos',
         items: [
-          'Autorização do responsável com firma reconhecida',
+          'Autorização do responsável legal assinada',
           'Documento do responsável (RG ou CNH)',
           'Certidão de nascimento ou RG do menor',
         ],
@@ -83,7 +83,7 @@ const guiaSections: GuiaSection[] = [
         items: [
           '📄 Documentos (RG, comprovante de inscrição)',
           '🔢 Número de peito preso na camiseta',
-          '⏱️ Chip de cronometragem no tênis',
+          '⏱️ Chip de cronometragem fixado no tênis',
           '💧 Garrafa de água (opcional)',
           '📱 Celular para contato e fotos',
           '🧢 Boné ou viseira',
@@ -103,69 +103,21 @@ const guiaSections: GuiaSection[] = [
     ],
   },
   {
-    id: 'hospedagem',
-    title: '🏨 Hospedagem',
-    content: [
-      {
-        subtitle: 'Hotéis parceiros com desconto',
-        items: [
-          'Hotel Macuco Plaza – R$ 180/noite (15% off) – (22) 3267-1000',
-          'Pousada Serra Verde – R$ 120/noite (10% off) – (22) 3267-2000',
-          'Hotel Centro – R$ 100/noite (20% off) – (22) 3267-3000',
-          'Pousada Cantinho Rural – R$ 90/noite (10% off) – (22) 3267-4000',
-        ],
-      },
-      {
-        subtitle: 'Dica',
-        items: [
-          'Mencione “Corrida de Macuco 2026” ao reservar',
-          'Faça a reserva com antecedência, principalmente para sexta-feira',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'alimentacao',
-    title: '🍽️ Alimentação',
-    content: [
-      {
-        subtitle: 'Restaurantes parceiros',
-        items: [
-          'Restaurante do Porto – frutos do mar – (22) 3267-5000',
-          'Cantina Italiana – massas – (22) 3267-6000',
-          'Churrascaria Gaúcha – carnes – (22) 3267-7000',
-          'Bistrô Orgânico – opções saudáveis – (22) 3267-8000',
-          'Pizzaria Bella – pizzas especiais – (22) 3267-9000',
-        ],
-      },
-      {
-        subtitle: 'Antes da prova',
-        items: [
-          'Refeição leve até 3 horas antes da largada',
-          'Evite alimentos gordurosos ou muito condimentados',
-          'Não utilize suplementos que você não esteja acostumado',
-        ],
-      },
-    ],
-  },
-  {
     id: 'logistica',
     title: '🚗 Logística e Transporte',
     content: [
       {
         subtitle: 'Para chegar à largada',
         items: [
-          'Acesso pela Fábrica de Cimento Holcim (vagas limitadas para carros)',
-          'Condução oficial saindo da Praça Prof. João Brasil às 11h15',
+          'Acesso pela Praça de Macuco',
           'Recomenda-se carona solidária ou transporte por aplicativo',
         ],
       },
       {
         subtitle: 'Acesso à chegada',
         items: [
-          'Chegada na Praça Prof. João Brasil (Centro de Macuco)',
-          'Estacionamento gratuito na Rua das Flores',
-          'Estacionamento oficial (R$ 15) com vigilância 24h',
+          'Chegada na Praça de Macuco (Centro de Macuco)',
+          'Estacionamento gratuito nas ruas próximas à Praça de Macuco',
         ],
       },
     ],
@@ -179,7 +131,7 @@ const faqs: FaqItem[] = [
   },
   {
     q: 'Posso usar meu próprio chip de cronometragem?',
-    a: 'Não. Todos devem utilizar o chip fornecido pela organização, que já vem junto ao número de peito.',
+    a: 'Não. Todos devem utilizar o chip fornecido pela organização, que deve ser fixado no tênis.',
   },
   {
     q: 'E se chover no dia da prova?',
@@ -195,11 +147,15 @@ const faqs: FaqItem[] = [
   },
   {
     q: 'Posso me inscrever no dia da prova?',
-    a: 'Somente em caso de desistência. Procure a equipe da organização na Praça Prof. João Brasil no dia da prova para verificar disponibilidade.',
+    a: 'Somente em caso de desistência. Procure a equipe da organização na Praça de Macuco no dia da prova para verificar disponibilidade.',
   },
   {
     q: 'Onde vejo os resultados?',
     a: 'Os resultados serão publicados no site em até 48 horas após o término da prova.',
+  },
+  {
+    q: 'Onde e quando retiro meu kit?',
+    a: 'Na Praça de Macuco, no dia da prova (24/06/2026), das 08:00 às 11:00 da manhã.',
   },
 ]
 
