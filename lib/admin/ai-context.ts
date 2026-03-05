@@ -107,6 +107,28 @@ export async function getAiUsage(cpf: string, fullName?: string) {
         const supabase = createServiceClient()
         const cleanCpf = cpf.replace(/\D/g, '')
 
+        // Verificar se é admin via tabela admin_users (não depende de env var)
+        const { data: athleteData } = await supabase
+            .from('athletes')
+            .select('user_id')
+            .eq('document_number', cleanCpf)
+            .limit(1)
+
+        let isAdmin = false
+        if (athleteData?.[0]?.user_id) {
+            const { data: adminData } = await supabase
+                .from('admin_users')
+                .select('id')
+                .eq('user_id', athleteData[0].user_id)
+                .limit(1)
+            isAdmin = (adminData?.length ?? 0) > 0
+        }
+
+        // Fallback: verificar também pela env var (compatibilidade)
+        if (!isAdmin && cleanCpf === (process.env.ADMIN_CHAT_CPF || '').replace(/\D/g, '')) {
+            isAdmin = true
+        }
+
         const { data: usageData, error: usageError } = await supabase
             .from('ai_usage')
             .select('*')
@@ -117,11 +139,10 @@ export async function getAiUsage(cpf: string, fullName?: string) {
 
         if (usageError) {
             console.error('Erro ao buscar uso da IA:', usageError)
-            return { cpf: cleanCpf, full_name: fullName || 'Visitante', message_count: 0, isAdmin: cleanCpf === process.env.ADMIN_CHAT_CPF }
+            return { cpf: cleanCpf, full_name: fullName || 'Visitante', message_count: 0, isAdmin }
         }
 
         const now = new Date()
-        const isAdmin = cleanCpf === process.env.ADMIN_CHAT_CPF
 
         if (!usage) {
             const { data: newUsage } = await supabase
