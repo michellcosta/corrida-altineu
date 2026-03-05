@@ -6,82 +6,97 @@ import { createServiceClient } from '@/lib/supabase/serverClient'
 export const PRIVACY_DRAWER = `
 DIRETIVA DE SEGURANÇA MÁXIMA E PRIVACIDADE (LGPD):
 1. Você é um assistente virtual que preza pela segurança dos dados.
-2. Você SÓ tem permissão para fornecer informações de inscrição para o usuário que está logado (identificado pelo CPF no contexto).
-3. Se o usuário perguntar por dados de TERCEIROS (outras pessoas), recuse firmemente: "Por questões de privacidade e segurança (LGPD), não tenho permissão para acessar ou divulgar dados nominais de outros participantes."
-4. NUNCA mostre CPFs, RGs ou e-mails nas respostas.
-5. O atleta tem autonomia total para corrigir seus próprios dados na página "Acompanhar Inscrição".
-
-DIRETIVA DE BUSCA DE INSCRIÇÃO:
-1. Quando o usuário perguntar "Estou inscrito?", "Verificar minha inscrição" ou similar:
-   - Olhe primeiro o resultado da busca vinculado ao CPF logado no bloco "DADOS EM TEMPO REAL".
-   - Se a inscrição for ENCONTRADA, informe: Nome (apenas o primeiro nome e inicial do sobrenome para segurança), Categoria e Status (Confirmada/Pendente).
-   - Se NÃO for encontrada para o CPF logado, diga: "Não localizei uma inscrição com o CPF do seu acesso. Você possui um RG ou Código de Inscrição para que eu tente uma nova busca?"
-2. Se o usuário fornecer um RG ou Código manualmente:
-   - Use o resultado da busca que aparecerá no contexto dinâmico.
-   - Se encontrar, mostre apenas Nome, Categoria e Status.
-3. Se após as tentativas nada for encontrado, sugira que ele verifique os dados ou faça a inscrição em [/inscricao](/inscricao).
+2. Dados Nominais Sensíveis: Você NUNCA deve mostrar CPFs, RGs ou e-mails nas respostas.
+3. Consulta Individual: Para ver dados detalhados ou corrigir informações, direcione o usuário para a página de [Acompanhar Inscrição](/inscricao/acompanhar).
+4. Lista Pública de Inscritos: É PERMITIDO informar que existe uma lista pública de confirmados na página [Lista de Inscritos](/inscricao/lista). 
+5. Respeite sempre a privacidade: Não divulgue dados privados de terceiros, apenas aponte para as páginas oficiais onde as informações públicas estão disponíveis.
 `
 
 /**
- * GAVETA 2: LOGÍSTICA E FAQ (ESTÁTICA)
+ * GAVETA 2: LOGÍSTICA, REGRAS E CATEGORIAS (2026)
  */
 export const LOGISTICS_DRAWER = `
-LOGÍSTICA E LOCALIZAÇÃO:
-- Local da Largada: Praça Central de Macuco, RJ (R. Dr. Mario Freire Martins, 194, Centro).
-- Link Google Maps: [Abrir no Google Maps](https://www.google.com/maps/dir/?api=1&destination=R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ)
-- Link Waze: [Abrir no Waze](https://waze.com/ul?q=R.+Dr.+Mario+Freire+Martins+194+Centro+Macuco+RJ&navigate=yes)
-- Estacionamento: Gratuito nas ruas próximas à Praça de Macuco.
+LOGÍSTICA E REGRAS:
+- Local da Largada/Chegada: Praça Central de Macuco, RJ.
+- Inscrições: Até o dia anterior à prova (sujeito a alteração).
+- Cancelamento/Transferência: Não é permitido reembolso ou transferência de inscrição.
+- PCD (Pessoas com Deficiência): Inscrição GRATUITA. O atleta deve entrar em contato com os organizadores para receber seu ingresso.
 
-CONTATOS E SUPORTE:
-- Suporte Geral: WhatsApp (21) 96868-6880 (Atendimento em até 24h úteis).
-- Thiago (Organizador): WhatsApp (21) 98382-1217
-- Felipe (Organização): WhatsApp (21) 98886-2910
-- Mário (Cronometragem): WhatsApp (21) 98226-7030
-- Michell (Site/Técnico): WhatsApp (21) 96868-6880
+VALORES E PAGAMENTO:
+- Categoria 10K: R$ 22,00 (Pagamento SOMENTE via PIX).
+- Categorias Gratuitas: Infantil, Morador de Macuco (conforme regra abaixo), 60+ e PCD.
 
-CRONOGRAMA DETALHADO (2026):
-- 08:00: Largada Oficial (10K e 5K).
-- 09:30: Início da Corrida Kids.
-- 10:30: Cerimônia de Premiação.
-- 12:00: Encerramento do Evento.
+CRONOGRAMA OFICIAL (2026):
+- 08:00: Início da Concentração na Arena.
+- 10:00: Largada da Corrida Infantil (Percurso de 2,5km).
+- 12:00: Largada Oficial 10K (Atletas a partir de 15 anos).
+- 13:30: Cerimônia de Premiação (Previsão).
+- 15:00: Encerramento do Evento.
 
-RETIRADA DE KITS:
-- Local: Praça de Macuco.
-- Horário: No dia da prova (24/06/2026), das 08:00 às 11:00 da manhã.
-- Documentos: Documento original com foto e comprovante de inscrição.
-- REGRA PARA MORADORES DE MACUCO: É OBRIGATÓRIO apresentar um comprovante de residência atualizado para validar a gratuidade da inscrição. Sem o comprovante, o kit não será entregue.
-- Terceiros: Autorização assinada, cópia do documento e comprovante de inscrição do atleta.
+CATEGORIAS E REGRAS DE PROVA:
+- Geral 10k, 60+ 10k, Morador de Macuco 10k. (Não há percurso de 5k).
+- PCD: Não possui categoria específica; competem no Geral.
+- Hidratação: Postos de água a cada 2km (km 2, 4, 6, 8) e na chegada.
+- Guarda-Volumes: NÃO haverá serviço de guarda-volumes no local.
+- Alimentação: Lanche leve/frutas disponível ANTES do início da prova (sujeito a disponibilidade, sem kit pós-prova garantido).
+- Resultados: Disponíveis no site da empresa de cronometragem e, posteriormente, em nosso site oficial.
 
-ITENS DO KIT E REGRAS:
-- Chip: OBRIGATORIAMENTE fixado no tênis.
-- Número de Peito: Parte frontal da camiseta.
-- Hidratação: A cada 2 km e na chegada.
-- Pagamento: SOMENTE PIX.
+CONTATOS PARA DÚVIDAS E PCD:
+- Suporte/Michell: WhatsApp (21) 96868-6880.
+- Thiago (Organizador): WhatsApp (21) 98382-1217.
 `
 
 /**
- * GAVETA 3: HISTÓRIA E CONTEXTO (ESTÁTICA)
+ * GAVETA 3: PREMIAÇÕES E TROFÉUS (ESTÁTICA)
+ */
+export const AWARDS_DRAWER = `
+PREMIAÇÃO TOTAL: Mais de R$ 20.000,00 em dinheiro e troféus.
+
+PREMIAÇÃO GERAL 10K (MASCULINO E FEMININO):
+- 1º: R$ 5.000,00 + Troféu General Atrantino Côrtes Coutinho
+- 2º: R$ 2.000,00 + Troféu Deputado José Carlos Pires Coutinho
+- 3º: R$ 1.500,00 + Troféu Atrantino Pires Coutinho
+- 4º: R$ 800,00 + Troféu Doutor Junot Abi-Ramia Antônio
+- 5º: R$ 600,00 + Troféu Prefeito José Carlos Boaretto
+- 6º ao 7º: R$ 500,00 (6º) e R$ 400,00 (7º) + Troféus
+- 8º ao 10º: R$ 300,00 (8º) e R$ 200,00 (9º/10º) + Troféus
+
+ATLETAS DE MACUCO (MASCULINO E FEMININO):
+- Premiação do 1º (R$ 1.000,00) ao 10º colocado (R$ 100,00).
+
+FAIXAS ETÁRIAS (A partir de 15 anos):
+- 1º: Troféu + R$ 200,00 | 2º: R$ 150,00 | 3º: R$ 100,00.
+
+CATEGORIA INFANTIL (2,5 KM):
+- Premiação do 1º (R$ 250,00) até o 10º colocado.
+
+MEDALHAS: Entregues a TODOS os atletas que terminarem a prova.
+`
+
+/**
+ * GAVETA 4: HISTÓRIA E CONTEXTO (ESTÁTICA)
  */
 export const HISTORY_DRAWER = `
 HISTÓRIA DO EVENTO:
-A Corrida Rústica de São João Batista nasceu in 1974 em Macuco-RJ. 
-Em 2026 acontece a 51ª edição, mantendo a tradição com inovação e premiação total de mais de R$ 20.000,00.
+A Corrida Rústica de São João Batista nasceu em 1974 em Macuco-RJ. 
+Em 2026 acontece a 51ª edição, consolidada como uma das mais tradicionais do estado.
+
+ORGANIZAÇÃO:
+O evento é organizado pela Comissão Organizadora da Corrida Rústica de Macuco, com apoio total da Prefeitura Municipal e patrocinadores oficiais.
+NÃO existe vínculo de organização com a "Associação Atlética Macuco (AAM)". Esta informação está INCORRETA se mencionada.
 `
 
 /**
- * GAVETA 4: MAPA DO SITE E LINKS (ESTÁTICA)
+ * GAVETA 5: MAPA DO SITE E LINKS
  */
 export const SITE_MAP_DRAWER = `
-LINKS ÚTEIS DO SITE (Sempre que possível, direcione o usuário para estas páginas):
-- Inscrição: [/inscricao](/inscricao)
-- Acompanhar Inscrição: [/inscricao/acompanhar](/inscricao/acompanhar)
-- Regulamento Oficial: [/regulamento](/regulamento)
-- Percursos e Mapas: [/percursos](/percursos)
-- Premiações: [/premiacoes](/premiacoes)
-- Perguntas Frequentes (FAQ): [/faq](/faq)
-- Central de Ajuda: [/ajuda](/ajuda)
-- Resultados (Pós-prova): [/resultados](/resultados)
-- Galeria de Fotos: [/galeria](/galeria)
+LINKS ÚTEIS:
+- Inscrição (Fazer Nova): [/inscricao](/inscricao)
+- Lista de Inscritos (Consulta Pública): [/inscricao/lista](/inscricao/lista)
+- Acompanhar / Ver Minha Inscrição: [/inscricao/acompanhar](/inscricao/acompanhar)
+- Premiações Detalhadas: [/premiacoes](/premiacoes)
+- Regulamento: [/regulamento](/regulamento)
+- Percursos: [/percursos](/percursos)
 `
 
 /**
@@ -92,12 +107,13 @@ export async function getAiUsage(cpf: string, fullName?: string) {
         const supabase = createServiceClient()
         const cleanCpf = cpf.replace(/\D/g, '')
 
-        // 1. Tentar buscar uso existente
-        const { data: usage, error: usageError } = await supabase
+        const { data: usageData, error: usageError } = await supabase
             .from('ai_usage')
             .select('*')
             .eq('cpf', cleanCpf)
-            .maybeSingle()
+            .limit(1)
+
+        const usage = usageData?.[0]
 
         if (usageError) {
             console.error('Erro ao buscar uso da IA:', usageError)
@@ -107,7 +123,6 @@ export async function getAiUsage(cpf: string, fullName?: string) {
         const now = new Date()
         const isAdmin = cleanCpf === process.env.ADMIN_CHAT_CPF
 
-        // 2. Se não existe, criar
         if (!usage) {
             const { data: newUsage } = await supabase
                 .from('ai_usage')
@@ -122,11 +137,11 @@ export async function getAiUsage(cpf: string, fullName?: string) {
             return { ...newUsage, isAdmin }
         }
 
-        // 3. Verificar se precisa resetar o contador (24h)
         const lastMessage = new Date(usage.last_message_at)
-        const diffHours = (now.getTime() - lastMessage.getTime()) / (1000 * 60 * 60)
+        const today = now.toISOString().split('T')[0]
+        const lastDay = lastMessage.toISOString().split('T')[0]
 
-        if (diffHours >= 24) {
+        if (today !== lastDay) {
             const { data: resetUsage } = await supabase
                 .from('ai_usage')
                 .update({ message_count: 0, last_message_at: now.toISOString() })
@@ -150,11 +165,11 @@ export async function incrementAiUsage(cpf: string) {
     try {
         const supabase = createServiceClient()
         const cleanCpf = cpf.replace(/\D/g, '')
-        
+
         if (cleanCpf === process.env.ADMIN_CHAT_CPF) return
 
         const { data: current } = await supabase.from('ai_usage').select('message_count').eq('cpf', cleanCpf).single();
-        await supabase.from('ai_usage').update({ 
+        await supabase.from('ai_usage').update({
             message_count: (current?.message_count || 0) + 1,
             last_message_at: new Date().toISOString()
         }).eq('cpf', cleanCpf);
@@ -178,19 +193,23 @@ export async function getDynamicContext(searchQuery?: string) {
             .eq('year', 2026)
             .single()
 
-        if (!event) return "Informação: Evento de 2026 em planejamento."
+        if (!event) {
+            console.log(`DEBUG DYNAMIC CONTEXT: Evento 2026 não encontrado no ano 2026.`)
+            return "Informação: Evento de 2026 em planejamento."
+        }
+        console.log(`DEBUG DYNAMIC CONTEXT: Evento = ${event.id}, query = ${searchQuery}`)
 
         // 2. Contagem de Atletas (Dinâmico)
         const { count: totalInscritos } = await supabase
             .from('registrations')
             .select('*', { count: 'exact', head: true })
             .eq('event_id', event.id)
-            .eq('status', 'confirmed')
+            .in('status', ['confirmed', 'paid'])
 
         // Buscar ocupação por categoria
         const { data: categories } = await supabase
             .from('categories')
-            .select('name, max_slots')
+            .select('id, name, max_slots')
             .eq('event_id', event.id)
             .eq('is_active', true)
 
@@ -200,9 +219,9 @@ export async function getDynamicContext(searchQuery?: string) {
                 const { count } = await supabase
                     .from('registrations')
                     .select('*', { count: 'exact', head: true })
-                    .eq('category_id', (cat as any).id)
-                    .eq('status', 'confirmed')
-                
+                    .eq('category_id', cat.id)
+                    .in('status', ['confirmed', 'paid'])
+
                 const remaining = (cat.max_slots || 0) - (count || 0)
                 categoryStats += `- ${cat.name}: ${remaining} vagas restantes.\n`
             }
@@ -212,16 +231,16 @@ export async function getDynamicContext(searchQuery?: string) {
         let searchResult = ""
         if (searchQuery) {
             const cleanQuery = searchQuery.replace(/[^\w]/g, '')
-            
+
             // Tentativa 1: Busca direta na tabela de inscrições
-            const { data: regByCode } = await supabase
+            const { data: regByCodeData } = await supabase
                 .from('registrations')
                 .select('id, status, confirmation_code, registration_number, categories(name), athletes(full_name, document_number)')
                 .eq('event_id', event.id)
-                .or(`confirmation_code.eq.${searchQuery.toUpperCase()},registration_number.eq.${searchQuery.toUpperCase()},confirmation_code.eq.${searchQuery},registration_number.eq.${searchQuery}`)
-                .maybeSingle()
+                .or(`confirmation_code.eq.${searchQuery.toUpperCase()}, registration_number.eq.${searchQuery.toUpperCase()}, confirmation_code.eq.${searchQuery}, registration_number.eq.${searchQuery}`)
+                .limit(1)
 
-            let finalReg = regByCode
+            let finalReg = regByCodeData?.[0]
 
             // Tentativa 2: Se não encontrou por código, busca por documento do atleta
             if (!finalReg && cleanQuery) {
@@ -237,25 +256,34 @@ export async function getDynamicContext(searchQuery?: string) {
                         .select('id, status, confirmation_code, registration_number, categories(name), athletes(full_name, document_number)')
                         .eq('event_id', event.id)
                         .in('athlete_id', athleteIds)
-                        .maybeSingle()
-                    
-                    finalReg = regByAthlete
+                        .limit(1)
+
+                    finalReg = regByAthlete?.[0]
+                    console.log(`DEBUG DYNAMIC CONTEXT: Tentativa 2 Result = ${finalReg ? 'Encontrada ✅' : 'Não encontrada ❌'}`)
                 }
             }
 
             if (finalReg) {
-                const athleteName = (finalReg.athletes as any)?.full_name || 'Atleta'
-                const categoryName = Array.isArray(finalReg.categories) ? (finalReg.categories[0] as any)?.name : (finalReg.categories as any)?.name
-                const regDoc = (finalReg.athletes as any)?.document_number
-                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: ENCONTRADA ✅\n- Atleta: ${athleteName}\n- CPF do Atleta: ${regDoc}\n- Status: ${finalReg.status === 'confirmed' ? 'CONFIRMADA ✅' : 'PENDENTE ⏳'}\n- Categoria: ${categoryName || 'Geral'}\n- Código: ${finalReg.confirmation_code || finalReg.registration_number}\n- CPF/Código consultado: ${searchQuery}\n`
+                // Acesso resiliente a objeto ou array (Supabase joins)
+                const athletesData = Array.isArray(finalReg.athletes) ? finalReg.athletes[0] : finalReg.athletes
+                const categoriesData = Array.isArray(finalReg.categories) ? finalReg.categories[0] : finalReg.categories
+
+                const athleteName = (athletesData as any)?.full_name || 'Atleta'
+                const categoryName = (categoriesData as any)?.name || 'Geral'
+                const regDoc = (athletesData as any)?.document_number
+                const isConfirmed = ['confirmed', 'paid'].includes(finalReg.status)
+
+                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: ENCONTRADA ✅\n - Atleta: ${athleteName}\n - CPF do Atleta: ${regDoc}\n - Status: ${isConfirmed ? 'CONFIRMADA ✅' : 'PENDENTE ⏳'} \n - Categoria: ${categoryName} \n - Código: ${finalReg.confirmation_code || finalReg.registration_number} \n - CPF / Código consultado: ${searchQuery} \n`
+                console.log(`DEBUG DYNAMIC CONTEXT: Search Success for ${athleteName}`)
             } else {
-                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: NÃO ENCONTRADA ❌\n- CPF/Código consultado: ${searchQuery}\n- Motivo: Nenhum registro vinculado ao evento de 2026 foi localizado para este documento.\n`
+                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: NÃO ENCONTRADA ❌\n - CPF / Código consultado: ${searchQuery} \n - Motivo: Nenhum registro vinculado ao evento de 2026 foi localizado para este documento.\n`
+                console.log(`DEBUG DYNAMIC CONTEXT: Search Failed for ${searchQuery}`)
             }
         }
 
         return `
 DADOS EM TEMPO REAL:
-- Data da Prova: 24/06/2026 às 08:00h.
+- Data da Prova: 24 /06 / 2026 às 08:00h.
 - Status das Inscrições: ${event.registrations_open ? 'ABERTAS' : 'FECHADAS'}.
 - Total de Atletas Confirmados: ${totalInscritos || 0}.
 VAGAS POR CATEGORIA:
@@ -275,19 +303,51 @@ export async function getFullContext(searchQuery?: string) {
     return `
 VOCÊ É O ASSISTENTE VIRTUAL DA 51ª CORRIDA DE MACUCO.
 
-${PRIVACY_DRAWER}
+    ${PRIVACY_DRAWER}
 ${LOGISTICS_DRAWER}
+${AWARDS_DRAWER}
 ${HISTORY_DRAWER}
+${SITE_MAP_DRAWER}
 ${dynamic}
 
 DIRETIVA DE RESPOSTA:
 - Use Markdown para links: [Texto](/link).
-- Use asteriscos para negrito em informações importantes (ex: *24/06/2026*).
+- Use asteriscos para negrito em informações importantes(ex: * 24 /06 / 2026 *).
 - Seja proativo em ajudar com a inscrição: [/inscricao](/inscricao).
-- Responda de forma amigável, concisa e descontraída. Adote uma personalidade de "Coach" ou Treinador motivador: use frases como "Foco no treino!", "Você vai brilhar!", "Prepare o fôlego!".
-- Use EMOJIS (🏃‍♂️, ✨, ✅, 📍, 🚀, ⏳) para tornar a conversa mais humana e animada.
+- Responda de forma amigável, concisa e descontraída.Adote uma personalidade de "Coach" ou Treinador motivador: use frases como "Foco no treino!", "Você vai brilhar!", "Prepare o fôlego!".
+- Use EMOJIS(🏃‍♂️, ✨, ✅, 📍, 🚀, ⏳) para tornar a conversa mais humana e animada.
 - ATALHOS INTELIGENTES: Se responder sobre localização ou retirada de kit, pergunte se o usuário quer o link do Google Maps ou Waze.
-- SENSO DE URGÊNCIA: Se o usuário perguntar sobre inscrições ou categorias, mencione o número de vagas restantes (se for baixo) para incentivar a inscrição imediata.
-- ONISCIÊNCIA E NAVEGAÇÃO: Sempre que fornecer uma informação que tenha uma página dedicada no site (como percursos, premiações ou regulamento), finalize a resposta sugerindo o link direto da página para que o usuário veja mais detalhes.
+- SENSO DE URGÊNCIA: Se o usuário perguntar sobre inscrições ou categorias, mencione o número de vagas restantes(se for baixo) para incentivar a inscrição imediata.
+- ONISCIÊNCIA E NAVEGAÇÃO: Sempre que fornecer uma informação que tenha uma página dedicada no site(como percursos, premiações ou regulamento), finalize a resposta sugerindo o link direto da página para que o usuário veja mais detalhes.
 `
+}
+
+/**
+ * Busca a configuração global da IA (Provedor, Regulamento, Prompt)
+ */
+export async function getAiConfig() {
+    try {
+        const supabase = createServiceClient()
+
+        // 1. Buscar evento de 2026
+        const { data: event } = await supabase
+            .from('events')
+            .select('id')
+            .eq('year', 2026)
+            .single()
+
+        if (!event) return null
+
+        // 2. Buscar config vinculada ao evento
+        const { data: config } = await supabase
+            .from('ai_config')
+            .select('ai_provider, regulation_text, system_prompt')
+            .eq('event_id', event.id)
+            .single()
+
+        return config
+    } catch (error) {
+        console.error('Erro ao buscar configuração da IA:', error)
+        return null
+    }
 }

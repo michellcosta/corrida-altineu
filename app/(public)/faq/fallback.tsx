@@ -69,7 +69,7 @@ const categories: FAQCategory[] = [
     items: [
       {
         q: 'Qual o horário das largadas?',
-        a: 'Corrida 10K às 08:00h e Corrida Infanto-Juvenil 2K às 09:30h.',
+        a: 'Corrida Kids 2.5K às 10:00h e Corrida 10K às 12:00h.',
       },
       {
         q: 'Haverá guarda-volumes?',
@@ -77,7 +77,7 @@ const categories: FAQCategory[] = [
       },
       {
         q: 'Há postos de hidratação?',
-        a: 'Sim, a cada 2 km e na chegada.',
+        a: 'Sim, a cada 2 km (km 2, 4, 6 e 8) e na chegada.',
       },
       {
         q: 'Posso correr com fones de ouvido?',
@@ -183,9 +183,8 @@ export default function FaqFallback() {
                           <span className="font-semibold text-gray-900">{item.q}</span>
                           <ChevronDown
                             size={22}
-                            className={`text-indigo-600 flex-shrink-0 transition-transform ${
-                              isOpen ? 'rotate-180' : ''
-                            }`}
+                            className={`text-indigo-600 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''
+                              }`}
                           />
                         </button>
                         {isOpen && (

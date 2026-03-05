@@ -9,7 +9,7 @@ import {
   Menu, LogOut, User, Bell, ChevronRight,
   LayoutDashboard, FileText, Calendar, Users, BarChart, Activity,
   Download, Hash, CheckCircle, Award, AlertTriangle, MessageSquare,
-  Settings, Search, Mail, Layers, File, Layout, Newspaper, Image, FileCheck, Shield
+  Settings, Search, Mail, Layers, File, Layout, Newspaper, Image
 } from 'lucide-react'
 import { SkeletonAdminLayout } from '@/components/ui'
 import { useAlertCount } from '@/hooks/useAlertCount'
@@ -18,7 +18,7 @@ import { useAdminNotifications } from '@/hooks/useAdminNotifications'
 const iconMap: Record<string, any> = {
   LayoutDashboard, FileText, Calendar, Users, BarChart, Activity,
   Download, Hash, CheckCircle, Award, AlertTriangle, MessageSquare,
-  Settings, Search, Mail, Layers, File, Layout, Newspaper, Image, FileCheck
+  Settings, Search, Mail, Layers, File, Layout, Newspaper, Image
 }
 
 interface AdminLayoutProps {
@@ -75,7 +75,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       setLoading(true)
       const supabase = createClient()
-      
+
       // Verificar se há sessão ativa
       const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -215,11 +215,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {hasChildren ? (
                   <button
                     onClick={() => toggleMenu(item.name)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-800'
-                    }`}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isActive
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-800'
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       {Icon && <Icon size={20} />}
@@ -234,11 +233,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <Link
                     href={item.href}
                     onClick={closeMobileMenu}
-                    className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-800'
-                    }`}
+                    className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isActive
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-800'
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       {Icon && <Icon size={20} />}
@@ -264,11 +262,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                           key={child.name}
                           href={child.href}
                           onClick={closeMobileMenu}
-                          className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
-                            isChildActive
-                              ? 'bg-primary-600 text-white'
-                              : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                          }`}
+                          className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${isChildActive
+                            ? 'bg-primary-600 text-white'
+                            : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                            }`}
                         >
                           {ChildIcon && <ChildIcon size={16} />}
                           <span>{child.name}</span>
@@ -284,14 +281,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Segurança + Logout */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800 space-y-1">
-          <Link
-            href="/admin/settings/security"
-            onClick={closeMobileMenu}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <Shield size={20} />
-            <span className="font-medium">Segurança (2FA)</span>
-          </Link>
           <button
             onClick={handleLogout}
             className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded-lg transition-colors"

@@ -131,7 +131,7 @@ export default async function SessentaMais10KPage() {
               title="Logística pensada para o conforto"
               items={[
                 'Transporte oficial da praça até a largada às 11h15',
-                'Postos de hidratação na largada, km 3, km 6, km 8,5 e chegada',
+                'Postos de hidratação a cada 2 km (km 2, 4, 6, 8) e na chegada',
                 'Kit completo com camiseta dry-fit, chip descartável e medalha',
               ]}
             />

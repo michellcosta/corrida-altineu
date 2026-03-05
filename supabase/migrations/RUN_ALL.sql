@@ -98,3 +98,33 @@ comment on column public.athletes.country is 'Código ISO do país (ex: BRA, ARG
 -- 6. Coluna is_macuco_resident em athletes (categoria Infantil)
 alter table public.athletes add column if not exists is_macuco_resident boolean;
 comment on column public.athletes.is_macuco_resident is 'Se o atleta (criança) é morador de Macuco - usado na categoria Infantil';
+
+-- 7. Configuração da IA
+CREATE TABLE IF NOT EXISTS public.ai_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID REFERENCES public.events(id) ON DELETE CASCADE,
+  system_prompt TEXT,
+  regulation_text TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- Adicionar coluna ai_provider se não existir
+ALTER TABLE public.ai_config ADD COLUMN IF NOT EXISTS ai_provider TEXT DEFAULT 'gemini';
+
+-- Verificar se a constraint existe ou apenas rodar o check separadamente
+-- Nota: IF NOT EXISTS no checkout constraint não é padrão, mas aqui vamos manter simples.
+-- Se falhar porque já existe o campo sem check, o próximo passo resolve.
+
+UPDATE public.ai_config SET ai_provider = 'gemini' WHERE ai_provider IS NULL;
+
+-- 8. Garantir unicidade da configuração por evento
+DELETE FROM public.ai_config a USING public.ai_config b WHERE a.id < b.id AND a.event_id = b.event_id;
+ALTER TABLE public.ai_config DROP CONSTRAINT IF EXISTS ai_config_event_id_key;
+ALTER TABLE public.ai_config ADD CONSTRAINT ai_config_event_id_key UNIQUE (event_id);
+
+-- Inserir configuração inicial se não existir
+INSERT INTO public.ai_config (event_id, system_prompt, regulation_text, ai_provider)
+SELECT id, 'Você é o assistente virtual da Corrida de Macuco 2026. Responda dúvidas baseando-se no regulamento abaixo. Seja amigável e conciso.', 'Regulamento inicial...', 'gemini'
+FROM public.events
+WHERE year = 2026
+ON CONFLICT DO NOTHING;

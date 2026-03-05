@@ -7,7 +7,7 @@ import { CRONOGRAMA_ESSENCIAL_CARD } from '@/lib/programacao'
 export const metadata = {
   title: 'Prova 10K | 51ª Corrida de Macuco',
   description:
-    'Categoria principal da Corrida de Macuco com largada às 12h, inscrição a partir de R$ 20 e premiação oficial para os 10 primeiros colocados.',
+    'Categoria principal da Corrida de Macuco com largada às 12h, inscrição a partir de R$ 22 e premiação oficial para os 10 primeiros colocados.',
 }
 
 const GENERAL_PRIZES = [
@@ -40,7 +40,7 @@ const KIT_ITEMS = [
   { title: 'Medalha Finisher', desc: 'Para todos que concluírem' },
   { title: 'Chip de Cronometragem', desc: 'Descartável, aplicado no número' },
   { title: 'Brindes de Parceiros', desc: 'Entregues na retirada do kit' },
-  { title: 'Hidratação', desc: 'Pontos na largada, km 3, km 6, km 8,5 e chegada' },
+  { title: 'Hidratação', desc: 'Pontos a cada 2km (km 2, 4, 6, 8) e na chegada' },
   { title: 'Frutas na Chegada', desc: 'Banana e laranja na área de dispersão' },
   { title: 'Resultados Oficiais', desc: 'Publicados em até 48h' },
   { title: 'Seguro Atleta', desc: 'Cobertura durante toda a prova' },
@@ -63,24 +63,24 @@ export default async function Prova10KPage() {
 
   const pricingOption = geralCategory
     ? {
-        id: 'geral-10k' as const,
-        title: geralCategory.name,
-        price: geralCategory.isFree ? 'Gratuita' : `R$ ${geralCategory.price.toFixed(2)}`,
-        description: geralCategory.description || buildAgeRule(geralCategory.ageMin, geralCategory.ageMax, config?.event?.year),
-        spots:
-          geralCategory.spotsAvailable != null
-            ? `${geralCategory.spotsAvailable} de ${geralCategory.spots} vagas`
-            : `${geralCategory.spots} vagas`,
-        highlight: !geralCategory.isFree,
-      }
+      id: 'geral-10k' as const,
+      title: geralCategory.name,
+      price: geralCategory.isFree ? 'Gratuita' : `R$ ${geralCategory.price.toFixed(2)}`,
+      description: geralCategory.description || buildAgeRule(geralCategory.ageMin, geralCategory.ageMax, config?.event?.year),
+      spots:
+        geralCategory.spotsAvailable != null
+          ? `${geralCategory.spotsAvailable} de ${geralCategory.spots} vagas`
+          : `${geralCategory.spots} vagas`,
+      highlight: !geralCategory.isFree,
+    }
     : {
-        id: 'geral-10k' as const,
-        title: 'Prova Geral 10K',
-        price: 'R$ 20,00',
-        description: `Categoria paga para atletas que completam 15 anos até 31/12/${RACE_CONFIG.year}.`,
-        spots: '500 vagas',
-        highlight: true,
-      }
+      id: 'geral-10k' as const,
+      title: 'Prova Geral 10K',
+      price: 'R$ 22,00',
+      description: `Categoria paga para atletas que completam 15 anos até 31/12/${RACE_CONFIG.year}.`,
+      spots: '500 vagas',
+      highlight: true,
+    }
 
   return (
     <div className="pt-24">
@@ -152,24 +152,24 @@ export default async function Prova10KPage() {
                 key={pricingOption.id}
                 className={`card text-center ${pricingOption.highlight ? 'border-4 border-primary-500 relative' : ''}`}
               >
-                  {pricingOption.highlight && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-bold">
-                      Categoria Paga
-                    </div>
-                  )}
-                  <div className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wide">
-                    {pricingOption.title}
+                {pricingOption.highlight && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-bold">
+                    Categoria Paga
                   </div>
-                  <div className="text-4xl font-bold text-primary-600 mb-4">{pricingOption.price}</div>
-                  <p className="text-gray-600 mb-4">{pricingOption.description}</p>
-                  <p className="text-sm text-gray-500 mb-6">{pricingOption.spots}</p>
-                  <Link
-                    href={`/inscricao?categoria=${pricingOption.id}`}
-                    className="block w-full text-center py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    Fazer inscrição
-                  </Link>
+                )}
+                <div className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wide">
+                  {pricingOption.title}
                 </div>
+                <div className="text-4xl font-bold text-primary-600 mb-4">{pricingOption.price}</div>
+                <p className="text-gray-600 mb-4">{pricingOption.description}</p>
+                <p className="text-sm text-gray-500 mb-6">{pricingOption.spots}</p>
+                <Link
+                  href={`/inscricao?categoria=${pricingOption.id}`}
+                  className="block w-full text-center py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Fazer inscrição
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -229,20 +229,20 @@ export default async function Prova10KPage() {
               </div>
 
               <div className="card bg-gradient-to-br from-blue-50 to-indigo-100">
-                  <h3 className="font-display font-bold text-2xl mb-4">
-                    Faixas Etárias (M/F)
-                  </h3>
-                  <p className="text-gray-700 mb-4">
-                    1º Troféu + R$ 200,00 · 2º R$ 150,00 · 3º R$ 100,00
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {AGE_GROUPS.map((group) => (
-                      <div key={group} className="p-3 bg-white rounded-lg border border-indigo-100">
-                        <p className="font-semibold text-gray-800">{group}</p>
-                      </div>
-                    ))}
-                  </div>
+                <h3 className="font-display font-bold text-2xl mb-4">
+                  Faixas Etárias (M/F)
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  1º Troféu + R$ 200,00 · 2º R$ 150,00 · 3º R$ 100,00
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {AGE_GROUPS.map((group) => (
+                    <div key={group} className="p-3 bg-white rounded-lg border border-indigo-100">
+                      <p className="font-semibold text-gray-800">{group}</p>
+                    </div>
+                  ))}
                 </div>
+              </div>
 
               <div className="card bg-gray-50 border border-gray-100">
                 <h3 className="font-display font-bold text-2xl mb-4">Premiação por Equipes</h3>

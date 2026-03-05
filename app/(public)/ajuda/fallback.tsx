@@ -112,7 +112,7 @@ const faqGroups = [
       },
       {
         q: 'Há postos de hidratação?',
-        a: 'Sim, a cada 2 km e na chegada.',
+        a: 'Sim, a cada 2 km (km 2, 4, 6, 8) e na chegada.',
       },
       {
         q: 'O que acontece se chover?',

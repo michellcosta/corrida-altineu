@@ -28,16 +28,6 @@ export const ROLE_NAVIGATION: Record<UserRole, NavItem[]> = {
   [UserRole.SITE_ADMIN]: [
     { name: 'Dashboard', href: '/admin/site', icon: 'LayoutDashboard' },
     {
-      name: 'Conteudo',
-      href: '/admin/site/content',
-      icon: 'FileText',
-      children: [
-        { name: 'Paginas', href: '/admin/site/content/pages', icon: 'FileText' },
-        { name: 'Posts', href: '/admin/site/content/posts', icon: 'Newspaper' },
-        { name: 'Midia', href: '/admin/site/content/media', icon: 'Image' },
-      ],
-    },
-    {
       name: 'Configuracoes',
       href: '/admin/site/settings',
       icon: 'Settings',
@@ -47,7 +37,6 @@ export const ROLE_NAVIGATION: Record<UserRole, NavItem[]> = {
         { name: 'SEO', href: '/admin/site/settings/seo', icon: 'Search' },
       ],
     },
-    { name: 'Regulamentos', href: '/admin/site/regulations', icon: 'FileCheck' },
     { name: 'Inscritos', href: '/admin/inscritos', icon: 'Users' },
     { name: 'Financeiro', href: '/admin/financeiro', icon: 'BarChart' },
     { name: 'Comunicacao', href: '/admin/comunicacao', icon: 'MessageSquare' },

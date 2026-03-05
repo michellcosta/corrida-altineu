@@ -172,7 +172,7 @@ export default async function Morador10KPage() {
             <Benefit
               icon={<Gift className="w-12 h-12 text-green-600 mx-auto mb-4" />}
               title="Inscrição gratuita"
-              description="Economia de R$ 20,00 em relação à categoria geral, com o mesmo kit e estrutura."
+              description="Economia de R$ 22,00 em relação à categoria geral, com o mesmo kit e estrutura."
             />
             <Benefit
               icon={<Trophy className="w-12 h-12 text-green-600 mx-auto mb-4" />}

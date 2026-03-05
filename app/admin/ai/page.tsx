@@ -22,6 +22,7 @@ interface AIConfig {
     id: string
     system_prompt: string
     regulation_text: string
+    ai_provider: 'gemini' | 'deepseek'
     updated_at: string
 }
 
@@ -36,11 +37,15 @@ export default function AIPanelPage() {
     // Settings State
     const [systemPrompt, setSystemPrompt] = useState('')
     const [regulationText, setRegulationText] = useState('')
+    const [aiProvider, setAiProvider] = useState<'gemini' | 'deepseek'>('gemini')
+    const [hasChanges, setHasChanges] = useState(false)
 
     // Chat State
     const [chatMessage, setChatMessage] = useState('')
     const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant', content: string }[]>([])
     const [chatLoading, setChatLoading] = useState(false)
+    const [adminCpf, setAdminCpf] = useState('')
+    const [adminName, setAdminName] = useState('')
 
     useEffect(() => {
         loadConfig()
@@ -71,6 +76,35 @@ export default function AIPanelPage() {
                 setConfig(data)
                 setSystemPrompt(data.system_prompt)
                 setRegulationText(data.regulation_text)
+                setAiProvider(data.ai_provider || 'gemini')
+                setHasChanges(false)
+            }
+
+            // Buscar dados do admin para o chat de teste
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data: athlete } = await supabase
+                    .from('athletes')
+                    .select('document_number, full_name')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (athlete) {
+                    setAdminCpf(athlete.document_number)
+                    setAdminName(athlete.full_name)
+                } else {
+                    // Tentar admin_users se não for atleta
+                    const { data: admin } = await supabase
+                        .from('admin_users')
+                        .select('full_name')
+                        .eq('user_id', user.id)
+                        .single()
+
+                    if (admin) {
+                        setAdminName(admin.full_name || 'Administrador (Teste)')
+                        setAdminCpf('000.000.000-00') // Fallback para permitir teste imediato
+                    }
+                }
             }
         } catch (err: any) {
             console.error('Erro ao carregar configuração da IA:', err)
@@ -96,9 +130,11 @@ export default function AIPanelPage() {
             const { data, error } = await supabase
                 .from('ai_config')
                 .upsert({
+                    id: config?.id,
                     event_id: event.id,
                     system_prompt: systemPrompt,
                     regulation_text: regulationText,
+                    ai_provider: aiProvider,
                     updated_at: new Date().toISOString()
                 })
                 .select()
@@ -107,6 +143,7 @@ export default function AIPanelPage() {
             if (error) throw error
 
             setConfig(data)
+            setHasChanges(false)
             toast.success('Configurações salvas com sucesso!')
         } catch (err: any) {
             toast.error('Erro ao salvar configurações')
@@ -117,6 +154,8 @@ export default function AIPanelPage() {
 
     async function handleSendMessage() {
         if (!chatMessage.trim() || chatLoading) return
+
+        console.log('DEBUG SEND:', { aiProvider, adminCpf, adminName })
 
         const newMessage = chatMessage
         setChatMessage('')
@@ -134,7 +173,10 @@ export default function AIPanelPage() {
                     message: newMessage,
                     history: chatHistory,
                     regulationText: config?.regulation_text,
-                    systemPrompt: config?.system_prompt
+                    systemPrompt: config?.system_prompt,
+                    aiProvider: aiProvider,
+                    userCpf: adminCpf,
+                    userName: adminName
                 })
             })
 
@@ -193,7 +235,7 @@ export default function AIPanelPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
-                            Painel de IA (Gemini) ✨
+                            Painel de IA ✨
                         </h1>
                         <p className="text-gray-600">
                             Gerencie a inteligência que atende os atletas.
@@ -238,8 +280,56 @@ export default function AIPanelPage() {
                                             className="admin-input w-full min-h-[120px] resize-none"
                                             placeholder="Ex: Você é o assistente oficial da Corrida de Macuco..."
                                             value={systemPrompt}
-                                            onChange={(e) => setSystemPrompt(e.target.value)}
+                                            onChange={(e) => {
+                                                setSystemPrompt(e.target.value)
+                                                setHasChanges(true)
+                                            }}
                                         />
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Bot className="text-primary-500" size={20} />
+                                            Provedor de IA
+                                        </h3>
+                                        <div className="text-sm text-gray-500 mb-4">
+                                            Escolha qual inteligência artificial processará as mensagens dos atletas.
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <button
+                                                onClick={() => {
+                                                    setAiProvider('gemini')
+                                                    setHasChanges(true)
+                                                }}
+                                                className={`p-4 rounded-xl border-2 transition-all text-left ${aiProvider === 'gemini'
+                                                    ? 'border-primary-500 bg-primary-50'
+                                                    : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`font-bold ${aiProvider === 'gemini' ? 'text-primary-900' : 'text-gray-900'}`}>Google Gemini</span>
+                                                    {aiProvider === 'gemini' && <div className="w-2 h-2 bg-primary-500 rounded-full" />}
+                                                </div>
+                                                <p className="text-xs text-gray-500">Modelo Flash 2.0. Rápido e integrado.</p>
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    setAiProvider('deepseek')
+                                                    setHasChanges(true)
+                                                }}
+                                                className={`p-4 rounded-xl border-2 transition-all text-left ${aiProvider === 'deepseek'
+                                                    ? 'border-primary-500 bg-primary-50'
+                                                    : 'border-gray-100 hover:border-gray-200 bg-white'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`font-bold ${aiProvider === 'deepseek' ? 'text-primary-900' : 'text-gray-900'}`}>DeepSeek V3</span>
+                                                    {aiProvider === 'deepseek' && <div className="w-2 h-2 bg-primary-500 rounded-full" />}
+                                                </div>
+                                                <p className="text-xs text-gray-500">Altíssima performance e custo reduzido.</p>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div>
@@ -254,9 +344,32 @@ export default function AIPanelPage() {
                                             className="admin-input w-full min-h-[300px] resize-none"
                                             placeholder="Cole o regulamento completo aqui..."
                                             value={regulationText}
-                                            onChange={(e) => setRegulationText(e.target.value)}
+                                            onChange={(e) => {
+                                                setRegulationText(e.target.value)
+                                                setHasChanges(true)
+                                            }}
                                         />
                                     </div>
+
+                                    {hasChanges && (
+                                        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 flex items-center justify-between animate-pulse">
+                                            <div className="flex items-center gap-3">
+                                                <AlertCircle className="text-primary-600" size={18} />
+                                                <p className="text-sm text-primary-800 font-medium">
+                                                    Você tem alterações não salvas!
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={handleSaveSettings}
+                                                disabled={saving}
+                                                leftIcon={saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                            >
+                                                Salvar Agora
+                                            </Button>
+                                        </div>
+                                    )}
 
                                     <div className="pt-4 flex justify-end">
                                         <Button
@@ -277,7 +390,7 @@ export default function AIPanelPage() {
                                             <Bot size={18} /> Como funciona?
                                         </h4>
                                         <div className="text-sm text-primary-800 leading-relaxed">
-                                            A IA utiliza o modelo <strong>Gemini 2.0 Flash</strong> para processar as informações fornecidas e responder os atletas em tempo real.
+                                            A IA utiliza o modelo <strong>{aiProvider === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek V3'}</strong> para processar as informações fornecidas e responder os atletas em tempo real.
                                         </div>
                                         <ul className="mt-4 space-y-2 text-xs text-primary-700">
                                             <li className="flex items-start gap-2">
@@ -300,7 +413,7 @@ export default function AIPanelPage() {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">Modelo</span>
-                                                <Badge variant="info">Gemini 2.0 Flash</Badge>
+                                                <Badge variant="info">{aiProvider === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek V3'}</Badge>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">Base de Dados</span>
@@ -340,6 +453,46 @@ export default function AIPanelPage() {
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30">
+                                    <div className="flex gap-4 mb-4 items-end">
+                                        <div className="flex-1">
+                                            <label className="text-xs font-medium text-gray-500 mb-1 block">Provedor de IA (Teste)</label>
+                                            <div className="flex bg-gray-100 p-1 rounded-lg gap-1">
+                                                <button
+                                                    onClick={() => setAiProvider('gemini')}
+                                                    className={`flex-1 py-1 px-2 rounded-md text-[10px] font-bold transition-all ${aiProvider === 'gemini' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                                >
+                                                    Gemini
+                                                </button>
+                                                <button
+                                                    onClick={() => setAiProvider('deepseek')}
+                                                    className={`flex-1 py-1 px-2 rounded-md text-[10px] font-bold transition-all ${aiProvider === 'deepseek' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                                >
+                                                    DeepSeek
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="text-xs font-medium text-gray-500 mb-1 block">Seu CPF (para teste)</label>
+                                            <input
+                                                type="text"
+                                                className="admin-input text-sm p-2 w-full"
+                                                placeholder="000.000.000-00"
+                                                value={adminCpf}
+                                                onChange={(e) => setAdminCpf(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="text-xs font-medium text-gray-500 mb-1 block">Seu Nome</label>
+                                            <input
+                                                type="text"
+                                                className="admin-input text-sm p-2 w-full"
+                                                placeholder="Nome do Admin"
+                                                value={adminName}
+                                                onChange={(e) => setAdminName(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
                                     {chatHistory.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
                                             <Bot size={64} className="text-gray-300" />

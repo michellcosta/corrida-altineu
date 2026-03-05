@@ -20,9 +20,9 @@ export default function RegulamentoPage() {
               Regulamento <span className="text-yellow-300">Oficial</span>
             </h1>
           </div>
-          
+
           <p className="text-xl text-primary-100 mb-8 max-w-4xl mx-auto">
-            Regulamento oficial da {RACE_CONFIG.edition}ª Corrida Rústica de Macuco. 
+            Regulamento oficial da {RACE_CONFIG.edition}ª Corrida Rústica de Macuco.
             Leia atentamente todas as regras e procedimentos antes de se inscrever.
           </p>
 
@@ -41,7 +41,7 @@ export default function RegulamentoPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
             Índice do Regulamento
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <a href="#geral" className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
               <FileText className="w-5 h-5 text-primary-600" />
@@ -80,37 +80,37 @@ export default function RegulamentoPage() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div className="p-8 md:p-12">
-              
+
               {/* 1. Disposições Gerais */}
               <section id="geral" className="mb-12">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
                   Disposições Gerais
                 </h2>
-                
+
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">1.1 Objetivo</h3>
                     <p className="text-gray-700 leading-relaxed">
-                      A {RACE_CONFIG.edition}ª Corrida Rústica de Macuco é um evento esportivo que tem por objetivo 
-                      promover a prática de corrida de rua, estimular hábitos saudáveis e integrar a comunidade 
+                      A {RACE_CONFIG.edition}ª Corrida Rústica de Macuco é um evento esportivo que tem por objetivo
+                      promover a prática de corrida de rua, estimular hábitos saudáveis e integrar a comunidade
                       de Macuco e região através do esporte.
                     </p>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">1.2 Data e Local</h3>
                     <ul className="space-y-2 text-gray-700">
                       <li>• <strong>Data:</strong> {RACE_CONFIG.raceDateFormatted}</li>
                       <li>• <strong>Local:</strong> Praça da Matriz, Macuco-RJ</li>
-                      <li>• <strong>Horário de Largada:</strong> 07:00 (10K) | 08:30 (2.5K)</li>
+                      <li>• <strong>Horário de Largada:</strong> 12:00 (10K) | 10:00 (Kids 2.5K)</li>
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">1.3 Organização</h3>
                     <p className="text-gray-700 leading-relaxed">
-                      O evento é organizado pela Comissão Organizadora da Corrida Rústica de Macuco, 
+                      O evento é organizado pela Comissão Organizadora da Corrida Rústica de Macuco,
                       com apoio da Prefeitura Municipal e patrocinadores oficiais.
                     </p>
                   </div>
@@ -123,18 +123,18 @@ export default function RegulamentoPage() {
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
                   Categorias
                 </h2>
-                
+
                 <div className="space-y-6">
                   <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
                     <h3 className="font-semibold text-blue-900 mb-3">2.1 Geral 10K</h3>
                     <ul className="space-y-2 text-gray-700">
                       <li>• <strong>Distância:</strong> 10 quilômetros</li>
-                      <li>• <strong>Valor:</strong> R$ 20,00</li>
+                      <li>• <strong>Valor:</strong> R$ 22,00</li>
                       <li>• <strong>Idade:</strong> A partir de 15 anos completos até 31/12/{RACE_CONFIG.year}</li>
                       <li>• <strong>Vagas:</strong> 500 participantes</li>
                     </ul>
                   </div>
-                  
+
                   <div className="bg-green-50 rounded-lg p-6 border border-green-200">
                     <h3 className="font-semibold text-green-900 mb-3">2.2 Morador de Macuco 10K</h3>
                     <ul className="space-y-2 text-gray-700">
@@ -145,7 +145,7 @@ export default function RegulamentoPage() {
                       <li>• <strong>Vagas:</strong> 200 participantes</li>
                     </ul>
                   </div>
-                  
+
                   <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
                     <h3 className="font-semibold text-purple-900 mb-3">2.3 60+ 10K</h3>
                     <ul className="space-y-2 text-gray-700">
@@ -155,7 +155,7 @@ export default function RegulamentoPage() {
                       <li>• <strong>Vagas:</strong> 100 participantes</li>
                     </ul>
                   </div>
-                  
+
                   <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
                     <h3 className="font-semibold text-orange-900 mb-3">2.4 Infantil 2.5K</h3>
                     <ul className="space-y-2 text-gray-700">
@@ -175,7 +175,7 @@ export default function RegulamentoPage() {
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
                   Inscrições
                 </h2>
-                
+
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">3.1 Período de Inscrições</h3>
@@ -185,7 +185,7 @@ export default function RegulamentoPage() {
                       <li>• <strong>Forma:</strong> Exclusivamente online através do site oficial</li>
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">3.2 Documentos Necessários</h3>
                     <ul className="space-y-2 text-gray-700">
@@ -196,7 +196,7 @@ export default function RegulamentoPage() {
                       <li>• <strong>60+:</strong> Documento comprovando idade (recomendado atestado médico)</li>
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">3.3 Pagamento</h3>
                     <ul className="space-y-2 text-gray-700">
@@ -214,7 +214,7 @@ export default function RegulamentoPage() {
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
                   Premiação
                 </h2>
-                
+
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">4.1 Premiação Geral 10K</h3>
@@ -239,7 +239,7 @@ export default function RegulamentoPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">4.2 Premiação Especial</h3>
                     <ul className="space-y-2 text-gray-700">
@@ -258,7 +258,7 @@ export default function RegulamentoPage() {
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">5</span>
                   Obrigações dos Participantes
                 </h2>
-                
+
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                   <ul className="space-y-3 text-gray-700">
                     <li className="flex items-start gap-3">
@@ -275,7 +275,7 @@ export default function RegulamentoPage() {
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                      <span>Seguir o percurso oficial sinalizado</span>
+                      <span>Seguir o percurso oficial sinalizado e utilizar os pontos de hidratação (km 2, 4, 6 e 8)</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -295,7 +295,7 @@ export default function RegulamentoPage() {
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">6</span>
                   Penalidades e Desclassificações
                 </h2>
-                
+
                 <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                   <ul className="space-y-3 text-gray-700">
                     <li className="flex items-start gap-3">
@@ -328,9 +328,9 @@ export default function RegulamentoPage() {
                   <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">7</span>
                   Saúde, Riscos e Isenção de Responsabilidade
                 </h2>
-                
+
                 <p className="text-gray-700 mb-6 leading-relaxed">
-                  Ao efetuar a inscrição, o participante declara estar ciente e de acordo com todos os itens abaixo, 
+                  Ao efetuar a inscrição, o participante declara estar ciente e de acordo com todos os itens abaixo,
                   que integram o regulamento do evento:
                 </p>
 
