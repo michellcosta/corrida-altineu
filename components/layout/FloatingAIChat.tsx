@@ -23,7 +23,7 @@ const QUICK_PROMPTS = [
 
 const MAX_FREE_MESSAGES = 15
 
-const MarkdownText = ({ content }: { content: string }): any => {
+const MarkdownText = ({ content, onLinkClick }: { content: string, onLinkClick?: () => void }): any => {
     if (!content) return null;
 
     // Segmenta o texto em tokens de Link, Negrito, Itálico ou Texto comum
@@ -42,9 +42,12 @@ const MarkdownText = ({ content }: { content: string }): any => {
                     key={`link-${i}`}
                     href={url.trim()}
                     className="text-blue-600 underline hover:text-blue-800 transition-colors font-bold mx-0.5 inline-flex items-center gap-1 cursor-pointer bg-blue-50/80 px-1.5 py-0.5 rounded shadow-sm relative z-10 active:scale-95 transition-transform"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        if (window.innerWidth < 768) onLinkClick?.()
+                    }}
                 >
-                    <MarkdownText content={text} />
+                    <MarkdownText content={text} onLinkClick={onLinkClick} />
                 </Link>
             );
         }
@@ -485,7 +488,10 @@ export default function FloatingAIChat() {
                                                     ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-100'
                                                     : 'bg-white text-gray-700 rounded-tl-none border border-gray-100 shadow-sm'
                                                     }`}>
-                                                    <MarkdownText content={msg.content} />
+                                                    <MarkdownText
+                                                        content={msg.content}
+                                                        onLinkClick={msg.role === 'assistant' ? () => setIsOpen(false) : undefined}
+                                                    />
                                                 </div>
                                             </div>
                                         ))}
