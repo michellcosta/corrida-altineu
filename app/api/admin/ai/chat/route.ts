@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
 
         const geminiKey = process.env.GEMINI_API_KEY
         const deepseekKey = process.env.DEEPSEEK_API_KEY
+        const adminCpf = (process.env.ADMIN_CHAT_CPF || '').replace(/\D/g, '')
 
         // 1. Validar Identificação e Limites
         if (!userCpf) {
@@ -34,14 +35,18 @@ export async function POST(request: NextRequest) {
         }
 
         const cleanUserCpf = userCpf.replace(/\D/g, '')
-        const usage = await getAiUsage(cleanUserCpf, userName)
+
+        // Se o CPF enviado for o fallback do painel admin (00000000000), substituir pelo CPF real do admin
+        const effectiveCpf = (cleanUserCpf === '00000000000' && adminCpf) ? adminCpf : cleanUserCpf
+
+        const usage = await getAiUsage(effectiveCpf, userName)
         if (!usage) {
             return NextResponse.json({ error: 'Erro ao validar acesso.' }, { status: 500 })
         }
 
         if (!usage.isAdmin && usage.message_count >= MAX_MESSAGES) {
             return NextResponse.json({
-                error: `Limite de ${MAX_MESSAGES} mensagens diárias atingido. Sua cota renova amanhã.`
+                error: `Limite de ${MAX_MESSAGES} mensagens diárias atingido. Sua cota renova amanhã!`
             }, { status: 429 })
         }
 
@@ -51,8 +56,8 @@ export async function POST(request: NextRequest) {
         const isAskingForSelf = (lowerMessage.includes('minha') || lowerMessage.includes('meu') || lowerMessage.includes('estou')) &&
             (lowerMessage.includes('inscrição') || lowerMessage.includes('inscrito') || lowerMessage.includes('status') || lowerMessage.includes('cadastro') || lowerMessage.includes('verificar'))
 
-        const searchQuery = docMatch ? docMatch[0] : cleanUserCpf
-        console.log(`DEBUG AI CHAT: userCpf=${cleanUserCpf}, searchQuery=${searchQuery}`)
+        const searchQuery = docMatch ? docMatch[0] : effectiveCpf
+        console.log(`DEBUG AI CHAT: userCpf=${effectiveCpf}, searchQuery=${searchQuery}`)
 
         // 3. Buscar dados em tempo real
         const dynamicContext = await getDynamicContext(searchQuery)
@@ -84,7 +89,7 @@ export async function POST(request: NextRequest) {
         `
 
         // 4. Incrementar uso no banco
-        await incrementAiUsage(cleanUserCpf)
+        await incrementAiUsage(effectiveCpf)
 
         // 5. Lógica por Provedor
         if (aiProvider === 'deepseek') {
