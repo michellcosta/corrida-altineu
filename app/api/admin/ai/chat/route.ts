@@ -113,8 +113,19 @@ export async function POST(request: NextRequest) {
             })
 
             if (!response.ok) {
-                const error = await response.json()
-                throw new Error(error.message || 'Erro DeepSeek')
+                let errorMsg = 'Erro DeepSeek'
+                try {
+                    const errorData = await response.json()
+                    errorMsg = errorData.message || errorData.error?.message || JSON.stringify(errorData)
+                } catch (e) {
+                    try {
+                        errorMsg = await response.text()
+                    } catch (t) {
+                        errorMsg = 'Não foi possível ler a mensagem de erro da API.'
+                    }
+                }
+                console.error(`DETALHE ERRO DEEPSEEK (${response.status}):`, errorMsg)
+                throw new Error(`DeepSeek API (${response.status}): ${errorMsg}`)
             }
 
             const stream = new ReadableStream({
