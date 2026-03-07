@@ -8,7 +8,6 @@ import Link from 'next/link'
 import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
 import { toQrCodeDataUrl } from '@/lib/utils'
-import { isValidCPF, isValidRG } from '@/lib/document-validation'
 
 // ============================================================
 // TIPOS E INTERFACES
@@ -59,10 +58,7 @@ function formatDocumentNumber(value: string, type: DocumentType) {
 function validateDocumentNumber(value: string, type: DocumentType) {
   if (!value?.trim()) return false
   const formatOk = type === 'CPF' ? CPF_REGEX.test(value) : RG_REGEX.test(value)
-  if (!formatOk) return false
-  if (type === 'CPF') return isValidCPF(value)
-  if (type === 'RG') return isValidRG(value)
-  return false
+  return formatOk
 }
 
 function getDocumentHelper(type: DocumentType) {
@@ -218,15 +214,15 @@ export default function InscricaoClient() {
     hasTeam: null as boolean | null,
     teamName: '',
     // Origem: brasileiro ou estrangeiro (obrigatório escolher)
-    originType: null as 'brazilian' | 'foreign' | null,
+    originType: 'brazilian' as 'brazilian' | 'foreign' | null,
     state: '',
     city: '',
     nationality: '', // código do país (apenas para estrangeiros)
-    
+
     // Documento do responsável (para estrangeiros)
     guardianDocumentType: '' as DocumentType | '',
     guardianDocumentNumber: '',
-    
+
     // Morador de Macuco
     addressStreet: '',
     addressNumber: '',
@@ -235,7 +231,7 @@ export default function InscricaoClient() {
     addressZipCode: '',
     residenceProofType: '',
     residenceProofFile: null as File | null,
-    
+
     // Infantil
     childCpf: '',
     guardianName: '',
@@ -244,7 +240,7 @@ export default function InscricaoClient() {
     guardianRelationship: '',
     isMacucoResident: null as boolean | null,
     authorizationFile: null as File | null,
-    
+
     // Termos
     acceptedTerms: false,
   })
@@ -304,30 +300,30 @@ export default function InscricaoClient() {
   // Anos de nascimento por categoria (idade em 31/12 do ano da prova)
   const birthYearsForInfantil = selectedCategory?.id === 'infantil-2k' && selectedCategory?.ageMax != null
     ? Array.from(
-        { length: selectedCategory.ageMax - selectedCategory.ageMin + 1 },
-        (_, i) => {
-          const year = eventYear - selectedCategory.ageMin! - i
-          return { value: String(year), label: String(year) }
-        }
-      )
+      { length: selectedCategory.ageMax - selectedCategory.ageMin + 1 },
+      (_, i) => {
+        const year = eventYear - selectedCategory.ageMin! - i
+        return { value: String(year), label: String(year) }
+      }
+    )
     : null
   const birthYearsForGeral = selectedCategory?.id === 'geral-10k'
     ? Array.from({ length: 45 }, (_, i) => ({
-        value: String(eventYear - 15 - i),
-        label: String(eventYear - 15 - i),
-      }))
+      value: String(eventYear - 15 - i),
+      label: String(eventYear - 15 - i),
+    }))
     : null
   const birthYearsForSessenta = selectedCategory?.id === 'sessenta-10k'
     ? Array.from({ length: 41 }, (_, i) => ({
-        value: String(eventYear - 60 - i),
-        label: String(eventYear - 60 - i),
-      }))
+      value: String(eventYear - 60 - i),
+      label: String(eventYear - 60 - i),
+    }))
     : null
   const birthYearsForMorador = selectedCategory?.id === 'morador-10k'
     ? Array.from({ length: 86 }, (_, i) => ({
-        value: String(eventYear - 15 - i),
-        label: String(eventYear - 15 - i),
-      }))
+      value: String(eventYear - 15 - i),
+      label: String(eventYear - 15 - i),
+    }))
     : null
   const YEARS = birthYearsForInfantil ?? birthYearsForGeral ?? birthYearsForSessenta ?? birthYearsForMorador ?? Array.from(
     { length: 101 },
@@ -335,7 +331,7 @@ export default function InscricaoClient() {
   )
 
   // Calcular steps dinâmicos (sem pagamento para categorias gratuitas)
-  const activeSteps = selectedCategory?.isFree 
+  const activeSteps = selectedCategory?.isFree
     ? steps.filter(step => step.id !== 3)
     : steps
 
@@ -346,7 +342,7 @@ export default function InscricaoClient() {
   // Verificar se deve mostrar campo de documento principal
   const CATEGORY_DOC_REQUIRED = new Set(['geral-10k', 'sessenta-10k', 'morador-10k'])
   const shouldShowMainDocument = selectedCategory && CATEGORY_DOC_REQUIRED.has(selectedCategory.id)
-  
+
   // Flags derivadas da origem (brasileiro vs estrangeiro)
   const isBrazilian = formData.originType === 'brazilian'
   const isForeign = formData.originType === 'foreign'
@@ -706,33 +702,33 @@ export default function InscricaoClient() {
 
       if (!registrationId) {
         const payload = {
-        categoryId: selectedCategory.id,
-        fullName: formData.fullName.trim(),
-        birthDate: getBirthDate(),
-        gender: formData.gender || undefined,
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        teamName: formData.hasTeam === true ? (formData.teamName.trim() || undefined) : undefined,
-        originType: formData.originType,
-        city: isBrazilian ? formData.city : undefined,
-        state: isBrazilian ? formData.state : undefined,
-        country: isBrazilian ? 'BRA' : (formData.nationality || undefined),
-        documentType: shouldShowAthleteDocument ? documentType : undefined,
-        documentNumber: shouldShowAthleteDocument ? documentNumber : undefined,
-        addressStreet: formData.addressStreet.trim() || undefined,
-        addressNumber: formData.addressNumber.trim() || undefined,
-        addressComplement: formData.addressComplement.trim() || undefined,
-        addressNeighborhood: formData.addressNeighborhood.trim() || undefined,
-        addressZipCode: formData.addressZipCode.trim() || undefined,
-        childCpf: undefined,
-        guardianName: formData.guardianName.trim() || undefined,
-        guardianCpf: formData.guardianCpf || undefined,
-        guardianPhone: formData.guardianPhone.trim() || undefined,
-        guardianRelationship: formData.guardianRelationship || undefined,
-        isMacucoResident: selectedCategory.id === 'infantil-2k' ? formData.isMacucoResident ?? undefined : undefined,
-        guardianDocumentType: shouldShowGuardianDocument ? formData.guardianDocumentType : undefined,
-        guardianDocumentNumber: shouldShowGuardianDocument ? formData.guardianDocumentNumber : undefined,
-      }
+          categoryId: selectedCategory.id,
+          fullName: formData.fullName.trim(),
+          birthDate: getBirthDate(),
+          gender: formData.gender || undefined,
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          teamName: formData.hasTeam === true ? (formData.teamName.trim() || undefined) : undefined,
+          originType: formData.originType,
+          city: isBrazilian ? formData.city : undefined,
+          state: isBrazilian ? formData.state : undefined,
+          country: isBrazilian ? 'BRA' : (formData.nationality || undefined),
+          documentType: shouldShowAthleteDocument ? documentType : undefined,
+          documentNumber: shouldShowAthleteDocument ? documentNumber : undefined,
+          addressStreet: formData.addressStreet.trim() || undefined,
+          addressNumber: formData.addressNumber.trim() || undefined,
+          addressComplement: formData.addressComplement.trim() || undefined,
+          addressNeighborhood: formData.addressNeighborhood.trim() || undefined,
+          addressZipCode: formData.addressZipCode.trim() || undefined,
+          childCpf: undefined,
+          guardianName: formData.guardianName.trim() || undefined,
+          guardianCpf: formData.guardianCpf || undefined,
+          guardianPhone: formData.guardianPhone.trim() || undefined,
+          guardianRelationship: formData.guardianRelationship || undefined,
+          isMacucoResident: selectedCategory.id === 'infantil-2k' ? formData.isMacucoResident ?? undefined : undefined,
+          guardianDocumentType: shouldShowGuardianDocument ? formData.guardianDocumentType : undefined,
+          guardianDocumentNumber: shouldShowGuardianDocument ? formData.guardianDocumentNumber : undefined,
+        }
         console.log('[InscricaoClient] handleFinalizePayment: enviando inscrição', { categoryId: selectedCategory.id })
         const resInsc = await fetch('/api/inscricao', {
           method: 'POST',
@@ -817,7 +813,7 @@ export default function InscricaoClient() {
   }
 
   const handleFileUpload = (field: 'residenceProofFile' | 'authorizationFile', file: File | null) => {
-    setFormData(prev => ({...prev, [field]: file}))
+    setFormData(prev => ({ ...prev, [field]: file }))
   }
 
   // ============================================================
@@ -830,13 +826,13 @@ export default function InscricaoClient() {
     switch (selectedCategory.id) {
       case 'morador-10k':
         return <MoradorFields />
-      
+
       case 'sessenta-10k':
         return <SeniorFields year={eventConfig?.year ?? 2026} />
-      
+
       case 'infantil-2k':
         return <InfantilFields formData={formData} setFormData={setFormData} onFileUpload={handleFileUpload} fieldErrors={fieldErrors} clearFieldError={clearFieldError} />
-      
+
       default:
         return null
     }
@@ -1039,13 +1035,12 @@ export default function InscricaoClient() {
                   <div key={step.id} className="flex items-center flex-1 min-w-0">
                     <div className="flex flex-col items-center flex-1 min-w-0">
                       <div
-                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          isCompleted
-                            ? 'bg-green-600'
-                            : isActive
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted
+                          ? 'bg-green-600'
+                          : isActive
                             ? 'bg-primary-600'
                             : 'bg-gray-300'
-                        } text-white transition-all duration-300`}
+                          } text-white transition-all duration-300`}
                       >
                         {isCompleted ? (
                           <Check size={20} />
@@ -1054,18 +1049,16 @@ export default function InscricaoClient() {
                         )}
                       </div>
                       <p
-                        className={`mt-1 sm:mt-2 text-xs sm:text-sm font-semibold truncate max-w-full ${
-                          isActive ? 'text-primary-600' : 'text-gray-600'
-                        }`}
+                        className={`mt-1 sm:mt-2 text-xs sm:text-sm font-semibold truncate max-w-full ${isActive ? 'text-primary-600' : 'text-gray-600'
+                          }`}
                       >
                         {step.name}
                       </p>
                     </div>
                     {index < activeSteps.length - 1 && (
                       <div
-                        className={`flex-1 h-1 ${
-                          isCompleted ? 'bg-green-600' : 'bg-gray-300'
-                        } transition-all duration-300`}
+                        className={`flex-1 h-1 ${isCompleted ? 'bg-green-600' : 'bg-gray-300'
+                          } transition-all duration-300`}
                       />
                     )}
                   </div>
@@ -1080,7 +1073,7 @@ export default function InscricaoClient() {
       <section className="py-6 sm:py-12 px-4 sm:px-0">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
-            
+
             {/* ================================================ */}
             {/* STEP 1: CATEGORIA */}
             {/* ================================================ */}
@@ -1099,11 +1092,10 @@ export default function InscricaoClient() {
                       <button
                         key={category.id}
                         onClick={() => handleCategorySelect(category)}
-                        className={`text-left p-4 sm:p-6 rounded-xl border-2 transition-all min-h-[44px] active:scale-[0.99] ${
-                          selectedCategory?.id === category.id
-                            ? 'border-primary-600 bg-primary-50'
-                            : 'border-gray-200 hover:border-primary-300'
-                        }`}
+                        className={`text-left p-4 sm:p-6 rounded-xl border-2 transition-all min-h-[44px] active:scale-[0.99] ${selectedCategory?.id === category.id
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300'
+                          }`}
                       >
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="font-display font-bold text-xl">
@@ -1115,9 +1107,9 @@ export default function InscricaoClient() {
                             </div>
                           )}
                         </div>
-                        
+
                         <p className="text-gray-600 mb-4">{category.description}</p>
-                        
+
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-3xl font-bold text-primary-600">
                             {category.isFree ? 'GRATUITO' : `R$ ${category.price.toFixed(2)}`}
@@ -1152,7 +1144,7 @@ export default function InscricaoClient() {
                         <div className="mt-2 text-xs text-gray-500">
                           <p>
                             <span className="font-semibold">Idade:</span>{' '}
-                            {category.ageMax 
+                            {category.ageMax
                               ? `${category.ageMin} a ${category.ageMax} anos`
                               : `A partir de ${category.ageMin} anos`}
                           </p>
@@ -1201,7 +1193,7 @@ export default function InscricaoClient() {
                   <p className="text-gray-600 mb-2 text-sm sm:text-base">
                     Preencha suas informações pessoais
                   </p>
-                  
+
                   {/* Alerta com categoria selecionada */}
                   <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8 flex items-start gap-3">
                     <AlertCircle className="text-primary-600 mt-0.5" size={20} />
@@ -1226,7 +1218,7 @@ export default function InscricaoClient() {
                         required
                         value={formData.fullName}
                         onChange={(e) => {
-                          setFormData({...formData, fullName: e.target.value.toUpperCase()})
+                          setFormData({ ...formData, fullName: e.target.value.toUpperCase() })
                           clearFieldError('fullName')
                         }}
                         className={`w-full px-4 py-3 min-h-[44px] border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'}`}
@@ -1427,7 +1419,7 @@ export default function InscricaoClient() {
                         <p className="text-xs text-gray-600 mb-4">
                           Como você é estrangeiro, precisamos do documento de um cidadão brasileiro que se responsabiliza pela sua inscrição.
                         </p>
-                        
+
                         <div className="space-y-4">
                           {/* Nome do Responsável */}
                           <div id="field-guardianName">
@@ -1459,7 +1451,7 @@ export default function InscricaoClient() {
                               <select
                                 value={formData.guardianDocumentType}
                                 onChange={(e) => {
-                                  setFormData({...formData, guardianDocumentType: e.target.value as DocumentType})
+                                  setFormData({ ...formData, guardianDocumentType: e.target.value as DocumentType })
                                   clearFieldError('guardianDocumentType')
                                   clearFieldError('guardianDocumentNumber')
                                 }}
@@ -1552,7 +1544,7 @@ export default function InscricaoClient() {
                         </div>
                         {selectedCategory && (
                           <p className="text-xs text-gray-500 mt-1">
-                            {selectedCategory.ageMax 
+                            {selectedCategory.ageMax
                               ? `Idade permitida: ${selectedCategory.ageMin} a ${selectedCategory.ageMax} anos`
                               : `Idade mínima: ${selectedCategory.ageMin} anos`}
                           </p>
@@ -1583,7 +1575,7 @@ export default function InscricaoClient() {
                           required
                           value={formData.gender}
                           onChange={(e) => {
-                            setFormData({...formData, gender: e.target.value})
+                            setFormData({ ...formData, gender: e.target.value })
                             clearFieldError('gender')
                           }}
                           className={`w-full px-4 py-3 min-h-[44px] border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${fieldErrors.gender ? 'border-red-500' : 'border-gray-300'}`}
@@ -1607,7 +1599,7 @@ export default function InscricaoClient() {
                         required
                         value={formData.email}
                         onChange={(e) => {
-                          setFormData({...formData, email: e.target.value.toLowerCase()})
+                          setFormData({ ...formData, email: e.target.value.toLowerCase() })
                           clearFieldError('email')
                         }}
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.email ? 'border-red-500' : 'border-gray-300'}`}
@@ -1632,7 +1624,7 @@ export default function InscricaoClient() {
                           maxLength={11}
                           value={formData.phone}
                           onChange={(e) => {
-                            setFormData({...formData, phone: limitPhoneDigits(e.target.value)})
+                            setFormData({ ...formData, phone: limitPhoneDigits(e.target.value) })
                             clearFieldError('phone')
                           }}
                           className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.phone ? 'border-red-500' : 'border-gray-300'}`}
@@ -1712,7 +1704,7 @@ export default function InscricaoClient() {
                         required
                         checked={formData.acceptedTerms}
                         onChange={(e) => {
-                          setFormData({...formData, acceptedTerms: e.target.checked})
+                          setFormData({ ...formData, acceptedTerms: e.target.checked })
                           clearFieldError('acceptedTerms')
                         }}
                         className={`w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500 ${fieldErrors.acceptedTerms ? 'ring-2 ring-red-500' : ''}`}
@@ -1749,11 +1741,10 @@ export default function InscricaoClient() {
                       onClick={handleContinueFromPersonalData}
                       disabled={submitLoading}
                       title={!isPersonalDataComplete() ? 'Clique para ver quais campos faltam' : undefined}
-                      className={`btn-primary flex items-center justify-center min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 ${
-                        !submitLoading && !isPersonalDataComplete()
-                          ? 'opacity-70 hover:opacity-90 transition-opacity cursor-pointer'
-                          : ''
-                      }`}
+                      className={`btn-primary flex items-center justify-center min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 ${!submitLoading && !isPersonalDataComplete()
+                        ? 'opacity-70 hover:opacity-90 transition-opacity cursor-pointer'
+                        : ''
+                        }`}
                     >
                       {submitLoading ? (
                         <>
@@ -2113,10 +2104,10 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
       <h3 className="font-bold text-lg mb-4 text-primary-700">
         Dados do Responsável
       </h3>
-      
+
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
         <p className="text-sm text-yellow-900">
-          <strong>Atenção:</strong> Obrigatório o responsável legal assinar o termo de autorização 
+          <strong>Atenção:</strong> Obrigatório o responsável legal assinar o termo de autorização
           e estar presente na retirada do kit.
         </p>
       </div>
@@ -2136,7 +2127,7 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
                   required
                   value={formData?.guardianName || ''}
                   onChange={(e) => {
-                    setFormData?.({...formData, guardianName: e.target.value.toUpperCase()})
+                    setFormData?.({ ...formData, guardianName: e.target.value.toUpperCase() })
                     clearFieldError?.('guardianName')
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.guardianName ? 'border-red-500' : 'border-gray-300'}`}
@@ -2155,7 +2146,7 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
                   required
                   value={formData?.guardianCpf || ''}
                   onChange={(e) => {
-                    setFormData?.({...formData, guardianCpf: formatDocumentNumber(e.target.value, 'CPF')})
+                    setFormData?.({ ...formData, guardianCpf: formatDocumentNumber(e.target.value, 'CPF') })
                     clearFieldError?.('guardianCpf')
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.guardianCpf ? 'border-red-500' : 'border-gray-300'}`}
@@ -2178,7 +2169,7 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
                   maxLength={11}
                   value={formData?.guardianPhone || ''}
                   onChange={(e) => {
-                    setFormData?.({...formData, guardianPhone: limitPhoneDigits(e.target.value)})
+                    setFormData?.({ ...formData, guardianPhone: limitPhoneDigits(e.target.value) })
                     clearFieldError?.('guardianPhone')
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.guardianPhone ? 'border-red-500' : 'border-gray-300'}`}
@@ -2196,7 +2187,7 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
                   required
                   value={formData?.guardianRelationship || ''}
                   onChange={(e) => {
-                    setFormData?.({...formData, guardianRelationship: e.target.value})
+                    setFormData?.({ ...formData, guardianRelationship: e.target.value })
                     clearFieldError?.('guardianRelationship')
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.guardianRelationship ? 'border-red-500' : 'border-gray-300'}`}

@@ -51,12 +51,28 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Identificar busca de documento na mensagem (Volátil)
-        const docMatch = message.match(/([A-Z]{1}[0-9A-Z]{7}|\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{5,12})/i)
+        let searchQuery = effectiveCpf
+
+        const regMatch = message.match(/\b2026-[a-z]+-\d{4}\b/i)
+        const docPattern = message.match(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b|\b\d{5,12}\b/)
+        const codeMatch = message.match(/\b[a-z0-9]{8}\b/i)
+
+        if (regMatch) {
+            searchQuery = regMatch[0]
+        } else if (docPattern) {
+            searchQuery = docPattern[0]
+        } else if (codeMatch) {
+            const possibleCode = codeMatch[0]
+            // Ignorar se for uma palavra comum (apenas letras minúsculas digitadas no texto)
+            if (!/^[a-z]+$/.test(possibleCode) || possibleCode === possibleCode.toUpperCase()) {
+                searchQuery = possibleCode
+            }
+        }
+
         const lowerMessage = message.toLowerCase()
         const isAskingForSelf = (lowerMessage.includes('minha') || lowerMessage.includes('meu') || lowerMessage.includes('estou')) &&
             (lowerMessage.includes('inscrição') || lowerMessage.includes('inscrito') || lowerMessage.includes('status') || lowerMessage.includes('cadastro') || lowerMessage.includes('verificar'))
 
-        const searchQuery = docMatch ? docMatch[0] : effectiveCpf
         console.log(`DEBUG AI CHAT: userCpf=${effectiveCpf}, searchQuery=${searchQuery}`)
 
         // 3. Buscar dados em tempo real

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
-import { isValidCPF, isValidRG } from '@/lib/document-validation'
 
 const CATEGORY_SLUG_MAP: Record<string, string> = {
   'geral-10k': 'geral-10k',
@@ -25,8 +24,8 @@ function formatDocumentNumber(value: string): string {
 
 function validateDocument(value: string, type: 'CPF' | 'RG'): boolean {
   const digits = value.replace(/\D/g, '')
-  if (type === 'CPF') return digits.length === 11 && isValidCPF(value)
-  if (type === 'RG') return digits.length === 9 && isValidRG(value)
+  if (type === 'CPF') return digits.length === 11
+  if (type === 'RG') return digits.length === 9
   return false
 }
 
@@ -254,8 +253,8 @@ export async function POST(request: NextRequest) {
       is_macuco_resident: isInfant && typeof isMacucoResident === 'boolean' ? isMacucoResident : null,
       address: addressStreet
         ? [addressStreet, addressNumber, addressComplement, addressNeighborhood]
-            .filter(Boolean)
-            .join(', ')
+          .filter(Boolean)
+          .join(', ')
         : null,
       zip_code: addressZipCode?.replace(/\D/g, '') || null,
     }

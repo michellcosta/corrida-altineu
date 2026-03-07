@@ -56,10 +56,6 @@ const categories: FAQCategory[] = [
         q: 'O que vem no kit?',
         a: 'Número de peito com chip, medalha (entregue após a prova), além de acesso aos postos de hidratação.',
       },
-      {
-        q: 'Posso trocar o tamanho da camiseta?',
-        a: 'As camisetas são entregues conforme a disponibilidade ao final da retirada.',
-      },
     ],
   },
   {
@@ -108,7 +104,7 @@ const categories: FAQCategory[] = [
       },
       {
         q: 'Há atendimento médico disponível?',
-        a: 'Sim. Contamos com ambulâncias, equipe médica e fisioterapeutas na chegada. Em caso de emergência, procure a equipe mais próxima.',
+        a: 'Sim. Contamos com ambulâncias e equipe médica na chegada. Em caso de emergência, procure a equipe mais próxima.',
       },
     ],
   },

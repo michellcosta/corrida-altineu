@@ -106,7 +106,7 @@ export default async function ProvaKidsPage() {
               <Benefit
                 icon={Gift}
                 title="Kit completo"
-                description="Camiseta dry-fit infantil, número, chip descartável, medalha e brindes dos parceiros."
+                description="Número de peito e medalha para quem concluir a prova."
                 gradient="from-green-400 to-teal-500"
               />
               <Benefit

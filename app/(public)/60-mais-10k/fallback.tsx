@@ -121,9 +121,8 @@ export default async function SessentaMais10KPage() {
               icon={<Heart className="w-8 h-8 text-purple-600" />}
               title="Apoio médico permanente"
               items={[
-                'Equipe de saúde posicionada nos km 2,5 / 5 / 8 e chegada',
+                'Apoio médico na chegada',
                 'Ambulância e UTI móvel acompanhando a prova',
-                'Área de recuperação com fisioterapeutas na dispersão',
               ]}
             />
             <BenefitCard
@@ -132,7 +131,7 @@ export default async function SessentaMais10KPage() {
               items={[
                 'Transporte oficial da praça até a largada às 11h15',
                 'Postos de hidratação a cada 2 km (km 2, 4, 6, 8) e na chegada',
-                'Kit completo com camiseta dry-fit, chip descartável e medalha',
+                'Kit completo com número de peito, chip descartável e medalha para quem concluir',
               ]}
             />
           </div>

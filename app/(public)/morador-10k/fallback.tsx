@@ -124,7 +124,7 @@ export default async function Morador10KPage() {
               <Requirement
                 icon={<CheckCircle className="w-5 h-5 text-green-600" />}
                 title="Kit e regulamento"
-                description="Assine o termo de participação e retire camiseta, número, chip e medalha finisher."
+                description="Assine o termo de participação e retire número, chip e medalha finisher."
               />
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, MapPin, TrendingUp, Droplets, AlertCircle } from 'lucide-react'
+import { Download, MapPin, TrendingUp, Droplets } from 'lucide-react'
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import ElevationChart from '@/components/charts/ElevationChart'
@@ -35,12 +35,13 @@ export default function PercursosPage() {
         'Saída controlada na Fábrica de Cimento Holcim',
         'Trechos com apoio e hidratação ao longo da RJ-116',
         'Chegada no portal montado na Praça Prof. João Brasil',
+        'Apoio médico na chegada (Praça Prof. João Brasil)',
       ],
       hydration: [
-        'Largada - Holcim',
-        'Km 3 - Apoio móvel',
-        'Km 6 - Bairro Goiabal',
-        'Km 8,5 - Acesso ao Centro',
+        'Km 2',
+        'Km 4',
+        'Km 6',
+        'Km 8',
         'Chegada - Praça Prof. João Brasil',
       ],
       // Dados reais de altimetria extraídos do GPX oficial
@@ -71,6 +72,7 @@ export default function PercursosPage() {
         'Concentração na entrada do Goiabal',
         'Acompanhamento integral de staff e batedores',
         'Chegada com passarela especial na Praça Prof. João Brasil',
+        'Apoio médico na chegada (Praça Prof. João Brasil)',
       ],
       hydration: ['Chegada - Praça Prof. João Brasil'],
       // Dados simulados (percurso mais plano)
@@ -204,6 +206,9 @@ export default function PercursosPage() {
               <div className="mb-6">
                 <RouteMap routeType={activeTab as '10k' | '2k'} />
               </div>
+              <p className="text-center text-sm text-gray-500 mb-6">
+                O mapa foi elaborado com base em cartografia e planejamento do trajeto. O percurso real pode ter pequenas diferenças em relação ao traçado exibido.
+              </p>
 
               <div className="card">
                 <div className="flex flex-wrap gap-4 justify-center">
@@ -224,7 +229,7 @@ export default function PercursosPage() {
                     </button>
                   )}
                   <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=-21.984536,-42.253116`}
+                    href={`https://www.google.com/maps/dir/?api=1&destination=-21.984694,-42.252585`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-secondary inline-flex items-center"
@@ -265,9 +270,7 @@ export default function PercursosPage() {
                   🚗 Estacionamento
                 </h3>
                 <ul className="space-y-2 text-gray-700">
-                  <li>• Estacionamento gratuito na Rua das Flores</li>
-                  <li>• Estacionamento oficial com manobrista (R$ 15)</li>
-                  <li>• Chegue com antecedência (ruas fecham às 6h30)</li>
+                  <li>• Estacionamento gratuito nas ruas próximas à Praça</li>
                 </ul>
               </div>
 
@@ -277,37 +280,11 @@ export default function PercursosPage() {
                 </h3>
                 <ul className="space-y-2 text-gray-700">
                   <li>• Ônibus especiais partindo às 5h30</li>
-                  <li>• Saída: Terminal Rodoviário</li>
-                  <li>• Retorno: Após às 10h</li>
+                  <li>• Saída: Praça dos Bandeirantes - São Gonçalo</li>
+                  <li>• Retorno: após a corrida</li>
                 </ul>
               </div>
 
-              <div className="card">
-                <h3 className="font-display font-bold text-xl mb-4">
-                  🚧 Interdições
-                </h3>
-                <ul className="space-y-2 text-gray-700">
-                  <li>• Centro fechado das 6h30 às 11h</li>
-                  <li>• Av. Principal: fluxo controlado</li>
-                  <li>• Rotas alternativas sinalizadas</li>
-                </ul>
-              </div>
-
-              <div className="card bg-gradient-to-br from-yellow-50 to-orange-50">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="text-orange-600 mt-1" size={24} />
-                  <div>
-                    <h3 className="font-display font-bold text-xl mb-2">
-                      ⚠️ Pontos de Atenção
-                    </h3>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• Km 3: Lombada redutora</li>
-                      <li>• Km 5-6: Subida íngreme</li>
-                      <li>• Km 8: Curva acentuada</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

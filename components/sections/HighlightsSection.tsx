@@ -19,7 +19,7 @@ const highlights = [
   {
     icon: Gift,
     title: 'Kit Premium',
-    description: 'Camiseta dry-fit, medalha finisher, chip de cronometragem e brindes',
+    description: 'Número de peito, chip de cronometragem e medalha finisher',
     color: 'from-blue-400 to-blue-600',
   },
   {

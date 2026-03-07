@@ -38,13 +38,8 @@ interface RegistrationRow {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-    pending: 'Pendente',
     pending_payment: 'Pagamento Pendente',
-    pending_documents: 'Documentos Pendentes',
-    under_review: 'Em Análise',
     confirmed: 'Confirmado',
-    rejected: 'Rejeitado',
-    cancelled: 'Cancelado',
 }
 
 const STATUS_BADGE_MAP: Record<string, 'success' | 'warning' | 'info' | 'error'> = {
@@ -228,7 +223,7 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
         setDeleting(true)
         try {
             const supabase = createClient()
-            
+
             // 1. Deletar a inscrição (registration)
             const { error: regError } = await supabase
                 .from('registrations')
@@ -242,7 +237,7 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
                 .select('id')
                 .eq('athlete_id', selectedReg.athlete_id)
                 .limit(1)
-            
+
             if (checkError) throw checkError
 
             // 3. Se não houver outras inscrições, deletar o atleta (athlete)
@@ -251,7 +246,7 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
                     .from('athletes')
                     .delete()
                     .eq('id', selectedReg.athlete_id)
-                
+
                 // Nota: Se falhar aqui (ex: FK em outra tabela), não travamos o processo principal
                 if (athleteError) {
                     console.warn('Não foi possível deletar o atleta órfão:', athleteError.message)
