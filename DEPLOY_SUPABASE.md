@@ -159,8 +159,13 @@ Antes de fazer deploy, precisamos adicionar as credenciais do Supabase:
 |------------------|-------|----------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxxxxxxxx.supabase.co` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiI...` | Production, Preview, Development |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGciOiJIUzI1NiI...` (service_role) | Production, Preview, Development |
+| `NEXT_PUBLIC_SITE_URL` | `https://seu-dominio.vercel.app` | Production |
 
 ⚠️ Use os valores que você **anotou no Passo 2 do Supabase**
+
+- **SUPABASE_SERVICE_ROLE_KEY**: Necessária para API routes (certificados, resultados, etc.)
+- **NEXT_PUBLIC_SITE_URL**: URL do site em produção (para QR Code dos certificados)
 
 3. Clique em **"Deploy"**
 

@@ -64,6 +64,14 @@ const sections = [
       'Caso o evento seja cancelado por determinação da organização, os inscritos serão informados sobre nova data ou procedimento alternativo. Não há garantia de reembolso integral.',
     ],
   },
+  {
+    title: '9. Informações do Site',
+    content: [
+      'As informações divulgadas no site (horários, percursos, premiações, transporte, logística e demais detalhes) têm caráter meramente informativo e podem ser alteradas ou corrigidas pela organização a qualquer momento, sem aviso prévio.',
+      'A organização não se obriga por informações eventualmente incorretas, incompletas ou desatualizadas veiculadas no site. Em caso de dúvida ou para informações críticas, o atleta deve confirmar diretamente com a organização antes do evento.',
+      'O atleta reconhece que a versão oficial e definitiva das informações do evento é a comunicada pela organização por seus canais oficiais (WhatsApp, e-mail, avisos no local). O atleta não poderá alegar prejuízo, reivindicar direitos ou exigir indenização com base em informações do site que não coincidam com as decisões finais da organização.',
+    ],
+  },
 ]
 
 export default function TermosFallback() {

@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import './globals.css'
 import { getSeoMetadata } from '@/lib/seo'
 import FloatingAIChat from '@/components/layout/FloatingAIChat'
+import AnalyticsTracker from '@/components/layout/AnalyticsTracker'
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -35,30 +36,40 @@ export async function generateMetadata() {
   const seo = await getSeoMetadata()
   const title = seo.meta_title || DEFAULT_METADATA.title
   const description = seo.meta_description || DEFAULT_METADATA.description
+  const siteName = seo.site_name || DEFAULT_METADATA.openGraph.title
   const ogImage = seo.og_image
   const ogImageUrl = ogImage
     ? ogImage.startsWith('http')
       ? ogImage
       : `${APP_URL.replace(/\/$/, '')}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`
     : undefined
+  const metadataBase = seo.canonical_url
+    ? new URL(seo.canonical_url.replace(/\/$/, ''))
+    : new URL(APP_URL)
+  const twitterSite = seo.twitter_handle
+    ? seo.twitter_handle.startsWith('@')
+      ? seo.twitter_handle
+      : `@${seo.twitter_handle}`
+    : undefined
   return {
-    metadataBase: new URL(APP_URL),
+    metadataBase,
     title,
     description,
-    keywords: DEFAULT_METADATA.keywords,
-    authors: DEFAULT_METADATA.authors,
+    keywords: seo.meta_keywords || DEFAULT_METADATA.keywords,
+    authors: [{ name: siteName }],
     openGraph: {
       title,
       description,
       type: 'website',
       locale: 'pt_BR',
-      siteName: 'Corrida Rústica de Macuco',
+      siteName,
       ...(ogImageUrl && { images: [{ url: ogImageUrl }] }),
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      ...(twitterSite && { site: twitterSite }),
       ...(ogImageUrl && { images: [ogImageUrl] }),
     },
   }
@@ -72,6 +83,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${outfit.variable} ${jakarta.variable}`}>
       <body className="font-sans antialiased bg-gray-50">
+        <AnalyticsTracker />
         {children}
         <FloatingAIChat />
         <Toaster

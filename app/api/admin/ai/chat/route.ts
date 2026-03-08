@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getDynamicContext, getAiUsage, incrementAiUsage, getAiConfig, PRIVACY_DRAWER, LOGISTICS_DRAWER, HISTORY_DRAWER, SITE_MAP_DRAWER } from '@/lib/admin/ai-context'
+import { getDynamicContext, getAiUsage, incrementAiUsage, getAiConfig, HONESTY_DRAWER, PRIVACY_DRAWER, LOGISTICS_DRAWER, PERCURSOS_DRAWER, CONTACTS_DRAWER, AWARDS_DRAWER, HISTORY_DRAWER, SITE_MAP_DRAWER } from '@/lib/admin/ai-context'
 
 const MAX_MESSAGES = 15
 export const dynamic = 'force-dynamic'
@@ -84,16 +84,20 @@ export async function POST(request: NextRequest) {
             Olá, você está falando com ${usage.full_name || 'um atleta'}.
             O CPF deste usuário logado é ${cleanUserCpf}.
 
+            ${HONESTY_DRAWER}
             ${PRIVACY_DRAWER.replace('${userCpf}', cleanUserCpf)}
             
             DIRETIVA DE BUSCA DE INSCRIÇÃO:
-            1. SEMPRE verifique o bloco "DADOS EM TEMPO REAL" abaixo antes de responder sobre inscrições.
-            2. Se houver um "RESULTADO DA BUSCA DE INSCRIÇÃO: ENCONTRADA ✅", você DEVE informar os dados (Status, Categoria, Código) imediatamente.
-            3. Se a inscrição foi ENCONTRADA, NUNCA peça o CPF ou qualquer documento.
-            4. Se o resultado for "NÃO ENCONTRADA ❌" para o CPF ${cleanUserCpf}, informe que não localizou e pergunte se ele tem um RG ou Código para tentar novamente.
+            1. Verifique o bloco "DADOS EM TEMPO REAL" abaixo APENAS quando o usuário perguntar sobre inscrição, status, confirmação ou cadastro.
+            2. NUNCA mostre o status da inscrição (CONFIRMADA, Código, Categoria) no início da conversa ou de forma proativa. Informe esses dados SOMENTE quando o usuário perguntar explicitamente (ex: "minha inscrição", "estou inscrito?", "qual meu status?", "meu código").
+            3. Se a inscrição foi ENCONTRADA e o usuário perguntou, informe os dados (Status, Categoria, Código). NUNCA peça CPF ou documento nesse caso.
+            4. Se o resultado for "NÃO ENCONTRADA ❌" e o usuário perguntou, informe que não localizou e sugira RG ou Código para tentar novamente.
 
             CONHECIMENTO BASE (CACHE):
             ${LOGISTICS_DRAWER}
+            ${PERCURSOS_DRAWER}
+            ${AWARDS_DRAWER}
+            ${CONTACTS_DRAWER}
             ${HISTORY_DRAWER}
             ${SITE_MAP_DRAWER}
             ${(regulationText || '').substring(0, 3000)}

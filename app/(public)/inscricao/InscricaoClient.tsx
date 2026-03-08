@@ -648,7 +648,7 @@ export default function InscricaoClient() {
     }
 
     if (!formData.acceptedTerms) {
-      errors.acceptedTerms = 'Aceite o regulamento e as políticas para continuar.'
+      errors.acceptedTerms = 'Aceite o regulamento, os termos de uso e as políticas para continuar.'
     }
 
     if (selectedCategory?.id === 'sessenta-10k') {
@@ -684,7 +684,7 @@ export default function InscricaoClient() {
 
   const handleFinalizePayment = async () => {
     if (!formData.acceptedTerms) {
-      setSubmitError('Aceite o regulamento e as políticas para continuar.')
+      setSubmitError('Aceite o regulamento, os termos de uso e as políticas para continuar.')
       return
     }
     setSubmitError409NoRedirect(false)
@@ -1713,6 +1713,10 @@ export default function InscricaoClient() {
                         Li e aceito o{' '}
                         <Link href="/regulamento" className="text-primary-600 hover:text-primary-700 font-semibold">
                           regulamento
+                        </Link>
+                        , os{' '}
+                        <Link href="/termos" className="text-primary-600 hover:text-primary-700 font-semibold">
+                          termos de uso
                         </Link>{' '}
                         e as{' '}
                         <Link href="/politicas" className="text-primary-600 hover:text-primary-700 font-semibold">

@@ -95,7 +95,7 @@ const PREMIO_FAIXA = '1º Troféu + R$ 200,00 • 2º R$ 150,00 • 3º R$ 100,0
 
 const CORRIDA_INFANTO_JUVENIL = {
   distancia: '2,5 KM (masculino e feminino)',
-  faixaEtaria: '11 a 14 anos',
+  faixaEtaria: '5 a 14 anos',
   inscricoes: 'Inscrições se encerram às 9h',
   largada: 'Largada às 10h - Da entrada do Goiabal até Macuco',
   premios: [

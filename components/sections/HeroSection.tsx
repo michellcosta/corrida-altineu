@@ -52,7 +52,7 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
   const badges =
     content?.badges && content.badges.length > 0
       ? content.badges
-      : [{ text: registrationsOpen ? 'Inscrições Abertas' : 'Inscrições Encerradas' }]
+      : [{ text: registrationsOpen ? 'Inscrições Abertas' : 'INSCRIÇÕES ENCERRADAS' }]
   const stats =
     content?.stats && content.stats.length > 0
       ? content.stats

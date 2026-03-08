@@ -9,6 +9,13 @@ const CATEGORY_SLUG_MAP: Record<string, string> = {
   'infantil-2k': 'infantil-2k',
 }
 
+const SLUG_TO_EVENT_SLOTS: Record<string, string> = {
+  'geral-10k': 'slots_geral',
+  'morador-10k': 'slots_morador',
+  '60-mais-10k': 'slots_60plus',
+  'infantil-2k': 'slots_infantil',
+}
+
 function generateConfirmationCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -104,13 +111,20 @@ export async function POST(request: NextRequest) {
 
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, race_date, year, price_geral')
+      .select('id, race_date, year, price_geral, registrations_open, slots_geral, slots_morador, slots_60plus, slots_infantil')
       .eq('year', 2026)
       .single()
 
     if (eventError || !event) {
       console.error('Evento não encontrado:', eventError)
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
+    }
+
+    if (!event.registrations_open) {
+      return NextResponse.json(
+        { error: 'As inscrições estão encerradas no momento.' },
+        { status: 403 }
+      )
     }
 
     const eventYear = event.year ?? 2026
@@ -151,6 +165,23 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+    }
+
+    const slotsKey = SLUG_TO_EVENT_SLOTS[slug]
+    const maxSlots = slotsKey ? ((event as any)[slotsKey] ?? 500) : 500
+
+    const { count: confirmedCount } = await supabase
+      .from('registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', event.id)
+      .eq('category_id', category.id)
+      .in('status', ['confirmed', 'paid'])
+
+    if ((confirmedCount ?? 0) >= maxSlots) {
+      return NextResponse.json(
+        { error: 'Não há mais vagas disponíveis para esta categoria.' },
+        { status: 409 }
+      )
     }
 
     let athleteDocType = documentType || 'CPF'

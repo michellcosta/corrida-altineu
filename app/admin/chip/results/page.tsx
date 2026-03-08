@@ -157,7 +157,7 @@ export default function ResultsPage() {
             <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">Resultados</h1>
             <p className="text-gray-600">Importe resultados da cronometragem em CSV.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <label className="admin-button-primary flex items-center gap-2 cursor-pointer">
               {uploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
               {uploading ? 'Importando...' : 'Importar CSV'}

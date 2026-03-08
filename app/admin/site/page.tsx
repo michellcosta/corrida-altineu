@@ -3,26 +3,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { getContentStats, listPages } from '@/lib/admin/cms'
+import { parseLocalDate } from '@/lib/utils/dates'
 import {
+  Activity,
   AlertCircle,
-  ArrowRight,
+  BarChart2,
   Calendar,
   CheckCircle,
-  FileText,
+  CreditCard,
+  Database,
   Globe,
-  Layers,
   Loader2,
+  Mail,
   RefreshCw,
-  Settings,
-  TrendingUp,
 } from 'lucide-react'
 
-interface DashboardStats {
-  totalPages: number
-  publishedPages: number
-  totalSections: number
-  totalPosts: number
+interface SiteStats {
+  health: {
+    database: boolean
+    payment: boolean
+    email: boolean
+  }
+  analytics: {
+    views: number
+    conversionRate: string
+    topPages: Array<{ path: string; count: number }>
+    period: string
+  }
 }
 
 interface EventSummary {
@@ -66,13 +73,13 @@ async function fetchEventSummary(): Promise<EventSummary | null> {
 
 export default function SiteAdminDashboard() {
   const router = useRouter()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [recentPages, setRecentPages] = useState<Array<{ id: string; title: string; slug: string; updated_at: string }>>([])
+  const [siteStats, setSiteStats] = useState<SiteStats | null>(null)
   const [eventSummary, setEventSummary] = useState<EventSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastState[]>([])
+  const [togglingRegistrations, setTogglingRegistrations] = useState(false)
 
   useEffect(() => {
     loadDashboard()
@@ -82,41 +89,25 @@ export default function SiteAdminDashboard() {
     try {
       setLoading(true)
       setError(null)
-      
-      const [contentStats, pages, event] = await Promise.all([
-        getContentStats().catch((err) => {
-          console.error('Erro ao buscar stats:', err)
-          return {
-            totalPages: 0,
-            publishedPages: 0,
-            totalSections: 0,
-            totalPosts: 0,
-          }
-        }),
-        listPages().catch((err) => {
-          console.error('Erro ao buscar páginas:', err)
-          return []
-        }),
+
+      const [event, siteStatsData] = await Promise.all([
         fetchEventSummary().catch((err) => {
           console.error('Erro ao buscar evento:', err)
           return null
         }),
+        fetch('/api/admin/stats')
+          .then(res => res.ok ? res.json() : null)
+          .catch((err) => {
+            console.error('Erro ao buscar site stats:', err)
+            return null
+          })
       ])
 
-      setStats(contentStats)
-      setRecentPages(pages.slice(0, 5).map(({ id, title, slug, updated_at }) => ({ id, title, slug, updated_at })))
       setEventSummary(event)
+      setSiteStats(siteStatsData)
     } catch (err: any) {
       console.error('Erro ao carregar painel:', err)
       setError(err?.message ?? 'Nao foi possivel carregar os dados do painel.')
-      // Definir valores padrão em caso de erro
-      setStats({
-        totalPages: 0,
-        publishedPages: 0,
-        totalSections: 0,
-        totalPosts: 0,
-      })
-      setRecentPages([])
       setEventSummary(null)
     } finally {
       setLoading(false)
@@ -141,38 +132,32 @@ export default function SiteAdminDashboard() {
     }, 4000)
   }
 
-  const statsCards = useMemo(() => {
-    return [
-      {
-        title: 'Paginas totais',
-        value: stats?.totalPages ?? 0,
-        description: 'Inclui rascunhos e arquivadas',
-        icon: FileText,
-        accent: 'bg-primary-100 text-primary-700',
-      },
-      {
-        title: 'Paginas publicadas',
-        value: stats?.publishedPages ?? 0,
-        description: 'Disponiveis no site publico',
-        icon: Globe,
-        accent: 'bg-emerald-100 text-emerald-700',
-      },
-      {
-        title: 'Seções em uso',
-        value: stats?.totalSections ?? 0,
-        description: 'Componentes ativos nas páginas',
-        icon: Layers,
-        accent: 'bg-indigo-100 text-indigo-700',
-      },
-      {
-        title: 'Posts do blog',
-        value: stats?.totalPosts ?? 0,
-        description: 'Conteúdo editorial publicado',
-        icon: TrendingUp,
-        accent: 'bg-amber-100 text-amber-700',
-      },
-    ]
-  }, [stats])
+  const handleToggleRegistrations = async () => {
+    if (!eventSummary || togglingRegistrations) return
+    const newState = !eventSummary.registrationsOpen
+    setTogglingRegistrations(true)
+    try {
+      const res = await fetch('/api/admin/event/registrations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ open: newState }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error || `Erro ${res.status}`)
+      }
+      setEventSummary({ ...eventSummary, registrationsOpen: newState })
+      notify(
+        newState ? 'Inscrições reabertas com sucesso!' : 'Inscrições encerradas com sucesso!',
+        'success'
+      )
+    } catch (err: any) {
+      notify(err.message || 'Erro ao alternar inscrições', 'error')
+    } finally {
+      setTogglingRegistrations(false)
+    }
+  }
 
   const formattedRaceDate = useMemo(() => {
     if (!eventSummary?.raceDate) return null
@@ -181,7 +166,7 @@ export default function SiteAdminDashboard() {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
-      }).format(new Date(eventSummary.raceDate))
+      }).format(parseLocalDate(eventSummary.raceDate))
     } catch {
       return eventSummary.raceDate
     }
@@ -226,75 +211,7 @@ export default function SiteAdminDashboard() {
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {statsCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <div key={card.title} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <div className={`mb-4 inline-flex rounded-xl px-3 py-2 text-sm font-semibold ${card.accent}`}>
-                  <Icon size={18} className="mr-2" />
-                  {card.title}
-                </div>
-                {loading ? (
-                  <Loader2 size={28} className="animate-spin text-primary-600" />
-                ) : (
-                  <p className="text-3xl font-bold text-gray-900">{card.value}</p>
-                )}
-                <p className="mt-2 text-sm text-gray-500">{card.description}</p>
-              </div>
-            )
-          })}
-        </div>
-
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:col-span-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Paginas recentes</h2>
-              <button
-                className="text-sm font-semibold text-primary-600 hover:text-primary-700"
-                onClick={() => router.push('/admin/site/content/pages')}
-              >
-                Ver todas
-              </button>
-            </div>
-            <div className="mt-4 space-y-3">
-              {loading ? (
-                <div className="flex min-h-[140px] items-center justify-center text-gray-500">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
-                </div>
-              ) : recentPages.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center text-gray-500">
-                  Nenhuma pagina cadastrada. Comece criando a estrutura da home.
-                </div>
-              ) : (
-                recentPages.map((page) => (
-                  <button
-                    key={page.id}
-                    onClick={() => router.push(`/admin/site/content/pages/${page.id}`)}
-                    className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-left transition hover:border-primary-200 hover:bg-primary-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm uppercase tracking-widest text-gray-400">/{page.slug}</p>
-                        <p className="text-base font-semibold text-gray-900">{page.title}</p>
-                      </div>
-                      <span className="text-xs font-semibold text-primary-600">Editar</span>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Atualizado em{' '}
-                      {new Date(page.updated_at).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
             <div className="flex items-start justify-between">
               <div>
@@ -326,6 +243,21 @@ export default function SiteAdminDashboard() {
                   Inscrições {eventSummary.registrationsOpen ? 'abertas' : 'fechadas'}
                 </p>
                 <button
+                  onClick={handleToggleRegistrations}
+                  disabled={togglingRegistrations}
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                    eventSummary.registrationsOpen
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                >
+                  {togglingRegistrations
+                    ? 'Aguarde...'
+                    : eventSummary.registrationsOpen
+                      ? 'Encerrar inscrições'
+                      : 'Reabrir inscrições'}
+                </button>
+                <button
                   onClick={() => router.push('/admin/site/settings/event')}
                   className="admin-button-secondary w-full"
                 >
@@ -341,88 +273,152 @@ export default function SiteAdminDashboard() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900">Ações rápidas</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Atalhos para as áreas mais utilizadas na gestão do site.
-            </p>
+          {/* Analytics Básico */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <BarChart2 size={20} className="text-blue-600" />
+                  Analytics Básico
+                </h2>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Últimos 7 dias</span>
+              </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <button
-                onClick={() => router.push('/admin/site/content/pages')}
-                className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-4 text-left transition hover:border-primary-300 hover:bg-primary-100"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-semibold text-primary-700">Gerenciar páginas</h3>
-                    <p className="text-xs text-primary-600">Editar estrutura e conteúdo</p>
-                  </div>
-                  <FileText size={20} className="text-primary-700" />
-                </div>
-              </button>
-
-              <button
-                onClick={() => router.push('/admin/site/content/posts')}
-                className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-left transition hover:border-amber-300 hover:bg-amber-100"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-semibold text-amber-700">Posts e noticias</h3>
-                    <p className="text-xs text-amber-600">Publicar conteúdo editorial</p>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-sm text-gray-500 mb-1">Visitas Totais</p>
+                  <div className="flex items-end justify-between">
+                    {loading ? (
+                      <Loader2 size={24} className="animate-spin text-primary-600" />
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900">
+                        {(siteStats?.analytics?.views ?? 0).toLocaleString('pt-BR')}
+                      </p>
+                    )}
                   </div>
                 </div>
-              </button>
-
-              <button
-                onClick={() => router.push('/admin/site/settings/templates')}
-                className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-left transition hover:border-emerald-300 hover:bg-emerald-100"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-semibold text-emerald-700">Templates de comunicação</h3>
-                    <p className="text-xs text-emerald-600">E-mails e notificações</p>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-sm text-gray-500 mb-1">Conversões</p>
+                  <div className="flex items-end justify-between">
+                    {loading ? (
+                      <Loader2 size={24} className="animate-spin text-primary-600" />
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900">
+                        {siteStats?.analytics?.conversionRate ?? '0'}%
+                      </p>
+                    )}
                   </div>
                 </div>
-              </button>
+              </div>
 
-              <button
-                onClick={() => router.push('/admin/site/settings/event')}
-                className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-left transition hover:border-indigo-300 hover:bg-indigo-100"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-semibold text-indigo-700">Configurações do evento</h3>
-                    <p className="text-xs text-indigo-600">Datas, vagas, contato</p>
+              <div className="space-y-4">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">Páginas mais acessadas</h3>
+
+                {loading ? (
+                  <div className="flex min-h-[80px] items-center justify-center text-gray-500">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
                   </div>
-                  <Settings size={20} className="text-indigo-700" />
-                </div>
-              </button>
+                ) : !siteStats?.analytics?.topPages?.length ? (
+                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                    Nenhuma visualização registrada nos últimos 7 dias.
+                  </div>
+                ) : (
+                  siteStats.analytics.topPages.map((page, idx) => {
+                    const maxCount = Math.max(...siteStats.analytics.topPages.map((p) => p.count), 1)
+                    const widthPct = Math.round((page.count / maxCount) * 100)
+                    return (
+                      <div key={page.path}>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="text-gray-600 truncate max-w-[70%]">{page.path || '/'}</span>
+                          <span className="font-medium text-gray-900 text-xs">
+                            {page.count.toLocaleString('pt-BR')} visualizações
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5">
+                          <div
+                            className="bg-blue-500 h-1.5 rounded-full"
+                            style={{ width: `${widthPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
             </div>
           </div>
 
+          {/* NOVO WIDGET: Status do Sistema */}
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900">Checklist de publicação</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Garanta que todas as frentes estão prontas antes de divulgar a próxima edição.
-            </p>
-            <ul className="mt-4 space-y-3 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <ArrowRight className="mt-0.5 text-primary-500" size={16} />
-                Atualize o hero e a contagem regressiva na página inicial.
-              </li>
-              <li className="flex items-start gap-2">
-                <ArrowRight className="mt-0.5 text-primary-500" size={16} />
-                Revise categorias, prêmios e regulamentos no CMS.
-              </li>
-              <li className="flex items-start gap-2">
-                <ArrowRight className="mt-0.5 text-primary-500" size={16} />
-                Ajuste templates de e-mail e notificações para o novo cronograma.
-              </li>
-              <li className="flex items-start gap-2">
-                <ArrowRight className="mt-0.5 text-primary-500" size={16} />
-                Publique notícias com comunicados oficiais e patrocinadores.
-              </li>
-            </ul>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Activity size={20} className="text-indigo-600" />
+                Saúde do Sistema
+              </h2>
+              {loading ? (
+                <Loader2 size={16} className="animate-spin text-gray-400" />
+              ) : (
+                <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${(siteStats?.health?.database && siteStats?.health?.payment) ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
+                  }`}>
+                  <span className={`w-2 h-2 rounded-full animate-pulse ${(siteStats?.health?.database && siteStats?.health?.payment) ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`}></span>
+                  {(siteStats?.health?.database && siteStats?.health?.payment) ? 'Operacional' : 'Com Alertas'}
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+                    <Database size={20} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Banco de Dados</h3>
+                    <p className="text-xs text-gray-500">Conexão Supabase</p>
+                  </div>
+                </div>
+                {loading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
+                  siteStats?.health?.database
+                    ? <div className="text-xs font-bold text-emerald-600">Online</div>
+                    : <div className="text-xs font-bold text-red-600">Offline</div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between border-b border-gray-50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                    <CreditCard size={20} className="text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Integração AbacatePay</h3>
+                    <p className="text-xs text-gray-500">API de Pagamentos</p>
+                  </div>
+                </div>
+                {loading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
+                  siteStats?.health?.payment
+                    ? <div className="text-xs font-bold text-emerald-600">Configurado</div>
+                    : <div className="text-xs font-bold text-amber-600">Falta Chave API</div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100">
+                    <Mail size={20} className="text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Serviço de E-mail</h3>
+                    <p className="text-xs text-gray-500">Resend / SMTP</p>
+                  </div>
+                </div>
+                {loading ? <Loader2 size={16} className="animate-spin text-gray-400" /> : (
+                  siteStats?.health?.email
+                    ? <div className="text-xs font-bold text-emerald-600">Configurado</div>
+                    : <div className="text-xs font-bold text-amber-600">Não Conectado</div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -431,16 +427,15 @@ export default function SiteAdminDashboard() {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${
-              toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
-            }`}
+            className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+              }`}
           >
             {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
             <span>{toast.message}</span>
           </div>
         ))}
       </div>
-    </AdminLayout>
+    </AdminLayout >
   )
 }
 

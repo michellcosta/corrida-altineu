@@ -50,7 +50,6 @@ export default function Footer() {
                 { name: 'Percursos', href: '/percursos' },
                 { name: 'Premiações', href: '/premiacoes' },
                 { name: 'Resultados', href: '/resultados' },
-                { name: 'Galeria', href: '/galeria' },
               ].map((link) => (
                 <li key={link.name}>
                   <Link

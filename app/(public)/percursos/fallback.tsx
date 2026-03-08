@@ -67,7 +67,7 @@ export default function PercursosPage() {
       finish: 'Praça Prof. João Brasil, Macuco',
       time: 'Largada às 10h • Limite: 30 minutos',
       description:
-        'Percurso rápido e seguro para atletas de 11 a 14 anos, ligando o bairro Goiabal ao centro de Macuco.',
+        'Percurso rápido e seguro para atletas de 5 a 14 anos, ligando o bairro Goiabal ao centro de Macuco.',
       highlights: [
         'Concentração na entrada do Goiabal',
         'Acompanhamento integral de staff e batedores',

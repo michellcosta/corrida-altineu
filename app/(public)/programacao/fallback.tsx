@@ -126,7 +126,7 @@ export default function ProgramacaoPage() {
                     Corrida Infanto-Juvenil
                   </h2>
                   <p className="text-gray-600">
-                    Distância oficial de 2,5 km, válida para atletas de 11 a 14
+                    Distância oficial de 2,5 km, válida para atletas de 5 a 14
                     anos.
                   </p>
                 </div>

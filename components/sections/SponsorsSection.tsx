@@ -93,19 +93,6 @@ export default function SponsorsSection() {
             ))}
           </div>
         </div>
-
-        {/* CTA para patrocinadores */}
-        <div className="mt-12 text-center">
-          <p className="text-gray-600 mb-4">
-            Quer fazer parte dessa história?
-          </p>
-          <a
-            href="/patrocinio"
-            className="inline-block text-primary-600 hover:text-primary-700 font-semibold border-2 border-primary-600 hover:bg-primary-50 py-2 px-6 rounded-lg transition-colors"
-          >
-            Seja um Patrocinador
-          </a>
-        </div>
       </div>
     </section>
   )

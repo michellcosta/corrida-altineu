@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle()
-      if (!profile || profile.role !== 'SITE_ADMIN') {
+      const ALLOWED_ADMIN_ROLES = ['SITE_ADMIN', 'CHIP_ADMIN', 'ORG_ADMIN']
+      if (!profile || !ALLOWED_ADMIN_ROLES.includes(profile.role)) {
         return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
       }
     }
