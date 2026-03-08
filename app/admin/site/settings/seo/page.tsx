@@ -137,15 +137,16 @@ export default function SeoPage() {
               <div className="space-y-4">
                 {SEO_FIELDS.map((field) => {
                   const val = values[field.key] ?? ''
-                  const charCount = field.maxChars ? val.length : null
+                  const maxChars = 'maxChars' in field ? field.maxChars : undefined
+                  const charCount = maxChars != null ? val.length : null
                   const isOver =
-                    charCount !== null && field.maxChars !== undefined && charCount > field.maxChars
+                    charCount !== null && maxChars != null && charCount > maxChars
                   return (
                     <div key={field.key}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {field.label}
                       </label>
-                      {field.textarea ? (
+                      {'textarea' in field && field.textarea ? (
                         <textarea
                           value={val}
                           onChange={(e) =>
@@ -157,7 +158,7 @@ export default function SeoPage() {
                         />
                       ) : (
                         <input
-                          type={field.type || 'text'}
+                          type={'type' in field ? field.type || 'text' : 'text'}
                           value={val}
                           onChange={(e) =>
                             setValues((v) => ({ ...v, [field.key]: e.target.value }))
@@ -168,13 +169,13 @@ export default function SeoPage() {
                       )}
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <span className="text-xs text-gray-500">{field.hint}</span>
-                        {charCount !== null && (
+                        {charCount !== null && maxChars != null && (
                           <span
                             className={`text-xs tabular-nums ${
                               isOver ? 'text-amber-600' : 'text-gray-400'
                             }`}
                           >
-                            {charCount}/{field.maxChars}
+                            {charCount}/{maxChars}
                           </span>
                         )}
                       </div>

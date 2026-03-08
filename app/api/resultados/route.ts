@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       .eq('event_id', event.id)
       .eq('disqualified', false)
 
-    if (categoria !== 'todos' && categorySlugs.includes(categoria)) {
+    if (categoria !== 'todos' && (categorySlugs as readonly string[]).includes(categoria)) {
       const { data: cat } = await supabase
         .from('categories')
         .select('id')
