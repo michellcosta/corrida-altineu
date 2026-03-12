@@ -2,7 +2,7 @@
   "name": "Admin Corrida Macuco",
   "short_name": "Admin",
   "description": "Painel administrativo da Corrida Rústica de Macuco",
-  "start_url": "/admin",
+  "start_url": "/admin/login",
   "scope": "/admin",
   "display": "standalone",
   "background_color": "#ffffff",

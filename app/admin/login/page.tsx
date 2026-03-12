@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/browserClient'
 import { login, verifyMfa } from '@/lib/admin/auth'
 
 export default function AdminLoginPage() {
@@ -29,6 +30,17 @@ export default function AdminLoginPage() {
         router.push('/admin/site')
     }
   }
+
+  useEffect(() => {
+    const check = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('admin_users').select('role').eq('user_id', user.id).single()
+      if (profile) redirectByRole(profile.role)
+    }
+    check()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
