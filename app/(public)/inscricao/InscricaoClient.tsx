@@ -120,6 +120,8 @@ export default function InscricaoClient() {
   const [documentNumber, setDocumentNumber] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [isCheckingDoc, setIsCheckingDoc] = useState(false)
+  const [docDuplicateFound, setDocDuplicateFound] = useState(false)
 
   const clearFieldError = (field: string) => {
     setFieldErrors((prev) => {
@@ -250,7 +252,7 @@ export default function InscricaoClient() {
 
   const documentHelper = getDocumentHelper(documentType)
 
-  const documentMaxLength = documentType === 'CPF' ? 14 : 12
+  const documentMaxLength = 14 // Permite alternar entre RG e CPF
 
   const documentGridClass = 'md:grid-cols-[160px_1fr]'
 
@@ -473,8 +475,42 @@ export default function InscricaoClient() {
   }
 
   const handleDocumentNumberInput = (value: string) => {
-    setDocumentNumber(formatDocumentNumber(value, documentType))
+    const digits = value.replace(/\D/g, '')
+    const newType: DocumentType = digits.length <= 9 ? 'RG' : 'CPF'
+    if (newType !== documentType) {
+      setDocumentType(newType)
+    }
+    setDocumentNumber(formatDocumentNumber(value, newType))
     clearFieldError('documentNumber')
+    setDocDuplicateFound(false)
+  }
+
+  const handleCheckExistingRegistration = async (doc: string, type: DocumentType) => {
+    const digits = doc.replace(/\D/g, '')
+    if (digits.length < 9) return
+
+    setIsCheckingDoc(true)
+    setDocDuplicateFound(false)
+    try {
+      const payload = type === 'CPF' ? { cpf: digits } : { rg: digits }
+      const res = await fetch('/api/inscricao/buscar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      if (json.data && json.data.length > 0) {
+        setDocDuplicateFound(true)
+        setFieldErrors((prev) => ({
+          ...prev,
+          documentNumber: 'Este documento já possui uma inscrição para este evento.'
+        }))
+      }
+    } catch (err) {
+      console.error('Erro ao verificar documento:', err)
+    } finally {
+      setIsCheckingDoc(false)
+    }
   }
 
   const handleCategorySelect = (category: Category) => {
@@ -729,17 +765,14 @@ export default function InscricaoClient() {
           guardianDocumentType: shouldShowGuardianDocument ? formData.guardianDocumentType : undefined,
           guardianDocumentNumber: shouldShowGuardianDocument ? formData.guardianDocumentNumber : undefined,
         }
-        console.log('[InscricaoClient] handleFinalizePayment: enviando inscrição', { categoryId: selectedCategory.id })
         const resInsc = await fetch('/api/inscricao', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const jsonInsc = await resInsc.json()
-        console.log('[InscricaoClient] inscrição resposta', { status: resInsc.status, ok: resInsc.ok, hasRegistration: !!jsonInsc?.registration })
         if (!resInsc.ok) {
           if (resInsc.status === 409) {
-            console.log('[InscricaoClient] 409: redirecionando para acompanhar (inscrição duplicada)')
             const docValue = shouldShowAthleteDocument ? (documentNumber || '').replace(/\D/g, '') : selectedCategory?.id === 'infantil-2k' ? (formData.guardianCpf || '').replace(/\D/g, '') : (formData.guardianDocumentNumber || '').replace(/\D/g, '')
             const emailVal = formData.email?.trim()
             if (docValue && docValue.length >= 9) {
@@ -764,7 +797,6 @@ export default function InscricaoClient() {
         registrationNumber = jsonInsc.registration.registration_number
         confirmationCode = jsonInsc.registration.confirmation_code
         setPendingRegistrationId(registrationId)
-        console.log('[InscricaoClient] inscrição OK, chamando create-checkout', { registrationId })
       } else {
         if (!registrationResult) throw new Error('Dados da inscrição não encontrados. Volte e preencha novamente.')
         registrationNumber = registrationResult.registration_number
@@ -779,18 +811,15 @@ export default function InscricaoClient() {
         phone: formData.phone.trim(),
         taxId: getTaxIdForPayment(),
       }
-      console.log('[InscricaoClient] create-checkout payload', checkoutPayload)
       const resCheckout = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(checkoutPayload),
       })
       const jsonCheckout = await resCheckout.json()
-      console.log('[InscricaoClient] create-checkout resposta', { status: resCheckout.status, ok: resCheckout.ok, hasId: !!jsonCheckout?.id, hasBrCode: !!jsonCheckout?.brCode, hasBrCodeBase64: !!jsonCheckout?.brCodeBase64, error: jsonCheckout?.error })
       if (!resCheckout.ok) throw new Error(jsonCheckout.error || 'Erro ao criar pagamento')
 
       if (jsonCheckout.id && jsonCheckout.brCode && jsonCheckout.brCodeBase64) {
-        console.log('[InscricaoClient] QR Code recebido, setando pixData')
         setRegistrationResult({
           registration_number: registrationNumber!,
           confirmation_code: confirmationCode!,
@@ -831,7 +860,14 @@ export default function InscricaoClient() {
         return <SeniorFields year={eventConfig?.year ?? 2026} />
 
       case 'infantil-2k':
-        return <InfantilFields formData={formData} setFormData={setFormData} onFileUpload={handleFileUpload} fieldErrors={fieldErrors} clearFieldError={clearFieldError} />
+        return <InfantilFields
+          formData={formData}
+          setFormData={setFormData}
+          onFileUpload={handleFileUpload}
+          fieldErrors={fieldErrors}
+          clearFieldError={clearFieldError}
+          onGuardianDocCheck={() => { }}
+        />
 
       default:
         return null
@@ -1378,21 +1414,17 @@ export default function InscricaoClient() {
                     {shouldShowAthleteDocument && (
                       <div id="field-documentNumber">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Documento de Identificação <span className="text-gray-500 font-normal">(Obrigatório)</span>
+                          Documento de Identificação (RG/CPF) <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </label>
                         <div className={`grid grid-cols-1 ${documentGridClass} gap-4`}>
-                          <select
-                            value={documentType}
-                            onChange={(e) => handleDocumentTypeChange(e.target.value as DocumentType)}
-                            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          >
-                            <option value="CPF">CPF</option>
-                            <option value="RG">RG</option>
-                          </select>
+                          <div className="px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 flex items-center justify-center font-bold min-w-[100px]">
+                            {documentType}
+                          </div>
                           <input
                             type="text"
                             value={documentNumber}
                             onChange={(e) => handleDocumentNumberInput(e.target.value)}
+                            onBlur={() => handleCheckExistingRegistration(documentNumber, documentType)}
                             required
                             maxLength={documentMaxLength}
                             inputMode="numeric"
@@ -1400,11 +1432,47 @@ export default function InscricaoClient() {
                             placeholder={documentPlaceholder}
                           />
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">{documentHelper}</p>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Documento válido necessário para consultar sua inscrição em Acompanhar Inscrição.
-                        </p>
-                        {fieldErrors.documentNumber && (
+                        {isCheckingDoc && (
+                          <div className="flex items-center gap-2 mt-2 text-xs text-blue-600">
+                            <Loader2 size={14} className="animate-spin" />
+                            Verificando disponibilidade...
+                          </div>
+                        )}
+                        {docDuplicateFound && (
+                          <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="text-orange-600 mt-0.5" size={20} />
+                              <div className="flex-1">
+                                <p className="text-sm font-bold text-orange-900">
+                                  Inscrição já realizada!
+                                </p>
+                                <p className="text-sm text-orange-800 mt-1">
+                                  Este documento já possui uma inscrição neste evento. Se você deseja alterar algum dado ou realizar o pagamento, acompanhe sua inscrição.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const raw = documentNumber.replace(/\D/g, '')
+                                    router.push(`/inscricao/acompanhar?doc=${encodeURIComponent(raw)}`)
+                                  }}
+                                  className="mt-3 flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm"
+                                >
+                                  Ir para Acompanhar Inscrição
+                                  <ChevronRight size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {!docDuplicateFound && (
+                          <>
+                            <p className="text-xs text-gray-500 mt-2">{documentHelper}</p>
+                            <p className="text-xs text-blue-600 mt-1">
+                              Documento válido necessário para consultar sua inscrição em Acompanhar Inscrição.
+                            </p>
+                          </>
+                        )}
+                        {fieldErrors.documentNumber && !docDuplicateFound && (
                           <p className="text-xs text-red-600 mt-1">{fieldErrors.documentNumber}</p>
                         )}
                       </div>
@@ -1414,7 +1482,7 @@ export default function InscricaoClient() {
                     {shouldShowGuardianDocument && (
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-4">
                         <p className="text-sm font-semibold text-gray-900 mb-3">
-                          Documento do Responsável no Brasil <span className="text-gray-500 font-normal">(Obrigatório)</span>
+                          Documento do Responsável no Brasil (RG/CPF) <span className="text-gray-500 font-normal">(Obrigatório)</span>
                         </p>
                         <p className="text-xs text-gray-600 mb-4">
                           Como você é estrangeiro, precisamos do documento de um cidadão brasileiro que se responsabiliza pela sua inscrição.
@@ -1448,32 +1516,25 @@ export default function InscricaoClient() {
                               Documento do Responsável <span className="text-gray-500 font-normal">(Obrigatório)</span>
                             </label>
                             <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
-                              <select
-                                value={formData.guardianDocumentType}
-                                onChange={(e) => {
-                                  setFormData({ ...formData, guardianDocumentType: e.target.value as DocumentType })
-                                  clearFieldError('guardianDocumentType')
-                                  clearFieldError('guardianDocumentNumber')
-                                }}
-                                required
-                                className={`px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white ${fieldErrors.guardianDocumentType ? 'border-red-500' : 'border-gray-300'}`}
-                              >
-                                <option value="">Tipo</option>
-                                <option value="CPF">CPF</option>
-                                <option value="RG">RG</option>
-                              </select>
+                              <div className={`px-4 py-3 border rounded-lg bg-gray-50 text-gray-700 flex items-center justify-center font-bold min-w-[100px] ${fieldErrors.guardianDocumentType ? 'border-red-500' : 'border-gray-300'}`}>
+                                {formData.guardianDocumentType || 'DOC'}
+                              </div>
                               <input
                                 type="text"
                                 value={formData.guardianDocumentNumber}
                                 onChange={(e) => {
+                                  const val = e.target.value
+                                  const digits = val.replace(/\D/g, '')
+                                  const newType: DocumentType = digits.length <= 9 ? 'RG' : 'CPF'
                                   setFormData({
                                     ...formData,
-                                    guardianDocumentNumber: formatDocumentNumber(e.target.value, formData.guardianDocumentType as DocumentType || 'CPF'),
+                                    guardianDocumentType: newType,
+                                    guardianDocumentNumber: formatDocumentNumber(val, newType),
                                   })
                                   clearFieldError('guardianDocumentNumber')
                                 }}
                                 required
-                                maxLength={formData.guardianDocumentType === 'CPF' ? 14 : 12}
+                                maxLength={14}
                                 inputMode="numeric"
                                 className={`px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white ${fieldErrors.guardianDocumentNumber ? 'border-red-500' : 'border-gray-300'}`}
                                 placeholder={formData.guardianDocumentType === 'CPF' ? '000.000.000-00' : '00.000.000-0'}
@@ -1991,12 +2052,23 @@ export default function InscricaoClient() {
                           <span className="font-semibold">Importante: O responsável deve estar presente na retirada do kit</span>
                         </li>
                       )}
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="text-green-600 mt-1" size={20} />
+                        <span>Confira seu nome na{' '}
+                          <Link href="/inscricao/lista" className="text-primary-600 hover:underline font-semibold">
+                            Lista Oficial de Inscritos
+                          </Link>
+                        </span>
+                      </li>
                     </ul>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link href="/inscricao/acompanhar" className="btn-primary">
                       Acompanhar Inscrição
+                    </Link>
+                    <Link href="/inscricao/lista" className="btn-secondary flex items-center gap-2">
+                       Ver Lista de Inscritos
                     </Link>
                     <Link href="/guia-atleta" className="btn-secondary">
                       Ver Guia do Atleta
@@ -2022,6 +2094,7 @@ interface FieldsProps {
   onFileUpload?: (field: any, file: File | null) => void
   fieldErrors?: Record<string, string>
   clearFieldError?: (field: string) => void
+  onGuardianDocCheck?: () => void
 }
 
 // Campos específicos para Morador de Macuco
@@ -2152,6 +2225,9 @@ function InfantilFields({ formData, setFormData, onFileUpload, fieldErrors = {},
                   onChange={(e) => {
                     setFormData?.({ ...formData, guardianCpf: formatDocumentNumber(e.target.value, 'CPF') })
                     clearFieldError?.('guardianCpf')
+                  }}
+                  onBlur={() => {
+                    // Verificação de responsável removida para permitir múltiplas inscrições por um mesmo responsável
                   }}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${fieldErrors.guardianCpf ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="000.000.000-00"

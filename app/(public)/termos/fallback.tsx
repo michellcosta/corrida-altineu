@@ -99,7 +99,7 @@ export default function TermosFallback() {
             </h2>
             <ul className="text-sm text-slate-600 space-y-2">
               <li>
-                <strong>Evento:</strong> 51ª Corrida Rústica de São João Batista (também chamada Corrida de Macuco).
+                <strong>Evento:</strong> 51ª Grande Corrida Rústica de São João Batista (também chamada Corrida de Macuco).
               </li>
               <li>
                 <strong>Data prevista:</strong> 24/06/2026 às 08:00h.

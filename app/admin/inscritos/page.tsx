@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import AthletesManagement from '@/components/admin/AthletesManagement'
@@ -62,7 +62,13 @@ export default function UnifiedInscritosPage() {
 
     return (
         <AdminLayout>
-            <AthletesManagement userRole={role} />
+            <Suspense fallback={
+                <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
+                </div>
+            }>
+                <AthletesManagement userRole={role} />
+            </Suspense>
         </AdminLayout>
     )
 }

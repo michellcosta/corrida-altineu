@@ -23,22 +23,14 @@ export function useEventConfigRealtime(onUpdate: () => void) {
           table: 'events',
         },
         () => {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[EventConfig] Realtime Supabase disparou - refetch')
-          }
           setTimeout(onUpdate, 150)
         }
       )
       .subscribe((status) => {
-        if (process.env.NODE_ENV === 'development' && status !== 'SUBSCRIBED') {
-          console.log('[Realtime events]', status)
-        }
+        // Status logger removed for cleaner console
       })
 
     const unbindBroadcast = onEventConfigUpdated(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[EventConfig] BroadcastChannel disparou - refetch')
-      }
       setTimeout(onUpdate, 150)
     })
 

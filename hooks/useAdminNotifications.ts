@@ -10,6 +10,7 @@ export interface AdminNotification {
   link: string | null
   read_at: string | null
   created_at: string
+  metadata?: any
 }
 
 export function useAdminNotifications() {

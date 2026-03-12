@@ -136,11 +136,32 @@ export default function FloatingAIChat() {
 
         if (savedCpf && savedName) {
             const clean = savedCpf.replace(/\D/g, '')
-            setUserCpf(clean)
-            setUserName(savedName)
-            setIsAdmin(clean === '13017905756')
-            setStep('chat')
-            fetchUsage(clean)
+            // Validar se o usuário ainda existe (atleta ou ai_usage) antes de restaurar sessão
+            const supabase = createClient()
+            Promise.all([
+                supabase.from('athletes').select('full_name').eq('document_number', clean).limit(1),
+                supabase.from('ai_usage').select('full_name').eq('cpf', clean).limit(1)
+            ]).then(([athleteRes, usageRes]) => {
+                const athlete = athleteRes.data?.[0]
+                const usage = usageRes.data?.[0]
+                if (athlete || usage) {
+                    const name = athlete?.full_name || usage?.full_name || savedName
+                    setUserCpf(clean)
+                    setUserName(name)
+                    setIsAdmin(clean === '13017905756')
+                    setStep('chat')
+                    fetchUsage(clean)
+                    if (name !== savedName) {
+                        localStorage.setItem('chat_user_name', name)
+                    }
+                } else {
+                    // Usuário excluído: limpar localStorage e forçar nova identificação
+                    localStorage.removeItem('chat_user_cpf')
+                    localStorage.removeItem('chat_user_name')
+                    setUserCpf('')
+                    setStep('identify')
+                }
+            })
         } else {
             // Autodetecção: Se estiver na página de acompanhamento, tentar pegar o CPF da tela ou URL
             const urlParams = new URLSearchParams(window.location.search)
@@ -208,8 +229,6 @@ export default function FloatingAIChat() {
                 .limit(1)
 
             const athlete = athletes?.[0]
-
-            console.log('DEBUG IDENTIFY:', { cleanDoc, athlete, athleteErr })
 
             if (athlete) {
                 setUserName(athlete.full_name)

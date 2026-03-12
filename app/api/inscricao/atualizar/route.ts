@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest) {
 
     let regQuery = supabase
       .from('registrations')
-      .select('id, athlete_id, confirmation_code, athlete:athletes(id, document_number)')
+      .select('id, athlete_id, confirmation_code, athlete:athletes(*)')
       .eq('event_id', event.id)
       .eq('id', regId)
 
@@ -82,17 +82,52 @@ export async function PATCH(request: NextRequest) {
 
     const athleteUpdate: Record<string, unknown> = {}
     const requiredFields = ['full_name', 'birth_date']
+    const changes: Array<{ field: string; label: string; old: any; new: any }> = []
+
+    const FIELD_LABELS: Record<string, string> = {
+      full_name: 'Nome',
+      birth_date: 'Data de Nascimento',
+      gender: 'Sexo',
+      city: 'Cidade',
+      state: 'Estado',
+      country: 'País',
+      email: 'E-mail',
+      phone: 'Telefone',
+      whatsapp: 'WhatsApp',
+      team_name: 'Equipe',
+      emergency_contact_name: 'Contato Emergência',
+      emergency_contact_phone: 'Fone Emergência',
+      tshirt_size: 'Camiseta',
+      address: 'Endereço',
+      zip_code: 'CEP',
+    }
+
     for (const key of EDITABLE_FIELDS) {
       if (key in updates && updates[key] !== undefined) {
         let val = updates[key]
         if (typeof val === 'string') val = val.trim() || null
         if (requiredFields.includes(key) && (val === null || val === '')) continue
-        athleteUpdate[key] = val
+
+        // Comparar com o valor atual
+        const oldValue = athlete[key]
+        // Normalizar comparação (null vs undefined vs '')
+        const normalizedOld = oldValue === undefined || oldValue === '' ? null : oldValue
+        const normalizedNew = val === undefined || val === '' ? null : val
+
+        if (normalizedOld !== normalizedNew) {
+          athleteUpdate[key] = val
+          changes.push({
+            field: key,
+            label: FIELD_LABELS[key] || key,
+            old: normalizedOld,
+            new: normalizedNew,
+          })
+        }
       }
     }
 
     if (Object.keys(athleteUpdate).length === 0) {
-      return NextResponse.json({ error: 'Nenhum campo editável enviado' }, { status: 400 })
+      return NextResponse.json({ error: 'Nenhum campo editável enviado ou nada foi alterado' }, { status: 400 })
     }
 
     if (athleteUpdate.email && typeof athleteUpdate.email === 'string') {
@@ -113,7 +148,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Notificar admins (SITE_ADMIN e CHIP_ADMIN) sobre a alteração
-    const athleteName = (athleteUpdate.full_name as string) || 'Atleta'
+    const athleteName = (athleteUpdate.full_name as string) || (athlete?.full_name as string) || 'Atleta'
     const { data: admins } = await supabase
       .from('admin_users')
       .select('id')
@@ -121,13 +156,18 @@ export async function PATCH(request: NextRequest) {
       .eq('is_active', true)
 
     if (admins && admins.length > 0) {
+      const changedFieldNames = changes.map((c) => c.label).join(', ')
       const notifications = admins.map((a) => ({
         admin_user_id: a.id,
         type: 'athlete_data_updated',
         title: 'Dados atualizados',
-        message: `${athleteName} atualizou seus dados na inscrição.`,
-        link: '/admin/site/inscritos',
-        metadata: { athlete_id: athleteId, registration_id: regId },
+        message: `${athleteName} atualizou: ${changedFieldNames}.`,
+        link: `/admin/inscritos?search=${encodeURIComponent(athleteName)}`,
+        metadata: { 
+          athlete_id: athleteId, 
+          registration_id: regId,
+          changes: changes 
+        },
       }))
       await supabase.from('admin_notifications').insert(notifications)
     }

@@ -1,0 +1,1009 @@
+[
+  {
+    "id": "TC001",
+    "title": "Home loads and shows hero and countdown",
+    "description": "Verifies the home page renders the hero section and a visible countdown element.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Corrida\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Hero section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Inscrever-se\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Countdown\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Scroll through highlights section from the home page",
+    "description": "Verifies the highlights section is reachable and visible when scrolling on the home page.",
+    "category": "Home Page",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Highlights\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Highlights section\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the bottom of \"Highlights\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Categories\" section is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Navigate from category card 'Geral 10K' to category page",
+    "description": "Verifies clicking the 'Geral 10K' category card navigates to the correct category route.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Categories\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Geral 10K\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Geral 10K\" category card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/prova-10k\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Category page header\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Category page 'Geral 10K' shows an Inscrever-se CTA",
+    "description": "Verifies the 'Geral 10K' category page provides a visible CTA to start registration.",
+    "category": "Home Page",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Categories\" section"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Geral 10K\" category card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/prova-10k\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Inscrever-se\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Inscrever-se button\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "End-to-end CTA flow: Home -> Geral 10K -> Inscrever-se -> Registration wizard",
+    "description": "Verifies the primary flow from home through a category to the registration wizard entry page.",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Categories\" section"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Geral 10K\" category card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/prova-10k\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Inscrever-se\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/inscricao\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Registration wizard\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "CTA from hero navigates to registration when registrations are open",
+    "description": "Verifies clicking the hero 'Inscrever-se' CTA takes the user to the registration wizard (open state).",
+    "category": "Home Page",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Hero section\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Inscrever-se\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/inscricao\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Registration wizard\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Closed registrations message appears when clicking Inscrever-se (when registrations are closed)",
+    "description": "Verifies the home page shows the expected closed-registration message upon clicking the CTA in the closed state.",
+    "category": "Home Page",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Inscrever-se\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Inscrever-se\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Inscrições não estão disponíveis\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Home categories section provides access to other category pages",
+    "description": "Verifies at least one additional category card is clickable and navigates to its respective route.",
+    "category": "Home Page",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Categories\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Morador 10K\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Morador 10K\" category card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/morador-10k\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Category page header\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Geral 10K: completar inscrição até visualizar QR Code do PIX",
+    "description": "Verifica que o usuário consegue selecionar a categoria Geral 10K, preencher dados pessoais e avançar até a etapa de pagamento exibindo o QR Code do PIX.",
+    "category": "Registration Wizard",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Inscrição\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select category \"Geral 10K\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"Teste Atleta\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"123.456.789-09\" into the CPF field"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Pay with PIX\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"QR\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Geral 10K: validação de campos obrigatórios ao tentar pagar vazio",
+    "description": "Verifica que o wizard impede o pagamento e exibe mensagens de validação quando os dados obrigatórios não foram preenchidos.",
+    "category": "Registration Wizard",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao"
+      },
+      {
+        "type": "action",
+        "description": "Select category \"Geral 10K\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Pay with PIX\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"CPF\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"obrigatório\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/inscricao\""
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Search registration by valid confirmation code and view details",
+    "description": "Verifies a user can search by a valid confirmation code and see registration details.",
+    "category": "Track Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Acompanhar\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"VALID_CONFIRMATION_CODE\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Detalhes da inscrição\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"registration details section\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Search registration by valid CPF and view details",
+    "description": "Verifies a user can search by CPF and see the matching registration details.",
+    "category": "Track Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"CPF field\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"123.456.789-09\" into the CPF field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Detalhes da inscrição\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"registration status\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Invalid confirmation code shows Registration not found message",
+    "description": "Verifies searching with an invalid confirmation code shows a not found message.",
+    "category": "Track Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Type \"INVALID-CODE-0000\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Inscrição não encontrada\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"registration details section\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Empty search input shows validation message",
+    "description": "Verifies the user cannot search without providing a confirmation code or CPF and sees a validation hint.",
+    "category": "Track Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Informe o código\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"ou CPF\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Generate PIX option is available for pending payment registration",
+    "description": "Verifies that for a pending registration, the user can initiate PIX generation.",
+    "category": "Track Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Type \"PENDING_PAYMENT_CODE\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Pagamento pendente\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Gerar PIX\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Pagar com PIX\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Pay with PIX displays QR code for payment",
+    "description": "Verifies clicking Pay with PIX shows a QR code or payment code on screen.",
+    "category": "Track Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Type \"PENDING_PAYMENT_CODE\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Gerar PIX\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Pagar com PIX\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"PIX QR code\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"QR Code\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Edit athlete data and save updates successfully",
+    "description": "Verifies the user can edit athlete data from the registration details and save changes.",
+    "category": "Track Registration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Type \"EDITABLE_REGISTRATION_CODE\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Edit athlete data\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Editar\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"Nome Atualizado\" into the athlete name field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Salvar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dados atualizados\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Cancel editing athlete data does not change displayed details",
+    "description": "Verifies the user can cancel editing and the original details remain visible.",
+    "category": "Track Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Type \"EDITABLE_REGISTRATION_CODE\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Editar\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"Nome Temporário\" into the athlete name field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Cancelar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Nome Temporário\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Non-pending registration does not show Generate PIX action",
+    "description": "Verifies that when the registration status is not pending, the Generate PIX action is not available.",
+    "category": "Track Registration",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /inscricao/acompanhar"
+      },
+      {
+        "type": "action",
+        "description": "Type \"PAID_REGISTRATION_CODE\" into the confirmation code field"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Buscar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Pago\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Gerar PIX\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Filter results by category and year and view list updates",
+    "description": "Verifies that selecting a category and year updates the visible results list.",
+    "category": "Results",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /resultados"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Resultados\""
+      },
+      {
+        "type": "action",
+        "description": "Select option \"10K\" from the category filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Select option \"2026\" from the year filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Aplicar\" or \"Filtrar\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"10K\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"2026\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Search results by athlete name after applying filters",
+    "description": "Verifies that searching by athlete name narrows the results after category and year filters are set.",
+    "category": "Results",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /resultados"
+      },
+      {
+        "type": "action",
+        "description": "Select option \"10K\" from the category filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Select option \"2026\" from the year filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Maria\" into the athlete name search field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Buscar\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Maria\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Search using Enter key in the name field",
+    "description": "Verifies that pressing Enter triggers the search and displays results.",
+    "category": "Results",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /resultados"
+      },
+      {
+        "type": "action",
+        "description": "Type \"João\" into the athlete name search field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Results list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"João\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "No-match search shows a clear empty state message",
+    "description": "Verifies that searching for a non-existent athlete shows a 'no results' message.",
+    "category": "Results",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /resultados"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ZZZ_NAO_EXISTE_123\" into the athlete name search field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Buscar\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No results found\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Results list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Validate certificate navigation from results page",
+    "description": "Verifies that the validate certificate action from the results page navigates to the validation page.",
+    "category": "Results",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /resultados"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Validar certificado\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/resultados/validar\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Validar\""
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Combined flow: filter, search, then open certificate validation page",
+    "description": "Verifies the end-to-end user path from filtering and searching results to reaching the certificate validation page.",
+    "category": "Results",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /resultados"
+      },
+      {
+        "type": "action",
+        "description": "Select option \"10K\" from the category filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Select option \"2026\" from the year filter dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Carlos\" into the athlete name search field"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Buscar\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Results list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Validar certificado\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/resultados/validar\""
+      }
+    ]
+  },
+  {
+    "id": "TC026",
+    "title": "Open Percursos page and see map and elevation chart",
+    "description": "Verifies the route page loads and shows both the interactive map and the elevation chart.",
+    "category": "Route Map",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /percursos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/percursos\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation chart\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Percursos\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC027",
+    "title": "Zoom the route map using zoom controls",
+    "description": "Verifies the map zoom controls work and the map remains visible after zooming in and out.",
+    "category": "Route Map",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /percursos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the map zoom in control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the map zoom out control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC028",
+    "title": "Zoom the route map using mouse wheel/trackpad scroll",
+    "description": "Verifies zooming via scroll works without breaking the page content.",
+    "category": "Route Map",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /percursos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll on the map area to zoom in"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll on the map area to zoom out"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation chart\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC029",
+    "title": "View elevation chart on the Percursos page",
+    "description": "Verifies the elevation chart renders and is visible within the page content.",
+    "category": "Route Map",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /percursos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation chart\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Elevation chart\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation chart\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Elevação\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC030",
+    "title": "Inspect elevation details by interacting with the chart",
+    "description": "Verifies the elevation chart reveals detail information when the user inspects points along the profile.",
+    "category": "Route Map",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /percursos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation chart\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on a point/segment on the elevation chart"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation detail\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"m\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC031",
+    "title": "Map remains usable after scrolling the page and returning to the map",
+    "description": "Verifies the map component remains visible and interactive after page scroll (no blank map area).",
+    "category": "Route Map",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /percursos"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Elevation chart\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Elevation chart\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the \"Interactive route map\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Interactive route map\" is visible"
+      }
+    ]
+  }
+]

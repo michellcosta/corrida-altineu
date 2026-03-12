@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Download, Filter, Pencil, Trash2, Loader2, X, Copy, Hash } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browserClient'
@@ -22,6 +22,7 @@ interface AthleteData {
     state: string | null
     country: string | null
     team_name: string | null
+    document_number?: string | null
 }
 
 interface RegistrationRow {
@@ -30,6 +31,7 @@ interface RegistrationRow {
     registration_number: string | null
     confirmation_code: string | null
     status: string
+    payment_status?: string | null
     bib_number: number | null
     notes: string | null
     registered_at: string
@@ -50,6 +52,7 @@ const STATUS_BADGE_MAP: Record<string, 'success' | 'warning' | 'info' | 'error'>
     under_review: 'info',
     rejected: 'error',
     cancelled: 'info',
+    updated: 'info',
 }
 
 // --- Utils ---
@@ -82,9 +85,10 @@ interface AthletesManagementProps {
 
 export default function AthletesManagement({ userRole }: AthletesManagementProps) {
     const router = useRouter()
+    const searchParams = useSearchParams()
 
     // State
-    const [searchTerm, setSearchTerm] = useState('')
+    const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '')
     const [filterCategory, setFilterCategory] = useState('todas')
     const [filterStatus, setFilterStatus] = useState('todos')
     const [registrations, setRegistrations] = useState<RegistrationRow[]>([])
@@ -104,9 +108,13 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
     const canDelete = userRole === UserRole.SITE_ADMIN
     const isChipAdmin = userRole === UserRole.CHIP_ADMIN
 
+    // Sync search term with URL param and reload data when it changes (e.g. notification click)
     useEffect(() => {
+        const paramSearch = searchParams.get('search') || ''
+        setSearchTerm(paramSearch)
         loadData()
-    }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams])
 
     async function loadData() {
         try {
@@ -198,12 +206,18 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
                 .eq('id', selectedReg.athlete_id)
             if (athleteError) throw athleteError
 
+            const regUpdate: Record<string, unknown> = {
+                status: registrationData.status,
+                updated_at: new Date().toISOString(),
+            }
+            // Ao confirmar inscrição, marcar como gratuito (exceto se já pago)
+            if (registrationData.status === 'confirmed' && selectedReg.payment_status !== 'paid') {
+                regUpdate.payment_status = 'free'
+            }
+
             const { error: regError } = await supabase
                 .from('registrations')
-                .update({
-                    status: registrationData.status,
-                    updated_at: new Date().toISOString(),
-                })
+                .update(regUpdate)
                 .eq('id', selectedReg.id)
             if (regError) throw regError
 
@@ -242,6 +256,7 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
 
             // 3. Se não houver outras inscrições, deletar o atleta (athlete)
             if (!otherRegs || otherRegs.length === 0) {
+                const docNumber = selectedReg.athlete?.document_number?.replace(/\D/g, '')
                 const { error: athleteError } = await supabase
                     .from('athletes')
                     .delete()
@@ -250,6 +265,18 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
                 // Nota: Se falhar aqui (ex: FK em outra tabela), não travamos o processo principal
                 if (athleteError) {
                     console.warn('Não foi possível deletar o atleta órfão:', athleteError.message)
+                } else if (docNumber && docNumber.length >= 5) {
+                    // Limpar ai_usage para que a IA não continue reconhecendo o usuário excluído
+                    try {
+                        await fetch('/api/admin/ai-usage/cleanup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ document_number: docNumber }),
+                        })
+                    } catch {
+                        // Silencioso: não bloqueia a exclusão principal
+                    }
                 }
             }
 

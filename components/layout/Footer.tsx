@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Instagram, Mail, MapPin, MessageCircle } from 'lucide-react'
+import { Instagram, Mail, MessageCircle } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
 
 export default function Footer() {
@@ -94,13 +94,6 @@ export default function Footer() {
               Contato
             </h3>
             <ul className="space-y-3">
-              <li className="flex items-start space-x-3">
-                <MapPin size={20} className="text-primary-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm">
-                  Prefeitura Municipal de Macuco<br />
-                  Centro, Macuco - RJ
-                </span>
-              </li>
               <li className="flex flex-col space-y-2">
                 <div className="flex items-center space-x-3">
                   <MessageCircle size={20} className="text-primary-400 flex-shrink-0" />

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { RACE_CONFIG } from '@/lib/constants'
-import { parseLocalDate } from '@/lib/utils/dates'
+import { parseRaceDateTime } from '@/lib/utils/dates'
 
 interface TimeLeft {
   days: number
@@ -35,12 +35,12 @@ export default function CountdownSection({ eventData, content }: CountdownSectio
 
   const target = useMemo(() => {
     if (content?.targetDate) {
-      const parsed = parseLocalDate(content.targetDate)
+      const parsed = parseRaceDateTime(content.targetDate)
       if (!Number.isNaN(parsed.getTime())) {
         return parsed
       }
     }
-    return eventData?.race_date ? parseLocalDate(eventData.race_date) : RACE_CONFIG.raceDate
+    return eventData?.race_date ? parseRaceDateTime(eventData.race_date) : RACE_CONFIG.raceDate
   }, [content?.targetDate, eventData?.race_date])
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function CountdownSection({ eventData, content }: CountdownSectio
 
   const title = content?.title || 'Faltam Apenas'
   const subtitle =
-    content?.subtitle || `Para a largada da ${edition}ª Corrida Rústica de São João Batista`
+    content?.subtitle || `Para a largada da ${edition}ª Grande Corrida Rústica de São João Batista`
 
   const backgroundClass =
     content?.backgroundColor === 'gradient-accent'

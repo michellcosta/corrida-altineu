@@ -67,11 +67,6 @@ const SECTION_DEFAULTS: Record<SectionType, Record<string, unknown>> = {
     subtitle: '',
     showCount: 3,
   },
-  sponsors: {
-    title: 'Patrocinadores',
-    subtitle: '',
-    tiers: [],
-  },
   cta: {
     title: 'Call to action',
     subtitle: '',

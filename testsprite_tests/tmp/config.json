@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "executionArgs": {
+    "projectName": "corrida-altineu",
+    "projectPath": "c:\\Users\\Michell Oliveira\\Documents\\GitHub\\corrida-altineu",
+    "testIds": [],
+    "additionalInstruction": "",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-WCErz702AHPR9uccs1A0TXv_jkyQ6coEP5V4r4mdquQcN4rMI4_fuMM7xS32dkJhYg_6zdJytnpoY-rR5I8b3cHAB3vCzOMj2cdMTh0g6mn7iehoe9z9H8Se5ZNMaQK4NvI"
+    }
+  },
+  "serverPort": 2152,
+  "proxy": "http://699861e9-e642-4aa9-8792-c648c52dfbf8:Sxd6gEmfh5fTd2CIvojZn9CWvkQJY56S@tun.testsprite.com:8080"
+}

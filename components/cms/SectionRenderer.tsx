@@ -74,40 +74,6 @@ function NewsSectionDynamic({ content }: { content: any }) {
   )
 }
 
-function SponsorsSectionDynamic({ content }: { content: any }) {
-  const tiers = Array.isArray(content?.tiers) ? content.tiers : []
-  if (tiers.length === 0) return null
-
-  return (
-    <section className="bg-gray-900 py-20">
-      <div className="container-custom">
-        <div className="mb-12 text-center">
-          <h2 className="section-title text-white">{content?.title || 'Patrocinadores'}</h2>
-          {content?.subtitle && (
-            <p className="section-subtitle mx-auto max-w-2xl text-gray-300">{content.subtitle}</p>
-          )}
-        </div>
-        <div className="grid gap-10 md:grid-cols-3">
-          {tiers.map((tier: any, index: number) => (
-            <div key={index} className="rounded-2xl border border-gray-700 bg-gray-800 p-6 text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary-300">
-                {tier.name}
-              </p>
-              <div className="mt-4 space-y-3">
-                {tier.sponsors?.map((sponsor: any, sIndex: number) => (
-                  <div key={sIndex} className="rounded-lg border border-gray-700 px-4 py-3 text-gray-100">
-                    {sponsor.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 function FAQSectionDynamic({ content }: { content: any }) {
   const items = Array.isArray(content?.items) ? content.items : []
   if (items.length === 0) return null
@@ -185,8 +151,6 @@ export default function SectionRenderer({ section, eventData }: SectionRendererP
       return <TestimonialsSectionDynamic content={content} />
     case 'news':
       return <NewsSectionDynamic content={content} />
-    case 'sponsors':
-      return <SponsorsSectionDynamic content={content} />
     case 'faq':
       return <FAQSectionDynamic content={content} />
     case 'stats':

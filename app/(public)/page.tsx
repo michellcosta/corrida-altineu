@@ -4,7 +4,6 @@ import HeroSection from '@/components/sections/HeroSection'
 import CountdownSection from '@/components/sections/CountdownSection'
 import HighlightsSection from '@/components/sections/HighlightsSection'
 import TimelineSection from '@/components/sections/TimelineSection'
-import SponsorsSection from '@/components/sections/SponsorsSection'
 import CTASection from '@/components/sections/CTASection'
 
 const CategoriesSection = dynamic(
@@ -36,7 +35,6 @@ export default async function Home() {
       <CategoriesSection />
       <HighlightsSection />
       <TimelineSection />
-      <SponsorsSection />
       <CTASection />
     </>
   )

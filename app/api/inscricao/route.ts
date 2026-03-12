@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
 
     const slug = CATEGORY_SLUG_MAP[categoryId] || categoryId
     const isInfant = categoryId === 'infantil-2k'
-    console.log('[inscricao] POST recebido', { categoryId, slug, originType: body?.originType })
 
     if (isInfant && typeof isMacucoResident !== 'boolean') {
       return NextResponse.json(
@@ -244,13 +243,6 @@ export async function POST(request: NextRequest) {
           .limit(1)
           .maybeSingle()
         if (existingByDoc) {
-          console.warn('[inscricao] 409: duplicata por documento', {
-            motivo: 'documento_ja_inscrito',
-            categoryId,
-            athleteDocNumberLen: athleteDocNumber?.length,
-            docAthleteIds,
-            existingRegId: existingByDoc?.id,
-          })
           const docHint = athleteDocNumber.length === 11 ? 'cpf' : 'rg'
           const consultHint =
             docHint === 'cpf'
@@ -353,12 +345,6 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existingReg) {
-      console.warn('[inscricao] 409: duplicata por categoria', {
-        motivo: 'mesma_categoria',
-        categoryId,
-        athleteId,
-        existingRegId: existingReg?.id,
-      })
       return NextResponse.json(
         {
           error: 'Você já possui uma inscrição nesta categoria. Consulte em Acompanhar Inscrição para editar ou concluir o pagamento.',
@@ -402,13 +388,6 @@ export async function POST(request: NextRequest) {
 
     if (regErr) {
       if (regErr.code === '23505') {
-        console.warn('[inscricao] 409: constraint única (23505)', {
-          motivo: 'unique_constraint',
-          categoryId,
-          athleteId,
-          regErrCode: regErr.code,
-          regErrDetail: regErr.details,
-        })
         return NextResponse.json(
           {
             error: 'Já existe uma inscrição com este e-mail para esta categoria. Consulte em Acompanhar Inscrição.',

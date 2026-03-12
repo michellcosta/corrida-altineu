@@ -97,64 +97,77 @@ export async function POST(request: NextRequest) {
       }
       regs = data || []
     } else {
-      // Busca por documento do atleta (normalizado: dígitos, RG com 9 dígitos)
+      // Busca por documento do atleta ou responsável (normalizado)
       const docVariants = [searchDoc]
       if (searchDoc.length === 9 && searchDoc.startsWith('0')) {
         docVariants.push(searchDoc.slice(1))
       }
+
+      // 1. Buscar atleta(s) pelo documento
       let athleteIds: string[] = []
       for (const doc of docVariants) {
-        const { data: athletes, error: athletesErr } = await supabase
+        const { data: athletes } = await supabase
           .from('athletes')
           .select('id')
           .eq('document_number', doc)
-          .limit(10)
-        athleteIds = (athletes || []).map((a) => a.id)
-        if (athleteIds.length > 0) break
-      }
-      if (athleteIds.length === 0) {
-        console.log('[buscar] Nenhum atleta com document_number=', searchDoc, '(docVariants:', docVariants.join(', '), ')')
+          .limit(20)
+        if (athletes && athletes.length > 0) {
+          athleteIds = [...athleteIds, ...athletes.map((a) => a.id)]
+        }
       }
 
-      // Se não encontrou por atleta, tenta por documento do responsável (inscrições infantis)
-      let regIdsToFetch: string[] = []
+      // 2. Buscar responsável(is) pelo documento
+      let guardianIds: string[] = []
+      for (const doc of docVariants) {
+        const { data: guardians } = await supabase
+          .from('guardians')
+          .select('id')
+          .eq('document_number', doc)
+          .limit(20)
+        if (guardians && guardians.length > 0) {
+          guardianIds = [...guardianIds, ...guardians.map((g) => g.id)]
+        }
+      }
+
+      // 3. Buscar todas as IDs de inscrições relacionadas
+      let regIdsSet = new Set<string>()
+
+      // Inscrições onde o documento é do atleta
       if (athleteIds.length > 0) {
         const { data: regsByAthlete } = await supabase
           .from('registrations')
           .select('id')
           .eq('event_id', event.id)
           .in('athlete_id', athleteIds)
-        regIdsToFetch = (regsByAthlete || []).map((r: { id: string }) => r.id)
-      }
-      if (regIdsToFetch.length === 0) {
-        for (const doc of docVariants) {
-          const { data: guardians } = await supabase
-            .from('guardians')
-            .select('id')
-            .eq('document_number', doc)
-            .limit(10)
-          const guardianIds = (guardians || []).map((g: { id: string }) => g.id)
-          if (guardianIds.length > 0) {
-            const { data: regsByGuardian } = await supabase
-              .from('registrations')
-              .select('id')
-              .eq('event_id', event.id)
-              .in('guardian_id', guardianIds)
-            regIdsToFetch = (regsByGuardian || []).map((r: { id: string }) => r.id)
-            break
-          }
+        if (regsByAthlete) {
+          regsByAthlete.forEach((r) => regIdsSet.add(r.id))
         }
       }
+
+      // Inscrições onde o documento é do responsável
+      if (guardianIds.length > 0) {
+        const { data: regsByGuardian } = await supabase
+          .from('registrations')
+          .select('id')
+          .eq('event_id', event.id)
+          .in('guardian_id', guardianIds)
+        if (regsByGuardian) {
+          regsByGuardian.forEach((r) => regIdsSet.add(r.id))
+        }
+      }
+
+      const regIdsToFetch = Array.from(regIdsSet)
+
       if (regIdsToFetch.length === 0) {
-        console.log('[buscar] Nenhuma inscrição para doc=', searchDoc, '(athleteIds:', athleteIds.length, ', guardianIds tentados)')
         return NextResponse.json({ data: [] })
       }
+
       const { data, error } = await supabase
         .from('registrations')
         .select(regSelect)
         .in('id', regIdsToFetch)
         .order('registered_at', { ascending: false })
-        .limit(5)
+        .limit(20)
       if (error) {
         console.error('Erro ao buscar inscrição:', error)
         return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })

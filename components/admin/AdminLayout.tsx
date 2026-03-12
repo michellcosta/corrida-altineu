@@ -41,6 +41,16 @@ function formatNotificationDate(iso: string): string {
   }
 }
 
+function formatDisplayValue(value: any, field?: string): string {
+  if (value === null || value === undefined || value === '') return '(vazio)'
+  // Se for uma data ISO curta (YYYY-MM-DD) ou campo de data
+  if (field === 'birth_date' || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))) {
+    const parts = value.split('-')
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  }
+  return String(value)
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -80,7 +90,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       const { data: { user }, error } = await supabase.auth.getUser()
 
       if (error || !user) {
-        console.log('Usuário não autenticado, redirecionando para login')
         router.push('/admin/login')
         return
       }
@@ -93,7 +102,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         .single()
 
       if (profileError || !profile) {
-        console.log('Perfil admin não encontrado, redirecionando para login')
         router.push('/admin/login')
         return
       }
@@ -355,18 +363,41 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             className={`p-4 border-b border-gray-50 hover:bg-gray-50 ${!n.read_at ? 'bg-primary-50/50' : ''}`}
                           >
                             {n.link ? (
-                              <Link
-                                href={n.link}
+                              <div
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => {
                                   if (!n.read_at) markAsRead([n.id])
                                   setNotificationsOpen(false)
+                                  router.push(n.link!)
+                                  router.refresh()
                                 }}
-                                className="block"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    if (!n.read_at) markAsRead([n.id])
+                                    setNotificationsOpen(false)
+                                    router.push(n.link!)
+                                    router.refresh()
+                                  }
+                                }}
+                                className="block cursor-pointer"
                               >
                                 <p className="font-medium text-gray-900 text-sm">{n.title}</p>
                                 <p className="text-sm text-gray-600 mt-0.5">{n.message}</p>
+                                {n.metadata?.changes && (
+                                  <div className="mt-2 text-xs space-y-1 bg-white/50 p-2 rounded border border-primary-100">
+                                    {n.metadata.changes.map((c: any, i: number) => (
+                                      <div key={i} className="text-gray-700">
+                                        <span className="font-semibold">{c.label}:</span>{' '}
+                                        <span className="text-red-600 line-through opacity-70">{formatDisplayValue(c.old, c.field)}</span>
+                                        <ChevronRight size={10} className="inline mx-1" />
+                                        <span className="text-emerald-700 font-medium">{formatDisplayValue(c.new, c.field)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                                 <p className="text-xs text-gray-400 mt-1">{formatNotificationDate(n.created_at)}</p>
-                              </Link>
+                              </div>
                             ) : (
                               <div
                                 onClick={() => !n.read_at && markAsRead([n.id])}
@@ -374,6 +405,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               >
                                 <p className="font-medium text-gray-900 text-sm">{n.title}</p>
                                 <p className="text-sm text-gray-600 mt-0.5">{n.message}</p>
+                                {n.metadata?.changes && (
+                                  <div className="mt-2 text-xs space-y-1 bg-gray-50 p-2 rounded border border-gray-100">
+                                    {n.metadata.changes.map((c: any, i: number) => (
+                                      <div key={i} className="text-gray-500">
+                                        <span className="font-semibold">{c.label}:</span>{' '}
+                                        <span className="text-red-500 line-through">{formatDisplayValue(c.old, c.field)}</span>
+                                        <ChevronRight size={10} className="inline mx-1" />
+                                        <span className="text-emerald-600 font-medium">{formatDisplayValue(c.new, c.field)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                                 <p className="text-xs text-gray-400 mt-1">{formatNotificationDate(n.created_at)}</p>
                               </div>
                             )}

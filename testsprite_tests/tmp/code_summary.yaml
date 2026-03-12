@@ -1,0 +1,201 @@
+version: "2"
+type: frontend
+tech_stack:
+  - TypeScript
+  - Next.js 14
+  - React 18
+  - Tailwind CSS
+  - Supabase
+  - Framer Motion
+  - Leaflet
+  - AbacatePay
+routes:
+  - path: /
+    file: app/(public)/page.tsx
+    auth_required: false
+    description: Home page with hero, countdown, categories, highlights
+  - path: /inscricao
+    file: app/(public)/inscricao/InscricaoClient.tsx
+    auth_required: false
+    description: Multi-step registration wizard
+  - path: /inscricao/acompanhar
+    file: app/(public)/inscricao/acompanhar/AcompanharClient.tsx
+    auth_required: false
+    description: Search and view registration by code or CPF
+  - path: /inscricao/lista
+    file: app/(public)/inscricao/lista/page.tsx
+    auth_required: false
+    description: Public list of registered athletes
+  - path: /inscricao/sucesso
+    file: app/(public)/inscricao/sucesso/InscricaoSucessoClient.tsx
+    auth_required: false
+    description: Payment success page
+  - path: /resultados
+    file: app/(public)/resultados/fallback.tsx
+    auth_required: false
+    description: Race results with filters
+  - path: /resultados/validar
+    file: app/(public)/resultados/validar/page.tsx
+    auth_required: false
+    description: Certificate validation
+  - path: /prova-10k
+    file: app/(public)/prova-10k/fallback.tsx
+    auth_required: false
+    description: General 10K category page
+  - path: /morador-10k
+    file: app/(public)/morador-10k/fallback.tsx
+    auth_required: false
+    description: Resident 10K category page
+  - path: /60-mais-10k
+    file: app/(public)/60-mais-10k/fallback.tsx
+    auth_required: false
+    description: 60+ 10K category page
+  - path: /percursos
+    file: app/(public)/percursos/fallback.tsx
+    auth_required: false
+    description: Route map and elevation
+  - path: /premiacoes
+    file: app/(public)/premiacoes/fallback.tsx
+    auth_required: false
+    description: Prizes information
+  - path: /programacao
+    file: app/(public)/programacao/fallback.tsx
+    auth_required: false
+    description: Event schedule
+  - path: /regulamento
+    file: app/(public)/regulamento/fallback.tsx
+    auth_required: false
+    description: Race regulations
+  - path: /guia-atleta
+    file: app/(public)/guia-atleta/fallback.tsx
+    auth_required: false
+    description: Athlete guide
+  - path: /contato
+    file: app/(public)/contato/fallback.tsx
+    auth_required: false
+    description: Contact page
+  - path: /sobre
+    file: app/(public)/sobre/fallback.tsx
+    auth_required: false
+    description: About the race
+  - path: /noticias
+    file: app/(public)/noticias/fallback.tsx
+    auth_required: false
+    description: News listing
+  - path: /admin/login
+    file: app/admin/login/page.tsx
+    auth_required: false
+    description: Admin login
+  - path: /admin/site
+    file: app/admin/site/page.tsx
+    auth_required: true
+    description: Site admin dashboard
+features:
+  - name: Home Page
+    description: Landing page with event info, categories, highlights, CTA
+    files:
+      - app/(public)/page.tsx
+      - components/sections/HeroSection.tsx
+      - components/sections/CategoriesSection.tsx
+    entry_route: /
+    user_interactions:
+      - View hero and countdown
+      - Click category cards to go to inscription
+      - Scroll through highlights
+      - Click Inscrever-se button
+    api_calls: []
+    auth_required: false
+  - name: Registration Wizard
+    description: Multi-step inscription with category, personal data, documents, PIX payment
+    files:
+      - app/(public)/inscricao/InscricaoClient.tsx
+    entry_route: /inscricao
+    user_interactions:
+      - Select category (geral, morador, 60+, infantil)
+      - Fill personal data (name, CPF, RG, birth date, email, phone)
+      - Fill address for morador category
+      - Upload documents when required
+      - Click Pay with PIX
+      - See QR code for payment
+    api_calls:
+      - method: GET
+        endpoint: /api/event/config
+      - method: GET
+        endpoint: /api/ibge/municipios
+      - method: POST
+        endpoint: /api/inscricao
+      - method: POST
+        endpoint: /api/payments/create-checkout
+      - method: GET
+        endpoint: /api/payments/status
+    auth_required: false
+  - name: Track Registration
+    description: Search registration by code or CPF, view and update
+    files:
+      - app/(public)/inscricao/acompanhar/AcompanharClient.tsx
+    entry_route: /inscricao/acompanhar
+    user_interactions:
+      - Enter confirmation code or CPF
+      - Click search
+      - View registration details
+      - Generate PIX for pending payment
+      - Edit athlete data
+    api_calls:
+      - method: GET
+        endpoint: /api/inscricao/buscar
+      - method: POST
+        endpoint: /api/payments/create-checkout
+      - method: PATCH
+        endpoint: /api/inscricao/atualizar
+    auth_required: false
+  - name: Results
+    description: View race results, filter by category, download certificate
+    files:
+      - app/(public)/resultados/fallback.tsx
+    entry_route: /resultados
+    user_interactions:
+      - Filter by category and year
+      - Search by name
+      - Download certificate PDF
+      - Validate certificate
+    api_calls:
+      - method: GET
+        endpoint: /api/resultados
+      - method: GET
+        endpoint: /api/resultados/certificado/[id]
+      - method: GET
+        endpoint: /api/resultados/validar
+    auth_required: false
+  - name: Admin Login
+    description: Admin authentication
+    files:
+      - app/admin/login/page.tsx
+    entry_route: /admin/login
+    user_interactions:
+      - Fill email input
+      - Fill password input
+      - Click login button
+      - See error on invalid credentials
+    api_calls: []
+    auth_required: false
+  - name: Route Map
+    description: View race route on map with elevation
+    files:
+      - app/(public)/percursos/fallback.tsx
+      - components/map/RouteMap.tsx
+    entry_route: /percursos
+    user_interactions:
+      - View interactive map
+      - See elevation chart
+    api_calls: []
+    auth_required: false
+known_limitations:
+  - issue: CMS pages use fallback data; Supabase CMS not wired
+    location: components/cms/CmsPage.tsx
+    impact: Dynamic content may not reflect database
+  - issue: Admin auth skipped when Supabase env vars missing
+    location: middleware.ts
+    impact: Allows access without auth in dev
+  - issue: Payment requires ABACATEPAY_API_KEY
+    location: app/api/payments/create-checkout/route.ts
+    impact: PIX flow fails without key

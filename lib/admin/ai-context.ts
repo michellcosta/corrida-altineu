@@ -165,11 +165,13 @@ PAGAMENTO: Valores em dinheiro mediante documento oficial com foto.
  */
 export const HISTORY_DRAWER = `
 HISTÓRIA DO EVENTO:
-A Corrida Rústica de São João Batista nasceu em 1974 em Macuco-RJ. 
+A Corrida Rústica de São João Batista foi idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, e nasceu em 1972 em Macuco-RJ.
+Em 2024 foi declarada Patrimônio Histórico Cultural Imaterial de Macuco pela Lei 1.158/2024.
+Realizada todo 24 de junho (Dia do Padroeiro do município), o percurso de 10 km liga a Fábrica Holcim à Praça Professor João Brasil, no centro da cidade.
 Em 2026 acontece a 51ª edição, consolidada como uma das mais tradicionais do estado.
 
 ORGANIZAÇÃO:
-O evento é organizado pela Comissão Organizadora da Corrida Rústica de Macuco, com apoio total da Prefeitura Municipal e patrocinadores oficiais.
+O evento é organizado pela Comissão Organizadora da Corrida Rústica de Macuco, com apoio total da Prefeitura Municipal.
 NÃO existe vínculo de organização com a "Associação Atlética Macuco (AAM)". Esta informação está INCORRETA se mencionada.
 `
 

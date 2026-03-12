@@ -171,7 +171,7 @@ export default function GuiaAtletaPage() {
               Guia do Atleta
             </h1>
             <p className="text-xl text-cyan-100 leading-relaxed">
-              Tudo o que você precisa saber para chegar pronto à 51ª Corrida Rústica de São João Batista.
+              Tudo o que você precisa saber para chegar pronto à 51ª Grande Corrida Rústica de São João Batista.
             </p>
           </div>
         </div>

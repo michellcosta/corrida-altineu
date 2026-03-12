@@ -88,13 +88,6 @@ export async function POST(request: NextRequest) {
     }
 
     const fromName = process.env.SES_FROM_NAME || 'Corrida Rústica de Macuco'
-    console.log('DEBUG SES:', {
-      region: process.env.AWS_SES_REGION,
-      fromEmail,
-      fromName,
-      hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
-      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
-    })
 
     let sent = 0
     const errors: string[] = []

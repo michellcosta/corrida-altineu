@@ -71,11 +71,8 @@ export async function POST(request: NextRequest) {
       .eq('id', registrationId)
 
     if (error) {
-      console.error('Webhook: erro ao atualizar inscrição:', error)
       return NextResponse.json({ error: 'Erro ao atualizar inscrição' }, { status: 500 })
     }
-
-    console.log(`Inscrição ${registrationId} confirmada após pagamento PIX`)
 
     return NextResponse.json({ received: true })
   } catch (err: unknown) {

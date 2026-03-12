@@ -8,6 +8,7 @@ import { Search, CheckCircle, AlertCircle, Loader2, Users, Pencil, Save, X, Copy
 import { CONTACT_EMAIL } from '@/lib/constants'
 import { toQrCodeDataUrl } from '@/lib/utils'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
+import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
 import { formatDateOnly } from '@/lib/formatDate'
 
 interface AthleteData {
@@ -93,6 +94,18 @@ function formatDocForSearch(digits: string): string {
   return digits
 }
 
+const MONTHS = [
+  { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
+  { value: '4', label: 'Abril' }, { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Setembro' },
+  { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+]
+const DAYS = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))
+const YEARS = Array.from({ length: 101 }, (_, i) => {
+  const y = new Date().getFullYear() - i
+  return { value: String(y), label: String(y) }
+})
+
 export default function AcompanharClient() {
   const searchParams = useSearchParams()
   const [edition, setEdition] = useState<number>(51)
@@ -168,18 +181,14 @@ export default function AcompanharClient() {
       const data = json.data || []
       setResults(data)
       if (!data.length) {
-        console.log('[AcompanharClient] Busca retornou 0 resultados', { searchValue: trimmed.slice(0, 20) + (trimmed.length > 20 ? '...' : '') })
         if (tryEmailFallback && fallbackEmailRef.current) {
           const fallback = fallbackEmailRef.current
           fallbackEmailRef.current = null
-          console.log('[AcompanharClient] Tentando fallback por e-mail')
           setSearch(fallback)
           await doSearch(fallback, false)
           return
         }
         setError('Nenhuma inscrição encontrada.')
-      } else {
-        console.log('[AcompanharClient] Busca retornou', data.length, 'inscrição(ões)')
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao buscar')
@@ -294,12 +303,14 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [editData, setEditData] = useState<Partial<AthleteData>>({})
+  const [editData, setEditData] = useState<Partial<AthleteData & { birthDay: string; birthMonth: string; birthYear: string }>>({})
   const [localReg, setLocalReg] = useState(reg)
   const [pixData, setPixData] = useState<{ id: string; brCode: string; brCodeBase64: string } | null>(null)
   const [pixLoading, setPixLoading] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [pixError, setPixError] = useState('')
+  const [municipios, setMunicipios] = useState<string[]>([])
+  const [municipiosLoading, setMunicipiosLoading] = useState(false)
 
   const isConfirmed = localReg.status === 'confirmed'
   const isPendingPayment = localReg.status === 'pending_payment'
@@ -308,6 +319,7 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   const pixEmail = athlete?.email?.trim() || guardian?.email?.trim() || ''
   const pixPhone = athlete?.phone || athlete?.whatsapp || guardian?.phone || ''
   const pixName = athlete?.full_name || guardian?.full_name || ''
+  const isForeign = athlete?.country && athlete.country !== 'BRA'
 
   function getTaxId(): string {
     const doc = athlete?.document_number || guardian?.document_number
@@ -319,7 +331,6 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   }
 
   async function handleGeneratePix() {
-    console.log('[AcompanharClient] handleGeneratePix chamado', { hasPixEmail: !!pixEmail, hasLocalRegId: !!localReg?.id, pixEmail: pixEmail ? '[presente]' : '[ausente]' })
     if (!pixEmail) {
       setPixError('E-mail não encontrado. Edite os dados da inscrição e adicione um e-mail para gerar o PIX.')
       return
@@ -353,21 +364,18 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
         phone: pixPhone || '',
         taxId: getTaxId() || '',
       }
-      console.log('[AcompanharClient] create-checkout payload', payload)
       const res = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       const json = await res.json().catch(() => ({}))
-      console.log('[AcompanharClient] create-checkout resposta', { status: res.status, ok: res.ok, hasId: !!json?.id, hasBrCode: !!json?.brCode, hasBrCodeBase64: !!json?.brCodeBase64, error: json?.error })
       if (!res.ok) {
         const msg = json?.error || json?.message || `Erro ao gerar PIX (${res.status})`
         console.error('[AcompanharClient] create-checkout erro:', msg, '\nPayload:', JSON.stringify(payload), '\nResposta:', JSON.stringify(json))
         throw new Error(msg)
       }
       if (json.id && json.brCode && json.brCodeBase64) {
-        console.log('[AcompanharClient] QR Code recebido, setando pixData')
         setPixData({ id: json.id, brCode: json.brCode, brCodeBase64: json.brCodeBase64 })
       } else {
         console.error('[AcompanharClient] Resposta inválida - faltando id/brCode/brCodeBase64', json)
@@ -413,10 +421,20 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
 
   function startEdit() {
     const bd = athlete?.birth_date
-    const birthDateForInput = bd ? (bd.includes('-') ? bd.slice(0, 10) : new Date(bd).toISOString().slice(0, 10)) : ''
+    let d = '', m = '', y = ''
+    if (bd) {
+      const parts = bd.split('-') // YYYY-MM-DD
+      if (parts.length === 3) {
+        y = parts[0]
+        m = String(parseInt(parts[1], 10))
+        d = String(parseInt(parts[2], 10))
+      }
+    }
     setEditData({
       full_name: athlete?.full_name ?? '',
-      birth_date: birthDateForInput || null,
+      birthDay: d,
+      birthMonth: m,
+      birthYear: y,
       gender: athlete?.gender ?? '',
       city: athlete?.city ?? '',
       state: athlete?.state ?? '',
@@ -435,10 +453,35 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
     setSaveError('')
   }
 
+  useEffect(() => {
+    if (!editing || !editData.state) {
+      setMunicipios([])
+      return
+    }
+    const isMorador = localReg.category_slug === 'morador-10k'
+    setMunicipiosLoading(true)
+    fetch(`/api/ibge/municipios?uf=${editData.state}`)
+      .then((res) => res.json())
+      .then((json) => {
+        const list = json.data || []
+        setMunicipios(list)
+        // Se for morador e a cidade não for Macuco, corrige
+        if (isMorador && editData.city !== 'Macuco') {
+          setEditData(prev => ({ ...prev, city: 'Macuco' }))
+        }
+      })
+      .catch(() => setMunicipios([]))
+      .finally(() => setMunicipiosLoading(false))
+  }, [editData.state, editing, localReg.category_slug])
+
   async function handleSave() {
     setSaving(true)
     setSaveError('')
     try {
+      const birthDate = editData.birthYear && editData.birthMonth && editData.birthDay
+        ? `${editData.birthYear}-${String(editData.birthMonth).padStart(2, '0')}-${String(editData.birthDay).padStart(2, '0')}`
+        : null
+
       const res = await fetch('/api/inscricao/atualizar', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -446,13 +489,14 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
           ...getAuthBody(),
           registration_id: localReg.id,
           ...editData,
+          birth_date: birthDate,
         }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao salvar')
       setLocalReg((prev) => ({
         ...prev,
-        athlete: prev.athlete ? { ...prev.athlete, ...editData } : null,
+        athlete: prev.athlete ? { ...prev.athlete, ...editData, birth_date: birthDate } : null,
       }))
       setEditing(false)
     } catch (err: unknown) {
@@ -604,7 +648,41 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
           {editing ? (
             <>
               <EditField label="Nome completo" value={editData.full_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, full_name: v }))} />
-              <EditField label="Data de nascimento" value={editData.birth_date ?? ''} onChange={(v) => setEditData((d) => ({ ...d, birth_date: v || null }))} type="date" />
+              <div>
+                <label className="block text-sm text-gray-600 mb-1.5">Data de Nascimento</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <select
+                    value={editData.birthDay ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, birthDay: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                  >
+                    <option value="">Dia</option>
+                    {DAYS.map((d) => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={editData.birthMonth ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, birthMonth: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                  >
+                    <option value="">Mês</option>
+                    {MONTHS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={editData.birthYear ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, birthYear: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                  >
+                    <option value="">Ano</option>
+                    {YEARS.map((y) => (
+                      <option key={y.value} value={y.value}>{y.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Sexo</label>
                 <select
@@ -619,31 +697,73 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
                 </select>
               </div>
               <Field label="Documento" value={athlete?.document_type ? `${athlete.document_type} ${formatDocNumber(athlete.document_number)}` : '-'} />
-              <EditField label="Cidade" value={editData.city ?? ''} onChange={(v) => setEditData((d) => ({ ...d, city: v }))} />
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Estado</label>
-                <select
-                  value={editData.state ?? ''}
-                  onChange={(e) => setEditData((d) => ({ ...d, state: e.target.value || null }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Selecione</option>
-                  {BRAZILIAN_STATES.map((s) => (
-                    <option key={s.code} value={s.code}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <EditField label="País" value={editData.country ?? ''} onChange={(v) => setEditData((d) => ({ ...d, country: v }))} />
+              
+              {!isForeign ? (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Município</label>
+                    <select
+                      value={editData.city ?? ''}
+                      onChange={(e) => setEditData((d) => ({ ...d, city: e.target.value }))}
+                      disabled={municipiosLoading || (localReg.category_slug === 'morador-10k' && editData.state === 'RJ')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:opacity-70"
+                    >
+                      <option value="">
+                        {municipiosLoading ? 'Carregando...' : !editData.state ? 'Selecione o estado primeiro' : 'Selecione o município'}
+                      </option>
+                      {municipios.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Estado</label>
+                    <select
+                      value={editData.state ?? ''}
+                      onChange={(e) => setEditData((d) => ({ ...d, state: e.target.value || null }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="">Selecione</option>
+                      {BRAZILIAN_STATES.map((s) => (
+                        <option key={s.code} value={s.code}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <Field label="País" value={athlete?.country || '-'} />
+                </>
+              ) : (
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">País</label>
+                  <select
+                    value={editData.country ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, country: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Selecione o país</option>
+                    {COUNTRY_OPTIONS_FOREIGN.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </>
           ) : (
             <>
               <Field label="Nome completo" value={athlete?.full_name || '-'} />
               <Field label="Data de nascimento" value={formatDate(athlete?.birth_date)} />
               <Field label="Sexo" value={athlete?.gender === 'M' ? 'Masculino' : athlete?.gender === 'F' ? 'Feminino' : athlete?.gender || '-'} />
-              <Field label="Documento" value={athlete?.document_type ? `${athlete.document_type} ${formatDocNumber(athlete.document_number)}` : '-'} />
-              <Field label="Cidade" value={athlete?.city || '-'} />
-              <Field label="Estado" value={athlete?.state ? BRAZILIAN_STATES.find((s) => s.code === athlete.state)?.name || athlete.state : '-'} />
-              <Field label="País" value={athlete?.country || '-'} />
+               <Field label="Documento" value={athlete?.document_type ? `${athlete.document_type} ${formatDocNumber(athlete.document_number)}` : '-'} />
+              {!isForeign ? (
+                <>
+                  <Field label="Cidade" value={athlete?.city || '-'} />
+                  <Field label="Estado" value={athlete?.state ? BRAZILIAN_STATES.find((s) => s.code === athlete.state)?.name || athlete.state : '-'} />
+                </>
+              ) : null}
+              <Field label="País" value={isForeign ? COUNTRY_OPTIONS_FOREIGN.find(c => c.code === athlete?.country)?.label || athlete?.country || '-' : 'Brasil (BRA)'} />
             </>
           )}
         </div>

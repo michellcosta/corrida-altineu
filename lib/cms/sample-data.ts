@@ -6,7 +6,7 @@ import { Page, GlobalConfigSchema } from './schemas'
 export const HOME_PAGE_DATA: Page = {
   id: 'home-2026',
   slug: '',
-  title: '51ª Corrida Rústica de São João Batista | Inscrições Abertas',
+  title: '51ª Grande Corrida Rústica de São João Batista | Inscrições Abertas',
   metaDescription: 'Participe da 51ª edição da tradicional Corrida Rústica de São João Batista. 4 categorias: Geral 10K (R$ 20), Morador 10K, 60+ e Infantil 2.5K (gratuitas). Inscreva-se já!',
   ogImage: 'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?q=80&w=2574',
   status: 'published',
@@ -17,8 +17,8 @@ export const HOME_PAGE_DATA: Page = {
     // Hero
     {
       type: 'hero',
-      headline: '51ª Corrida Rústica de São João Batista',
-      subheadline: 'Tradição de 51 anos',
+      headline: '51ª Grande Corrida Rústica de São João Batista',
+      subheadline: '51ª edição • Tradição desde 1972',
       description: 'Junte-se a milhares de atletas na corrida mais querida da região.',
       backgroundImage: {
         url: 'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?q=80&w=2574',
@@ -51,8 +51,8 @@ export const HOME_PAGE_DATA: Page = {
     {
       type: 'countdown',
       title: 'Faltam Apenas',
-      subtitle: 'Para a largada da 51ª Corrida Rústica de São João Batista',
-      targetDate: '2026-06-24T07:00:00',
+      subtitle: 'Para a largada da 51ª Grande Corrida Rústica de São João Batista',
+      targetDate: '2026-06-24T11:00:00.000Z',
       backgroundColor: 'gradient-primary',
     },
     
@@ -150,36 +150,36 @@ export const HOME_PAGE_DATA: Page = {
     // Timeline (História)
     {
       type: 'timeline',
-      title: '51 Anos de História e Tradição',
+      title: 'Tradição desde 1972',
       subtitle: 'Mais de cinco décadas promovendo saúde, esporte e união em Macuco',
       milestones: [
         {
-          year: '1974',
-          title: 'A Primeira Edição',
-          description: 'Nasceu a tradição que marcaria gerações em Macuco',
+          year: '1972',
+          title: 'Primeira Edição',
+          description: 'Idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, nasceu a tradição que marcaria gerações em Macuco',
           image: { url: 'https://images.unsplash.com/photo-1513593771513-7b58b6c4af38?q=80&w=800' },
           highlight: false,
         },
         {
-          year: '1985',
-          title: 'Mil Atletas',
-          description: 'A corrida ultrapassou a marca de 1.000 participantes',
-          image: { url: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?q=80&w=800' },
+          year: '2024',
+          title: 'Patrimônio Histórico',
+          description: 'Declarada Patrimônio Histórico Cultural Imaterial de Macuco pela Lei 1.158/2024',
+          image: { url: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=80&w=800' },
           highlight: false,
         },
         {
-          year: '2000',
-          title: 'Reconhecimento Nacional',
-          description: 'Certificação da Confederação Brasileira de Atletismo',
-          image: { url: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=80&w=800' },
-          highlight: false,
+          year: '2025',
+          title: '50ª Edição',
+          description: 'Ano dourado, maior premiação da história, com R$ 10 mil para o primeiro colocado',
+          image: { url: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=800' },
+          highlight: true,
         },
         {
           year: '2026',
           title: '51ª Edição',
           description: 'Continuando a tradição com inovação e sustentabilidade',
           image: { url: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=800' },
-          highlight: true,
+          highlight: false,
         },
       ],
     },

@@ -18,14 +18,6 @@ const news = [
     image: 'https://images.unsplash.com/photo-1586466849048-05d0c2ab2c94?q=80&w=800',
     href: '/noticias/percurso-2025',
   },
-  {
-    title: 'Novos Patrocinadores',
-    excerpt: 'Conheça as empresas que apoiam a maior corrida rústica da região.',
-    date: '05 Jan 2025',
-    category: 'Parcerias',
-    image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=800',
-    href: '/noticias/novos-patrocinadores',
-  },
 ]
 
 export default function NewsSection() {

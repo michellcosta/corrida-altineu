@@ -111,7 +111,7 @@ export default function RegulamentoPage() {
                     <h3 className="font-semibold text-gray-900 mb-3">1.3 Organização</h3>
                     <p className="text-gray-700 leading-relaxed">
                       O evento é organizado pela Comissão Organizadora da Corrida Rústica de Macuco,
-                      com apoio da Prefeitura Municipal e patrocinadores oficiais.
+                      com apoio da Prefeitura Municipal.
                     </p>
                   </div>
                 </div>

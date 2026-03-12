@@ -174,7 +174,6 @@ function loadEventConfig(
       if (data.categories?.length && data.event) {
         if (process.env.NODE_ENV === 'development') {
           const sessenta = data.categories.find((c: ApiCategory) => c.id === 'sessenta-10k')
-          console.log('[CategoriesSection] API retornou:', sessenta ? `60+ = ${sessenta.spots} vagas` : 'sem 60+')
         }
         setYear(data.event.year ?? RACE_CONFIG.year)
         const mapped = data.categories.map((c: ApiCategory) => apiCategoryToCard(c, data.event.year ?? RACE_CONFIG.year))
@@ -196,9 +195,6 @@ export default function CategoriesSection({ content }: CategoriesSectionProps) {
   const [loading, setLoading] = useState(true)
 
   const refetch = useCallback(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[CategoriesSection] Refetch disparado - buscando /api/event/config')
-    }
     loadEventConfig(setCards, setYear, setLoading)
   }, [])
 

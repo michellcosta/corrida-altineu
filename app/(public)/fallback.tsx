@@ -1,6 +1,5 @@
 import SectionRenderer from '@/components/cms/SectionRenderer'
 import HighlightsSection from '@/components/sections/HighlightsSection'
-import SponsorsSection from '@/components/sections/SponsorsSection'
 import { HOME_PAGE_DATA } from '@/lib/cms/sample-data'
 import { getPublishedPage } from '@/lib/cms/queries'
 import { getLatestEvent } from '@/lib/cms/event'
@@ -36,7 +35,6 @@ export default async function Home() {
 
       {/* Se no CMS ainda nao existirem secoes equivalentes, mantemos os modulos adicionais */}
       {!sectionTypes.has('highlights') && <HighlightsSection />}
-      {!sectionTypes.has('sponsors') && <SponsorsSection />}
     </>
   )
 }

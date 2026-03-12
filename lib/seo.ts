@@ -13,10 +13,18 @@ export async function getSeoMetadata() {
       'seo_canonical_url',
     ]
     const result: Record<string, string> = {}
-    for (const key of keys) {
-      const { data } = await supabase.from('settings').select('value').eq('key', key).single()
-      if (data?.value && typeof data.value === 'object' && 'v' in data.value) {
-        result[key.replace('seo_', '')] = String((data.value as { v: string }).v)
+    
+    const { data: rows } = await supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', keys)
+
+    if (rows) {
+      for (const row of rows) {
+        const val = row.value
+        if (val && typeof val === 'object' && 'v' in val) {
+          result[row.key.replace('seo_', '')] = String((val as { v: string }).v)
+        }
       }
     }
     return result

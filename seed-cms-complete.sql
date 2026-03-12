@@ -86,13 +86,13 @@ BEGIN
   INSERT INTO public.sections (page_id, component_type, order_index, content, is_visible) VALUES
   (home_id, 'hero', 1, '{
     "type": "hero",
-    "headline": "51ª Corrida Rústica de Macuco",
-    "subheadline": "24 de junho de 2026",
+    "headline": "51ª Grande Corrida Rústica de São João Batista",
+    "subheadline": "51ª edição • Tradição desde 1972",
     "description": "A maior tradição esportiva da região. Participe da corrida mais esperada do ano!",
     "ctaPrimary": {"label": "Inscrever-se", "href": "/inscricao", "variant": "primary"},
     "ctaSecondary": {"label": "Ver Percursos", "href": "/percursos", "variant": "secondary"},
     "stats": [
-      {"value": "51", "label": "Anos de Tradição"},
+      {"value": "51ª", "label": "Edição"},
       {"value": "1000+", "label": "Atletas"},
       {"value": "R$ 15.000", "label": "Em Premiação"}
     ]
@@ -101,8 +101,8 @@ BEGIN
   (home_id, 'countdown', 2, '{
     "type": "countdown",
     "title": "Contagem Regressiva",
-    "subtitle": "Para a largada da 51ª Corrida Rústica de São João Batista",
-    "targetDate": "2026-06-24T08:00:00.000Z"
+    "subtitle": "Para a largada da 51ª Grande Corrida Rústica de São João Batista",
+    "targetDate": "2026-06-24T11:00:00.000Z"
   }'::jsonb, true),
   
   (home_id, 'cards', 3, '{
@@ -156,13 +156,13 @@ BEGIN
   
   (home_id, 'timeline', 4, '{
     "type": "timeline",
-    "title": "Nossa História",
-    "subtitle": "Mais de 50 anos de tradição",
+    "title": "Tradição desde 1972",
+    "subtitle": "Mais de cinco décadas promovendo saúde, esporte e união em Macuco",
     "milestones": [
-      {"year": "1975", "title": "Primeira Edição", "description": "Início da tradição esportiva em Macuco", "highlight": false},
-      {"year": "1990", "title": "Consolidação", "description": "Evento se torna referência na região", "highlight": false},
-      {"year": "2010", "title": "Modernização", "description": "Introdução da cronometragem eletrônica", "highlight": true},
-      {"year": "2026", "title": "51ª Edição", "description": "Maior premiação da história: R$ 15.000", "highlight": true}
+      {"year": "1972", "title": "Primeira Edição", "description": "Idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, nasceu a tradição que marcaria gerações em Macuco", "highlight": false},
+      {"year": "2024", "title": "Patrimônio Histórico", "description": "Declarada Patrimônio Histórico Cultural Imaterial de Macuco pela Lei 1.158/2024", "highlight": false},
+      {"year": "2025", "title": "50ª Edição", "description": "Ano dourado, maior premiação da história, com R$ 10 mil para o primeiro colocado", "highlight": true},
+      {"year": "2026", "title": "51ª Edição", "description": "Continuando a tradição com inovação e sustentabilidade", "highlight": false}
     ]
   }'::jsonb, true),
   
@@ -279,8 +279,8 @@ BEGIN
   (sobre_id, 'hero', 1, '{
     "type": "hero",
     "headline": "Sobre a Corrida",
-    "subheadline": "51 Anos de Tradição",
-    "description": "A Corrida Rústica de Macuco é um dos eventos esportivos mais tradicionais da região, reunindo atletas de diversas cidades."
+    "subheadline": "Tradição desde 1972",
+    "description": "A Corrida Rústica de São João Batista é um dos eventos esportivos mais tradicionais da região, reunindo atletas de diversas cidades."
   }'::jsonb, true),
   
   (percursos_id, 'hero', 1, '{

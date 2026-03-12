@@ -26,7 +26,7 @@ export async function GET() {
 
     const { data: notifications, error } = await supabase
       .from('admin_notifications')
-      .select('id, type, title, message, link, read_at, created_at')
+      .select('id, type, title, message, link, read_at, created_at, metadata')
       .eq('admin_user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(20)

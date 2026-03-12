@@ -128,3 +128,41 @@ SELECT id, 'Você é o assistente virtual da Corrida de Macuco 2026. Responda d�
 FROM public.events
 WHERE year = 2026
 ON CONFLICT DO NOTHING;
+
+-- 9. Hardening de segurança (RLS e policies)
+ALTER TABLE IF EXISTS public.ai_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "SITE_ADMIN gerencia ai_config" ON public.ai_config;
+CREATE POLICY "SITE_ADMIN gerencia ai_config"
+  ON public.ai_config FOR ALL
+  USING (
+    auth.uid() IN (
+      SELECT user_id FROM public.admin_users
+      WHERE role = 'SITE_ADMIN' AND is_active = true
+    )
+  )
+  WITH CHECK (
+    auth.uid() IN (
+      SELECT user_id FROM public.admin_users
+      WHERE role = 'SITE_ADMIN' AND is_active = true
+    )
+  );
+DROP POLICY IF EXISTS "Service role gerencia ai_config" ON public.ai_config;
+CREATE POLICY "Service role gerencia ai_config"
+  ON public.ai_config FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+ALTER TABLE IF EXISTS public.notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins podem ver histórico de notificações" ON public.notifications;
+CREATE POLICY "Admins podem ver histórico de notificações"
+  ON public.notifications FOR SELECT
+  USING (
+    auth.uid() IN (
+      SELECT user_id FROM public.admin_users WHERE is_active = true
+    )
+  );
+DROP POLICY IF EXISTS "Service role gerencia notifications" ON public.notifications;
+CREATE POLICY "Service role gerencia notifications"
+  ON public.notifications FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');

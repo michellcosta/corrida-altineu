@@ -72,6 +72,11 @@ export async function generateMetadata() {
       ...(twitterSite && { site: twitterSite }),
       ...(ogImageUrl && { images: [ogImageUrl] }),
     },
+    icons: {
+      icon: '/icon.svg?v=3',
+      shortcut: '/icon.svg?v=3',
+      apple: '/icon.svg?v=3',
+    },
   }
 }
 
@@ -81,7 +86,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className={`${outfit.variable} ${jakarta.variable}`}>
+    <html lang="pt-BR" className={`${outfit.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-gray-50">
         <AnalyticsTracker />
         {children}

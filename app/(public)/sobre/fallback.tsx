@@ -19,9 +19,9 @@ export default function SobrePage() {
           </h1>
           
           <p className="text-xl text-primary-100 mb-8 max-w-4xl mx-auto">
-            A Corrida Rústica de Macuco é mais do que um evento esportivo. 
+            A Corrida Rústica de São João Batista é mais do que um evento esportivo. 
             É uma tradição que une gerações, fortalece a comunidade e celebra 
-            o espírito de superação há mais de 50 anos.
+            o espírito de superação desde 1972.
           </p>
 
           {/* Estatísticas */}
@@ -43,7 +43,7 @@ export default function SobrePage() {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
               <Trophy className="w-8 h-8 text-white mx-auto mb-3" />
-              <p className="text-3xl font-bold text-white">1975</p>
+              <p className="text-3xl font-bold text-white">1972</p>
               <p className="text-primary-100 text-sm">Início</p>
             </div>
           </div>
@@ -68,13 +68,13 @@ export default function SobrePage() {
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold">1975</span>
+                    <span className="text-white font-bold">1972</span>
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 mb-2">Primeira Edição</h3>
                     <p className="text-gray-600">
-                      Nasce a Corrida Rústica de Macuco com apenas 50 participantes, 
-                      idealizada por um grupo de entusiastas do esporte local.
+                      Idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, 
+                      nasce a Corrida Rústica de São João Batista, tornando-se uma das mais tradicionais do interior fluminense.
                     </p>
                   </div>
                 </div>
@@ -107,13 +107,26 @@ export default function SobrePage() {
 
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">2024</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Patrimônio Histórico</h3>
+                    <p className="text-gray-600">
+                      Declarada Patrimônio Histórico Cultural Imaterial de Macuco pela Lei 1.158/2024, 
+                      integrando o Calendário Oficial de Eventos do município.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold">2026</span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Categorias Especiais</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">51ª Edição</h3>
                     <p className="text-gray-600">
-                      Introdução de categorias gratuitas para moradores, 
-                      idosos e crianças, democratizando ainda mais o acesso ao esporte.
+                      Categorias gratuitas para moradores, idosos e crianças, 
+                      democratizando ainda mais o acesso ao esporte.
                     </p>
                   </div>
                 </div>
@@ -127,7 +140,8 @@ export default function SobrePage() {
                   Tradição e Inovação
                 </h3>
                 <p className="text-primary-100 leading-relaxed">
-                  Ao longo de mais de 50 anos, a Corrida Rústica de Macuco tem evoluído 
+                  Idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, 
+                  a Corrida Rústica de São João Batista tem evoluído ao longo de mais de 50 anos, 
                   mantendo sempre o foco no esporte como ferramenta de transformação social, 
                   promovendo saúde, integração e desenvolvimento da comunidade.
                 </p>
@@ -179,7 +193,7 @@ export default function SobrePage() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Nosso Impacto</h3>
               <p className="text-gray-600 leading-relaxed">
-                Mais de 50 anos promovendo saúde, integração social e 
+                Tradição desde 1972 promovendo saúde, integração social e 
                 desenvolvimento local, impactando positivamente milhares 
                 de vidas em nossa comunidade.
               </p>

@@ -73,11 +73,8 @@ export async function POST(request: NextRequest) {
         const isAskingForSelf = (lowerMessage.includes('minha') || lowerMessage.includes('meu') || lowerMessage.includes('estou')) &&
             (lowerMessage.includes('inscrição') || lowerMessage.includes('inscrito') || lowerMessage.includes('status') || lowerMessage.includes('cadastro') || lowerMessage.includes('verificar'))
 
-        console.log(`DEBUG AI CHAT: userCpf=${effectiveCpf}, searchQuery=${searchQuery}`)
-
         // 3. Buscar dados em tempo real
         const dynamicContext = await getDynamicContext(searchQuery)
-        console.log(`DEBUG AI CHAT: dynamicContext length=${dynamicContext.length}, foundInscricao=${dynamicContext.includes('ENCONTRADA')}`)
 
         const systemInstruction = `
             VOCÊ É O ASSISTENTE VIRTUAL DA 51ª CORRIDA DE MACUCO.

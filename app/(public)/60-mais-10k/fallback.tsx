@@ -191,7 +191,7 @@ export default async function SessentaMais10KPage() {
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
               <Trophy className="w-12 h-12 text-white mx-auto mb-4" />
               <h3 className="font-semibold text-white mb-2">1º lugar M/F</h3>
-              <p className="text-sm text-purple-100">Troféu + kit premium dos patrocinadores</p>
+              <p className="text-sm text-purple-100">Troféu + kit premium</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
               <Users className="w-12 h-12 text-white mx-auto mb-4" />

@@ -47,7 +47,7 @@ const SECTION_DESCRIPTION: Record<string, string> = SECTION_TYPES.reduce<Record<
   return acc
 }, {})
 
-const FORM_SUPPORTED_TYPES = ['hero', 'countdown', 'cta', 'stats', 'news', 'faq', 'cards', 'timeline', 'testimonials', 'sponsors']
+const FORM_SUPPORTED_TYPES = ['hero', 'countdown', 'cta', 'stats', 'news', 'faq', 'cards', 'timeline', 'testimonials']
 
 function AddSectionModal({
   open,

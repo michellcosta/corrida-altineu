@@ -12,8 +12,8 @@ const highlights = [
   },
   {
     icon: MapPin,
-    title: 'Percurso Certificado',
-    description: 'Medição oficial e altimetria favorável para melhores tempos',
+    title: 'Mapa do Percurso',
+    description: 'O trajeto foi desenhado em mapa digital para você conhecer o caminho. A distância real pode variar um pouco no seu GPS de pulso.',
     color: 'from-green-400 to-green-600',
   },
   {
@@ -25,19 +25,19 @@ const highlights = [
   {
     icon: Calendar,
     title: 'Programação Completa',
-    description: 'Retirada de kits, briefing técnico, warm-up e festa pós-prova',
+    description: 'Pegue seu kit, receba as orientações, faça o aquecimento e comemore com a gente depois da linha de chegada.',
     color: 'from-purple-400 to-purple-600',
   },
   {
     icon: Users,
-    title: 'Estrutura de Apoio',
-    description: 'Postos de hidratação, frutas, apoio médico e vestiários',
+    title: 'Suporte ao Atleta',
+    description: 'Teremos pontos de água durante o caminho e equipe médica pronta para atender você.',
     color: 'from-pink-400 to-pink-600',
   },
   {
     icon: TrendingUp,
-    title: 'Resultados ao Vivo',
-    description: 'Acompanhamento em tempo real e resultados oficiais publicados em até 48h',
+    title: 'Resultados Oficiais',
+    description: 'Veja sua classificação e tempo final aqui no site em até 48 horas após a prova.',
     color: 'from-cyan-400 to-cyan-600',
   },
 ]
@@ -61,9 +61,9 @@ export default function HighlightsSection() {
           {highlights.map((highlight, index) => {
             const Icon = highlight.icon
             return (
-              <ScrollReveal key={highlight.title} delay={index * 0.08}>
+              <ScrollReveal key={highlight.title} delay={index * 0.08} className="h-full">
                 <div
-                  className="group relative overflow-hidden rounded-2xl bg-white border border-gray-200 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl"
+                  className="group relative h-full overflow-hidden rounded-2xl bg-white border border-gray-200 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${highlight.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} aria-hidden />
 

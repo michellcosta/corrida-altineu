@@ -20,27 +20,21 @@ interface TimelineSectionProps {
 
 const FALLBACK_TIMELINE: TimelineItem[] = [
   {
-    year: '1974',
-    title: 'A primeira edição',
-    description: 'Nasceu a tradição que marcaria gerações em Macuco.',
+    year: '1972',
+    title: 'Primeira edição',
+    description: 'Idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, nasceu a tradição que marcaria gerações em Macuco.',
     image: 'https://images.unsplash.com/photo-1513593771513-7b58b6c4af38?q=80&w=800',
   },
   {
-    year: '1985',
-    title: 'Mil atletas',
-    description: 'A corrida ultrapassou a marca de 1.000 participantes.',
-    image: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?q=80&w=800',
-  },
-  {
-    year: '2000',
-    title: 'Reconhecimento nacional',
-    description: 'Certificação da confederação brasileira de atletismo.',
+    year: '2024',
+    title: 'Patrimônio Histórico',
+    description: 'Declarada Patrimônio Histórico Cultural Imaterial de Macuco pela Lei 1.158/2024.',
     image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=80&w=800',
   },
   {
     year: '2025',
     title: '50ª edição',
-    description: 'Meio século de história! Celebração dos 50 anos da corrida com recorde de participantes e festa na cidade.',
+    description: 'Ano dourado, maior premiação da história, com R$ 10 mil para o primeiro colocado.',
     image: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=800',
     highlight: 'gold',
   },
@@ -53,7 +47,7 @@ const FALLBACK_TIMELINE: TimelineItem[] = [
 ]
 
 export default function TimelineSection({ content }: TimelineSectionProps) {
-  const title = content?.title || '51 anos de história e tradição'
+  const title = content?.title || 'Tradição desde 1972'
   const subtitle =
     content?.subtitle || 'Mais de cinco décadas promovendo saúde, esporte e união em Macuco.'
   const milestones = content?.milestones && content.milestones.length > 0 ? content.milestones : FALLBACK_TIMELINE

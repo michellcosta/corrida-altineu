@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     const { data: regs, error } = await supabaseService
       .from('registrations')
-      .select('id, athlete_id, category_id, registration_number, confirmation_code, status, bib_number, notes')
+      .select('id, athlete_id, category_id, registration_number, confirmation_code, status, payment_status, bib_number, notes')
       .eq('event_id', event.id)
       .order('registered_at', { ascending: isAdmin ? false : true })
       .limit(10000)
@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
       registration_number: string | null
       confirmation_code: string | null
       status: string
+      payment_status?: string | null
       bib_number: number | null
       notes: string | null
     }

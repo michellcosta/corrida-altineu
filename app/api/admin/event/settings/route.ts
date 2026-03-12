@@ -50,15 +50,6 @@ export async function POST(request: Request) {
     const slots60plus = n(data.vagasSessenta, 100)
     const slotsInfantil = n(data.vagasInfantil, 300)
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[API event/settings] vagas recebidas:', {
-        vagasGeral: data.vagasGeral,
-        vagasMorador: data.vagasMorador,
-        vagasSessenta: data.vagasSessenta,
-        vagasInfantil: data.vagasInfantil,
-      })
-    }
-
     const updatePayload: Record<string, unknown> = {
       edition: data.edicao,
       race_date: data.dataProva,
@@ -94,23 +85,11 @@ export async function POST(request: Request) {
       .single()
 
     if (updateError) {
-      console.error('Erro ao atualizar evento:', updateError)
-      return NextResponse.json(
-        { error: updateError.message },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
     if (!updated) {
-      console.error('Update não afetou nenhum registro, year=', anoProva)
-      return NextResponse.json(
-        { error: 'Evento não encontrado para o ano informado' },
-        { status: 404 }
-      )
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[API event/settings] Atualizado. slots_60plus no DB:', updated.slots_60plus)
+      return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
     }
 
     for (const path of PATHS_TO_REVALIDATE) {

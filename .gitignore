@@ -23,6 +23,7 @@ corrida-macuco/
 
 # misc
 .DS_Store
+videos-analise/
 *.pem
 check-models-new.js
 

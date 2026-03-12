@@ -250,7 +250,7 @@ Este projeto é proprietário e confidencial.
 
 ## 🙏 Agradecimentos
 
-Obrigado a todos os organizadores, patrocinadores e atletas que fazem desta corrida um evento especial há 51 edições!
+Obrigado a todos os organizadores e atletas que fazem desta corrida um evento especial há 51 edições!
 
 ---
 

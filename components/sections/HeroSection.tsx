@@ -40,8 +40,8 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
     eventData?.registrations_open !== undefined ? eventData.registrations_open : true
 
   const headline =
-    content?.headline || `51ª Corrida Rústica de São João Batista`
-  const subheadline = content?.subheadline || `Tradição de ${edition} anos`
+    content?.headline || `51ª Grande Corrida Rústica de São João Batista`
+  const subheadline = content?.subheadline || `51ª edição • Tradição desde 1972`
   const description =
     content?.description || 'Junte-se a milhares de atletas na corrida mais querida da região.'
   const primaryCTA = content?.ctaPrimary || { href: '/inscricao', label: 'Inscrever-se Agora' }
@@ -93,7 +93,7 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
             </div>
           ))}
 
-          <h1 className="animate-slide-up font-display text-5xl font-bold leading-tight text-white md:text-6xl lg:text-7xl">
+          <h1 className="animate-slide-up font-display text-3xl font-bold leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
             {headline}
           </h1>
           {subheadline && (

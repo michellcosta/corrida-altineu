@@ -126,7 +126,7 @@ export default function Header() {
               </div>
               <div className="hidden sm:block text-white">
                 <p className="font-display text-xl font-bold tracking-tight">Corrida de Macuco</p>
-                <p className="text-xs text-white/70 tracking-wide">Tradição desde 1974</p>
+                <p className="text-xs text-white/70 tracking-wide">Tradição desde 1972</p>
               </div>
             </Link>
             <Link
@@ -162,19 +162,21 @@ export default function Header() {
 
                 {/* Submenu */}
                 {item.submenu && activeSubmenu === item.name && (
-                  <div className="absolute left-0 top-full mt-1 w-52 rounded-xl border border-gray-200 bg-white p-2 shadow-xl">
-                    {item.submenu.map((subitem) => (
-                      <Link
-                        key={subitem.name}
-                        href={subitem.href}
-                        className={`block rounded-lg px-4 py-2 text-sm transition-colors hover:bg-primary-50 hover:text-primary-600 ${
-                          pathname === subitem.href ? 'bg-primary-50 font-semibold text-primary-600' : 'text-gray-700'
-                        }`}
-                        aria-current={pathname === subitem.href ? 'page' : undefined}
-                      >
-                        {subitem.name}
-                      </Link>
-                    ))}
+                  <div className="absolute left-0 top-full w-52 pt-2">
+                    <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-xl">
+                      {item.submenu.map((subitem) => (
+                        <Link
+                          key={subitem.name}
+                          href={subitem.href}
+                          className={`block rounded-lg px-4 py-2 text-sm transition-colors hover:bg-primary-50 hover:text-primary-600 ${
+                            pathname === subitem.href ? 'bg-primary-50 font-semibold text-primary-600' : 'text-gray-700'
+                          }`}
+                          aria-current={pathname === subitem.href ? 'page' : undefined}
+                        >
+                          {subitem.name}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

@@ -114,7 +114,7 @@ export default function SectionFormEditor({ section, content, onChange }: Sectio
             type="date"
             className="admin-input w-full"
             value={((content.targetDate as string) ?? '').slice(0, 10)}
-            onChange={(e) => update('targetDate', e.target.value + 'T00:00:00')}
+            onChange={(e) => update('targetDate', e.target.value + 'T11:00:00.000Z')}
           />
         </div>
       </div>
@@ -351,34 +351,6 @@ export default function SectionFormEditor({ section, content, onChange }: Sectio
         </div>
         <p className="text-xs text-gray-500">
           Depoimentos: edite o JSON. Cada item: name, role, city, image (url, alt), rating, text.
-        </p>
-      </div>
-    )
-  }
-
-  if (type === 'sponsors') {
-    return (
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-          <input
-            type="text"
-            className="admin-input w-full"
-            value={(content.title as string) ?? ''}
-            onChange={(e) => update('title', e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo</label>
-          <input
-            type="text"
-            className="admin-input w-full"
-            value={(content.subtitle as string) ?? ''}
-            onChange={(e) => update('subtitle', e.target.value)}
-          />
-        </div>
-        <p className="text-xs text-gray-500">
-          Patrocinadores: edite o JSON. tiers: array de {`{name, sponsors: [{name, logo: {url}}]}`}
         </p>
       </div>
     )

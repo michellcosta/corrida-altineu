@@ -25,17 +25,13 @@ export async function POST(request: NextRequest) {
       taxId,
     } = body
 
-    console.log('[create-checkout] Recebido', { registrationId, amount, hasEmail: !!email?.trim(), hasFullName: !!fullName?.trim(), hasPhone: !!phone, hasTaxId: !!taxId })
-
     if (!registrationId) {
-      console.warn('create-checkout 400: registrationId ausente', { body: { ...body, email: body?.email ? '[presente]' : '[ausente]' } })
       return NextResponse.json(
         { error: 'ID da inscrição não informado' },
         { status: 400 }
       )
     }
     if (!email?.trim()) {
-      console.warn('create-checkout 400: e-mail ausente', { registrationId })
       return NextResponse.json(
         { error: 'E-mail é obrigatório para gerar o PIX. Edite os dados da inscrição.' },
         { status: 400 }
@@ -46,7 +42,6 @@ export async function POST(request: NextRequest) {
     const amountInCents = Math.round((Number.isNaN(amountNum) ? 20 : amountNum) * 100)
 
     if (amountInCents < 50) {
-      console.warn('create-checkout 400: valor inválido', { amount, amountInCents, registrationId })
       return NextResponse.json(
         { error: 'Valor mínimo para PIX é R$ 0,50' },
         { status: 400 }
@@ -62,7 +57,6 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    console.log('[create-checkout] Enviando para AbacatePay', { amount: payload.amount })
     const res = await fetch(`${ABACATEPAY_API}/pixQrCode/create`, {
       method: 'POST',
       headers: {
@@ -73,8 +67,6 @@ export async function POST(request: NextRequest) {
     })
 
     const json = await res.json()
-    console.log('[create-checkout] AbacatePay resposta', { status: res.status, ok: res.ok, hasData: !!json?.data, hasId: !!json?.data?.id, hasBrCode: !!json?.data?.brCode, hasBrCodeBase64: !!json?.data?.brCodeBase64 })
-
     if (!res.ok) {
       const abacateError = json?.error || json?.message || JSON.stringify(json)
       console.error('AbacatePay create error:', { status: res.status, json })
@@ -113,7 +105,6 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', registrationId)
 
-    console.log('[create-checkout] Sucesso', { paymentId: data.id, registrationId })
     return NextResponse.json({
       id: data.id,
       brCode: data.brCode,

@@ -32,16 +32,6 @@ const noticias = [
     destaque: false
   },
   {
-    id: 'novos-patrocinadores',
-    titulo: 'Novos Patrocinadores Confirmados',
-    resumo: 'Grandes empresas se juntam à Corrida de Macuco para tornar esta edição ainda mais especial.',
-    data: '2025-10-05',
-    autor: 'Organização',
-    categoria: 'Patrocínio',
-    imagem: '/images/noticias/patrocinadores.jpg',
-    destaque: false
-  },
-  {
     id: 'categoria-60-mais',
     titulo: 'Categoria 60+ com Suporte Especial',
     resumo: 'Conheça os benefícios especiais para corredores de 60 anos ou mais na próxima edição.',

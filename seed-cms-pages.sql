@@ -74,8 +74,8 @@ BEGIN
     1,
     '{
       "type": "hero",
-      "headline": "51ª Corrida Rústica de Macuco",
-      "subheadline": "2026",
+      "headline": "51ª Grande Corrida Rústica de São João Batista",
+      "subheadline": "51ª edição • Tradição desde 1972",
       "description": "A maior tradição esportiva da região. Participe da corrida mais esperada do ano!",
       "ctaPrimary": {
         "label": "Inscrever-se",
@@ -88,7 +88,7 @@ BEGIN
         "variant": "secondary"
       },
       "stats": [
-        {"value": "51", "label": "Anos de Tradição"},
+        {"value": "51ª", "label": "Edição"},
         {"value": "1000+", "label": "Atletas"},
         {"value": "R$ 15.000", "label": "Em Premiação"}
       ]
@@ -105,8 +105,8 @@ BEGIN
     '{
       "type": "countdown",
       "title": "Contagem Regressiva",
-      "subtitle": "Para a largada da 51ª Corrida Rústica de São João Batista",
-      "targetDate": "2026-06-24T08:00:00.000Z"
+      "subtitle": "Para a largada da 51ª Grande Corrida Rústica de São João Batista",
+      "targetDate": "2026-06-24T11:00:00.000Z"
     }'::jsonb,
     true
   );
@@ -176,32 +176,32 @@ BEGIN
     4,
     '{
       "type": "timeline",
-      "title": "Nossa História",
-      "subtitle": "Mais de 50 anos de tradição",
+      "title": "Tradição desde 1972",
+      "subtitle": "Mais de cinco décadas promovendo saúde, esporte e união em Macuco",
       "milestones": [
         {
-          "year": "1975",
+          "year": "1972",
           "title": "Primeira Edição",
-          "description": "Início da tradição esportiva em Macuco",
+          "description": "Idealizada pela família do Clube União Maravilha, liderada por Altineu Coutinho, nasceu a tradição que marcaria gerações em Macuco",
           "highlight": false
         },
         {
-          "year": "1990",
-          "title": "Consolidação",
-          "description": "Evento se torna referência na região",
+          "year": "2024",
+          "title": "Patrimônio Histórico",
+          "description": "Declarada Patrimônio Histórico Cultural Imaterial de Macuco pela Lei 1.158/2024",
           "highlight": false
         },
         {
-          "year": "2010",
-          "title": "Modernização",
-          "description": "Introdução da cronometragem eletrônica",
+          "year": "2025",
+          "title": "50ª Edição",
+          "description": "Ano dourado, maior premiação da história, com R$ 10 mil para o primeiro colocado",
           "highlight": true
         },
         {
           "year": "2026",
           "title": "51ª Edição",
-          "description": "Maior premiação da história: R$ 15.000",
-          "highlight": true
+          "description": "Continuando a tradição com inovação e sustentabilidade",
+          "highlight": false
         }
       ]
     }'::jsonb,

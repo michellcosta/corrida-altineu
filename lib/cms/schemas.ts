@@ -307,14 +307,6 @@ export const SECTION_TYPES: SectionMetadata[] = [
     schema: NewsSectionSchema,
   },
   {
-    type: 'sponsors',
-    name: 'Patrocinadores',
-    description: 'Logos de parceiros',
-    icon: 'Award',
-    category: 'content',
-    schema: SponsorsSectionSchema,
-  },
-  {
     type: 'cta',
     name: 'Call to Action',
     description: 'Seção de conversão',

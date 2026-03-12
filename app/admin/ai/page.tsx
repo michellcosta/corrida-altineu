@@ -155,8 +155,6 @@ export default function AIPanelPage() {
     async function handleSendMessage() {
         if (!chatMessage.trim() || chatLoading) return
 
-        console.log('DEBUG SEND:', { aiProvider, adminCpf, adminName })
-
         const newMessage = chatMessage
         setChatMessage('')
         setChatHistory(prev => [...prev, { role: 'user', content: newMessage }])
