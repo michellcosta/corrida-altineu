@@ -40,9 +40,6 @@ export default function InstallPWAButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
 
-  // Mostrar apenas na tela de login (antes de autenticar)
-  if (pathname !== '/admin/login') return null
-
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault()
@@ -63,6 +60,9 @@ export default function InstallPWAButton() {
       window.removeEventListener('appinstalled', installedHandler)
     }
   }, [])
+
+  // Mostrar apenas na tela de login (antes de autenticar)
+  if (pathname !== '/admin/login') return null
 
   const handleClick = async () => {
     if (deferredPrompt) {
