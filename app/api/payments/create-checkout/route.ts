@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const amountNum = Number(amount)
-    const amountInCents = Math.round((Number.isNaN(amountNum) ? 20 : amountNum) * 100)
+    const amountInCents = Math.round((Number.isNaN(amountNum) ? 22 : amountNum) * 100)
 
     if (amountInCents < 50) {
       return NextResponse.json(

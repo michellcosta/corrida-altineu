@@ -15,7 +15,7 @@ Data: 12 de Janeiro de 2025
 - ✅ **SEO** otimizado
 
 ### 🏃 4 Categorias Implementadas
-- ✅ **Geral 10K** - R$ 20,00 (500 vagas)
+- ✅ **Geral 10K** - R$ 22,00 (500 vagas)
 - ✅ **Morador 10K** - GRATUITO (200 vagas)
 - ✅ **60+ 10K** - GRATUITO (100 vagas)
 - ✅ **Infantil 2K** - GRATUITO (300 vagas)

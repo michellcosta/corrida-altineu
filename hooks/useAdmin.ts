@@ -80,7 +80,7 @@ export function useEventSettings() {
         vagasMorador: event.slots_morador || 200,
         vagasSessenta: event.slots_60plus || 100,
         vagasInfantil: event.slots_infantil || 300,
-        valorGeral: event.price_geral || 20.00,
+        valorGeral: event.price_geral || 22.00,
         inscricoesAbertas: event.registrations_open,
         dataAberturaInscricoes: event.registration_open_date?.split('T')[0] || '2025-12-01',
         dataEncerramentoInscricoes: event.registration_close_date?.split('T')[0] || '2026-06-20',

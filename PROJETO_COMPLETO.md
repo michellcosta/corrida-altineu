@@ -27,7 +27,7 @@ Projeto: 51ª Corrida Rústica de Macuco - 2026
 - ✅ **Progress bar** visual
 
 #### 4 Categorias Oficiais
-1. ✅ **Geral 10K** - R$ 20,00 (500 vagas)
+1. ✅ **Geral 10K** - R$ 22,00 (500 vagas)
 2. ✅ **Morador 10K** - GRATUITO (200 vagas)
 3. ✅ **60+ 10K** - GRATUITO (100 vagas)
 4. ✅ **Infantil 2K** - GRATUITO (300 vagas)

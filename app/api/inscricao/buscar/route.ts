@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       .select('slug, price, is_free')
       .eq('event_id', event.id)
     const priceBySlug = new Map<string, number>()
-    const priceGeral = Number(event.price_geral) ?? 20
+    const priceGeral = Number(event.price_geral) ?? 22
     for (const c of categories || []) {
       const p = Number(c.price) || priceGeral
       priceBySlug.set(c.slug, c.is_free ? 0 : p)

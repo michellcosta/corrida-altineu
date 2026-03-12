@@ -366,7 +366,7 @@ export async function POST(request: NextRequest) {
     const prefix = slug.replace(/-10k|-2k/g, '').toUpperCase().replace('-', '')
     const registrationNumber = `2026-${prefix}-${String(seq).padStart(4, '0')}`
 
-    const priceGeral = Number(event.price_geral) ?? 20
+    const priceGeral = Number(event.price_geral) ?? 22
     const categoryPrice = Number(category.price) || priceGeral
     const paymentAmount = category.is_free ? 0 : categoryPrice
 

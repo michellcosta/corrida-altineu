@@ -7,7 +7,7 @@ export const HOME_PAGE_DATA: Page = {
   id: 'home-2026',
   slug: '',
   title: '51ª Grande Corrida Rústica de São João Batista | Inscrições Abertas',
-  metaDescription: 'Participe da 51ª edição da tradicional Corrida Rústica de São João Batista. 4 categorias: Geral 10K (R$ 20), Morador 10K, 60+ e Infantil 2.5K (gratuitas). Inscreva-se já!',
+  metaDescription: 'Participe da 51ª edição da tradicional Corrida Rústica de São João Batista. 4 categorias: Geral 10K (R$ 22), Morador 10K, 60+ e Infantil 2.5K (gratuitas). Inscreva-se já!',
   ogImage: 'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?q=80&w=2574',
   status: 'published',
   publishedAt: new Date().toISOString(),
@@ -69,7 +69,7 @@ export const HOME_PAGE_DATA: Page = {
           title: 'Geral 10K',
           description: 'Categoria principal para atletas a partir de 15 anos',
           badge: { text: 'Mais Popular', color: 'blue' },
-          price: 'R$ 20,00',
+          price: 'R$ 22,00',
           isFree: false,
           details: [
             '10 quilômetros',

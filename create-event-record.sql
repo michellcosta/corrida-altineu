@@ -47,7 +47,7 @@ INSERT INTO events (
   200,
   100,
   300,
-  20.00
+  22.00
 ) ON CONFLICT (year) DO UPDATE SET
   edition = EXCLUDED.edition,
   race_date = EXCLUDED.race_date,

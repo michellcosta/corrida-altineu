@@ -116,7 +116,7 @@ BEGIN
         "icon": "🏃",
         "title": "Geral 10K",
         "description": "Categoria principal para atletas a partir de 15 anos",
-        "price": "R$ 20,00",
+        "price": "R$ 22,00",
         "isFree": false,
         "details": ["10 quilômetros", "Medalha finisher", "Kit completo"],
         "cta": {"label": "Inscrever-se", "href": "/prova-10k", "variant": "primary"}
@@ -372,7 +372,7 @@ INSERT INTO public.posts (
 
 <h2>Categorias Disponíveis</h2>
 <ul>
-  <li><strong>Geral 10K</strong> - R$ 20,00</li>
+  <li><strong>Geral 10K</strong> - R$ 22,00</li>
   <li><strong>Morador 10K</strong> - GRATUITO (requer comprovante de residência)</li>
   <li><strong>60+ 10K</strong> - GRATUITO</li>
   <li><strong>Infantil 2.5K</strong> - GRATUITO</li>

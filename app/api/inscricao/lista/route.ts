@@ -93,13 +93,6 @@ export async function GET(request: NextRequest) {
       return v === 'confirmed' || v === 'confirmado' || v.includes('confirm')
     }
 
-    /** Extrai o sufixo numérico do registration_number (ex: "2026-GERAL-0001" -> 1) para ordenação correta */
-    const parseRegNumber = (rn: string | null): number => {
-      if (!rn || typeof rn !== 'string') return 999999
-      const match = rn.match(/-(\d+)$/)
-      return match ? parseInt(match[1], 10) : 999999
-    }
-
     const allRegs = (regs || []) as RegItem[]
 
     if (isAdmin) {
@@ -171,9 +164,11 @@ export async function GET(request: NextRequest) {
       .map((c) => {
         const slug = c.slug || c.id
         const items = regsToUse.filter((r) => r.category_id && String(r.category_id) === String(c.id))
-        const inscritosOrdenados = [...items].sort((a, b) =>
-          parseRegNumber(a.registration_number) - parseRegNumber(b.registration_number)
-        )
+        const inscritosOrdenados = [...items].sort((a, b) => {
+          const nameA = (a.full_name || '').toLowerCase().trim()
+          const nameB = (b.full_name || '').toLowerCase().trim()
+          return nameA.localeCompare(nameB, 'pt-BR')
+        })
         return {
           slug,
           name: c.name,
@@ -205,9 +200,11 @@ export async function GET(request: NextRequest) {
     if (regsWithUnknownCategory.length > 0) {
       const outrosSlug = 'outros'
       if (!categories.some((c) => c.slug === outrosSlug)) {
-        const outrosOrdenados = [...regsWithUnknownCategory].sort((a, b) =>
-          parseRegNumber(a.registration_number) - parseRegNumber(b.registration_number)
-        )
+        const outrosOrdenados = [...regsWithUnknownCategory].sort((a, b) => {
+          const nameA = (a.full_name || '').toLowerCase().trim()
+          const nameB = (b.full_name || '').toLowerCase().trim()
+          return nameA.localeCompare(nameB, 'pt-BR')
+        })
         categories.push({
           slug: outrosSlug,
           name: 'Outros',

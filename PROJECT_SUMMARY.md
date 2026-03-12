@@ -60,11 +60,11 @@
 
 ## 🏆 4 Categorias Oficiais (2026)
 
-### 1️⃣ Geral 10K - R$ 20,00
+### 1️⃣ Geral 10K - R$ 22,00
 ```
 📏 10 quilômetros
 👤 Quem completa 15 anos até 31/12/2026
-💰 R$ 20,00
+💰 R$ 22,00
 📋 500 vagas
 📝 Docs: RG ou CPF ou Passaporte
 ✏️ Campos: Equipe, WhatsApp, Sexo, Data Nascimento

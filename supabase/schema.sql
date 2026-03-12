@@ -120,7 +120,7 @@ create table if not exists public.events (
   slots_morador int default 200,
   slots_60plus int default 100,
   slots_infantil int default 300,
-  price_geral numeric default 20,
+  price_geral numeric default 22,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -804,7 +804,7 @@ begin
   -- Inserir categorias
   insert into public.categories (event_id, slug, name, description, distance, price, is_free, min_age, max_age, age_rule, requires_residence_proof, total_slots, color_from, color_to, icon)
   values
-    (v_event_id, 'geral-10k', 'Geral 10K', 'Categoria principal para atletas a partir de 15 anos', '10 quilômetros', 20.00, false, 15, null, 'Quem completa 15 anos até 31/12/2026', false, 500, 'blue-600', 'cyan-600', '🏃'),
+    (v_event_id, 'geral-10k', 'Geral 10K', 'Categoria principal para atletas a partir de 15 anos', '10 quilômetros', 22.00, false, 15, null, 'Quem completa 15 anos até 31/12/2026', false, 500, 'blue-600', 'cyan-600', '🏃'),
     (v_event_id, 'morador-10k', 'Morador de Macuco 10K', 'Categoria gratuita para moradores de Macuco', '10 quilômetros', 0, true, 15, null, 'Quem completa 15 anos até 31/12/2026', true, 200, 'green-600', 'emerald-600', '🏘️'),
     (v_event_id, '60-mais-10k', '60+ 10K', 'Categoria gratuita para atletas acima de 60 anos', '10 quilômetros', 0, true, 60, null, '60 anos ou mais até 31/12/2026', false, 100, 'purple-600', 'pink-600', '👴'),
     (v_event_id, 'infantil-2k', 'Infantil 2.5K', 'Categoria gratuita para crianças de 5 a 14 anos', '2,5 quilômetros', 0, true, 5, 14, 'Até 14 anos completos em 2026', false, 300, 'yellow-500', 'orange-500', '👶')

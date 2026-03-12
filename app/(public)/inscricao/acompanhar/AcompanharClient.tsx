@@ -339,7 +339,7 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
       setPixError('Dados da inscrição incompletos. Recarregue a página e tente novamente.')
       return
     }
-    let amount = Math.max(0.5, Number(localReg.payment_amount) || 20)
+    let amount = Math.max(0.5, Number(localReg.payment_amount) || 22)
     try {
       const configRes = await fetch(`/api/event/config?t=${Date.now()}`, { cache: 'no-store' })
       const config = await configRes.json()

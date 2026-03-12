@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       slots_morador: slotsMorador,
       slots_60plus: slots60plus,
       slots_infantil: slotsInfantil,
-      price_geral: n(data.valorGeral, 20),
+      price_geral: n(data.valorGeral, 22),
       registrations_open: data.inscricoesAbertas,
       registration_open_date: data.dataAberturaInscricoes
         ? new Date(data.dataAberturaInscricoes).toISOString()

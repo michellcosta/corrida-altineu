@@ -30,7 +30,7 @@ URL: http://localhost:3000
 URL: http://localhost:3000/prova-10k
 
 Conteúdo:
-├─ Valores e lotes (R$ 20)
+├─ Valores e lotes (R$ 22)
 ├─ Premiação detalhada (R$ 10.000)
 ├─ Kit incluído
 ├─ Regulamento
@@ -143,7 +143,7 @@ URL: http://localhost:3000/inscricao
 
 Fluxo:
 Step 1 → Escolher Categoria
-  ├─ Card Geral 10K (R$ 20)
+  ├─ Card Geral 10K (R$ 22)
   ├─ Card Morador 10K (Grátis)
   ├─ Card 60+ 10K (Grátis)
   └─ Card Infantil 2K (Grátis)
@@ -229,7 +229,7 @@ Edite:
    - Morador: 200
    - 60+: 100
    - Infantil: 300
-✏️ Valor Geral: R$ 20,00
+✏️ Valor Geral: R$ 22,00
 ✏️ Status inscrições
 
 📊 Visualize:
@@ -337,7 +337,7 @@ Infantil: Autorização + RG responsável
 ### 💰 Pagamento
 
 ```
-Geral:    R$ 20,00 (PIX/Cartão/Boleto)
+Geral:    R$ 22,00 (PIX/Cartão/Boleto)
 Morador:  Gratuito
 60+:      Gratuito  
 Infantil: Gratuito
@@ -413,7 +413,7 @@ Infantil: Gratuito
 - [x] SEO otimizado
 
 ### Categorias
-- [x] Geral 10K (R$ 20)
+- [x] Geral 10K (R$ 22)
 - [x] Morador 10K (Grátis)
 - [x] 60+ 10K (Grátis)
 - [x] Infantil 2K (Grátis)
@@ -472,11 +472,11 @@ Infantil: Gratuito
 ### 1. Atleta se inscrevendo no Geral
 ```
 1. Acessa /inscricao
-2. Clica em "Geral 10K - R$ 20"
+2. Clica em "Geral 10K - R$ 22"
 3. Preenche dados pessoais
 4. Sistema valida: nasceu em 2000 → 26 anos em 2026 ✅
 5. Escolhe PIX como pagamento
-6. Paga R$ 20
+6. Paga R$ 22
 7. Recebe QR Code
 8. Status: confirmed
 ```

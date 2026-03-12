@@ -35,7 +35,7 @@ Sistema completo desenvolvido para a 51ª edição da Corrida Rústica de Macuco
 
 | Categoria | Distância | Valor | Vagas | Elegibilidade |
 |-----------|-----------|-------|-------|---------------|
-| **Geral 10K** | 10 km | R$ 20 | 500 | 15+ anos em 2026 |
+| **Geral 10K** | 10 km | R$ 22 | 500 | 15+ anos em 2026 |
 | **Morador 10K** | 10 km | Grátis | 200 | 15+ anos + residência |
 | **60+ 10K** | 10 km | Grátis | 100 | 60+ anos em 2026 |
 | **Infantil 2K** | 2 km | Grátis | 300 | 5-14 anos em 2026 |

@@ -98,7 +98,7 @@ Tabelas criadas:
 
 ## 🎯 AS 4 CATEGORIAS
 
-### 1. Geral 10K - R$ 20,00
+### 1. Geral 10K - R$ 22,00
 ```
 📏 10 km | 500 vagas
 👤 Quem completa 15 anos até 31/12/2026

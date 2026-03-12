@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Users, ChevronDown, ChevronUp, Loader2, Search } from 'lucide-react'
+import { Users, ChevronDown, ChevronUp, Loader2, Search, ChevronRight } from 'lucide-react'
+
+const INITIAL_SHOW = 50
+const LOAD_MORE = 50
 
 interface Inscrito {
   id: string
@@ -23,6 +26,7 @@ export default function ListaInscritosClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [visibleCount, setVisibleCount] = useState<Record<string, number>>({})
   const [searchTerm, setSearchTerm] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -42,6 +46,13 @@ export default function ListaInscritosClient() {
       if (json.edition != null) setEdition(json.edition)
       if (json.data?.length) {
         setExpandedCategories(new Set(json.data.map((c: CategoryGroup) => c.slug)))
+        setVisibleCount((prev) => {
+          const next = { ...prev }
+          json.data.forEach((c: CategoryGroup) => {
+            next[c.slug] = INITIAL_SHOW
+          })
+          return next
+        })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar')
@@ -73,6 +84,13 @@ export default function ListaInscritosClient() {
       else next.add(slug)
       return next
     })
+  }
+
+  const showMore = (slug: string) => {
+    setVisibleCount((prev) => ({
+      ...prev,
+      [slug]: (prev[slug] ?? INITIAL_SHOW) + LOAD_MORE,
+    }))
   }
 
   if (loading) {
@@ -173,53 +191,51 @@ export default function ListaInscritosClient() {
 
                 {expandedCategories.has(cat.slug) && (
                   <div className="border-t border-gray-200">
-                    {/* Desktop: tabela */}
-                    <div className="hidden sm:block overflow-x-auto">
-                      <table className="w-full table-fixed">
-                        <colgroup>
-                          <col className="w-24 sm:w-28" />
-                          <col className="min-w-0" />
-                          <col className="w-28 sm:w-36" />
-                        </colgroup>
-                        <thead>
-                          <tr className="bg-gray-50 text-left">
-                            <th className="px-4 sm:px-6 py-3 text-sm font-semibold text-gray-700 w-24 sm:w-28">Nº</th>
-                            <th className="px-4 sm:px-6 py-3 text-sm font-semibold text-gray-700">Nome</th>
-                            <th className="px-4 sm:px-6 py-3 text-sm font-semibold text-gray-700 w-28 sm:w-36">Data</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cat.inscritos.map((ins) => (
-                            <tr key={ins.id} className="border-t border-gray-100 hover:bg-gray-50">
-                              <td className="px-4 sm:px-6 py-3 text-sm text-gray-600 font-mono">
-                                {ins.registration_number ?? '-'}
-                              </td>
-                              <td className="px-4 sm:px-6 py-3 font-medium text-gray-900 min-w-0 break-words">
-                                {ins.full_name}
-                              </td>
-                              <td className="px-4 sm:px-6 py-3 text-sm text-gray-600">
-                                {ins.birth_date ?? '-'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    {(() => {
+                      const limit = visibleCount[cat.slug] ?? INITIAL_SHOW
+                      const visible = cat.inscritos.slice(0, limit)
+                      const hasMore = cat.inscritos.length > limit
+                      const remaining = cat.inscritos.length - limit
 
-                    {/* Mobile: cards */}
-                    <div className="sm:hidden divide-y divide-gray-100">
-                      {cat.inscritos.map((ins) => (
-                        <div key={ins.id} className="px-4 py-3 hover:bg-gray-50">
-                          <p className="font-medium text-gray-900" title={ins.full_name}>
-                            {ins.full_name}
-                          </p>
-                          <div className="flex gap-4 mt-1 text-sm text-gray-600">
-                            <span>Nº {ins.registration_number ?? '-'}</span>
-                            <span>{ins.birth_date ?? '-'}</span>
+                      return (
+                        <>
+                          {/* Layout compacto: uma linha por atleta */}
+                          <div className="divide-y divide-gray-100">
+                            {visible.map((ins, index) => (
+                              <div
+                                key={ins.id}
+                                className={`flex items-center gap-2 sm:gap-3 py-1.5 px-2 sm:px-3 text-xs sm:text-sm ${
+                                  index % 2 === 0 ? 'bg-white' : 'bg-gray-100'
+                                } hover:bg-blue-100`}
+                              >
+                                <span className="hidden sm:inline font-mono text-gray-500 shrink-0 w-28 sm:w-32 whitespace-nowrap overflow-hidden text-ellipsis">
+                                  {ins.registration_number ?? '-'}
+                                </span>
+                                <span className="truncate flex-1 min-w-0 font-medium text-gray-900" title={ins.full_name}>
+                                  {ins.full_name}
+                                </span>
+                                <span className="text-gray-500 shrink-0 w-20 sm:w-24 text-right">
+                                  {ins.birth_date ?? '-'}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
+
+                          {hasMore && (
+                            <div className="p-3 border-t border-gray-100 bg-gray-50/50">
+                              <button
+                                type="button"
+                                onClick={() => showMore(cat.slug)}
+                                className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                                Mostrar mais {Math.min(LOAD_MORE, remaining)} de {remaining} restantes
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
                   </div>
                 )}
               </div>

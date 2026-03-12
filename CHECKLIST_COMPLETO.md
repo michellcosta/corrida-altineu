@@ -128,7 +128,7 @@
 ## 🎯 4 CATEGORIAS (100%)
 
 ### Implementação ✅
-- [x] **Geral 10K** - R$ 20,00
+- [x] **Geral 10K** - R$ 22,00
   - [x] 500 vagas
   - [x] Idade: 15+ em 2026
   - [x] Docs: RG/CPF/Passaporte

@@ -13,7 +13,7 @@ Sistema completo para gerenciamento da 51ª Corrida Rústica de Macuco com:
 
 ## 🎯 4 Categorias da Corrida
 
-### 1. Geral 10K - R$ 20,00
+### 1. Geral 10K - R$ 22,00
 - **Distância**: 10 km
 - **Idade**: Quem completa 15 anos até 31/12/2026
 - **Validação**: `ano_nascimento <= 2011`
@@ -93,7 +93,7 @@ Sistema completo para gerenciamento da 51ª Corrida Rústica de Macuco com:
 ✅ Configurações do Evento
    - Editar ano da prova (2026)
    - Configurar vagas (500/200/100/300)
-   - Definir valores (R$ 20 Geral)
+   - Definir valores (R$ 22 Geral)
    - Gerenciar lotes
 ✅ Templates de Comunicação
 ✅ Regulamentos (Upload PDF versionado)
@@ -196,7 +196,7 @@ Response:
 {
   "registrationId": "uuid",
   "category": { ... },
-  "price": 20.00,
+  "price": 22.00,
   "isFree": false
 }
 ```
@@ -431,7 +431,7 @@ Event (Evento 2026)
 ├── raceDate: 2026-06-24
 ├── ageCutoffDate: 2026-12-31
 └── Categories (4)
-    ├── Geral 10K (R$ 20, 500 vagas)
+    ├── Geral 10K (R$ 22, 500 vagas)
     ├── Morador 10K (Grátis, 200 vagas)
     ├── 60+ 10K (Grátis, 100 vagas)
     └── Infantil 2K (Grátis, 300 vagas)
@@ -476,7 +476,7 @@ Result
 2. Preenche dados pessoais
 3. Valida idade (>= 15 em 2026) ✅
 4. Seleciona método de pagamento
-5. Paga R$ 20 via PIX/Cartão/Boleto
+5. Paga R$ 22 via PIX/Cartão/Boleto
 6. Recebe QR Code por email
 7. Status: confirmed
 ```

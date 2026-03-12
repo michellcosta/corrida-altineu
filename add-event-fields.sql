@@ -23,7 +23,7 @@ ADD COLUMN IF NOT EXISTS slots_infantil int DEFAULT 300;
 
 -- Adicionar campo de preço da categoria geral
 ALTER TABLE public.events 
-ADD COLUMN IF NOT EXISTS price_geral numeric DEFAULT 20.00;
+ADD COLUMN IF NOT EXISTS price_geral numeric DEFAULT 22.00;
 
 -- Verificar se os campos foram adicionados
 SELECT column_name, data_type, column_default 

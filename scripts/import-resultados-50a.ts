@@ -130,7 +130,7 @@ async function main() {
     slots_morador: 0,
     slots_60plus: 100,
     slots_infantil: 300,
-    price_geral: 20,
+    price_geral: 22,
   }
 
   const { data: existingEvent } = await supabase.from('events').select('id').eq('year', 2025).single()

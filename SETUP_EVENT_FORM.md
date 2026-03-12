@@ -30,7 +30,7 @@ ADD COLUMN IF NOT EXISTS slots_infantil int DEFAULT 300;
 
 -- Adicionar campo de preço da categoria geral
 ALTER TABLE public.events 
-ADD COLUMN IF NOT EXISTS price_geral numeric DEFAULT 20.00;
+ADD COLUMN IF NOT EXISTS price_geral numeric DEFAULT 22.00;
 ```
 
 #### **B. Criar/atualizar registro do evento 2026:**
@@ -81,7 +81,7 @@ INSERT INTO events (
   200,
   100,
   300,
-  20.00
+  22.00
 ) ON CONFLICT (year) DO UPDATE SET
   edition = EXCLUDED.edition,
   race_date = EXCLUDED.race_date,

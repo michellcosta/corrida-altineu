@@ -153,7 +153,7 @@ async function main() {
       slug: 'geral',
       name: 'Geral 10K',
       distance: '10km',
-      price: 20,
+      price: 22,
       isFree: false,
       minAge: 15,
       totalSlots: 500,

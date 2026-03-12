@@ -25,7 +25,7 @@ export const CATEGORIES = {
     name: 'Geral 10K',
     slug: 'geral-10k',
     distance: '10 quilômetros',
-    price: 20,
+    price: 22,
     isFree: false,
     ageRule: `Quem completa 15 anos até 31/12/${RACE_CONFIG.year}`,
     color: 'from-blue-600 to-cyan-600',

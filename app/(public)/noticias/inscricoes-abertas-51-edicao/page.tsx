@@ -86,7 +86,7 @@ export default function InscricoesAbertasPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
                     <h3 className="font-bold text-blue-900 mb-2">Geral 10K</h3>
-                    <p className="text-blue-700 text-sm mb-2">R$ 20,00</p>
+                    <p className="text-blue-700 text-sm mb-2">R$ 22,00</p>
                     <p className="text-gray-600 text-sm">Para corredores a partir de 15 anos</p>
                   </div>
                   
@@ -198,10 +198,6 @@ export default function InscricoesAbertasPage() {
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
                       <span className="text-gray-700">Certificado digital</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-gray-700">Seguro durante a prova</span>
                     </div>
                   </div>
                 </div>

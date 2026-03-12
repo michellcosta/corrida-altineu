@@ -28,7 +28,7 @@ O sistema é uma plataforma web completa para a **51ª edição da Corrida Rúst
 - Design responsivo e moderno
 
 **Categorias de Corrida**
-- **Geral 10K** – R$ 20,00 (a partir de 15 anos)
+- **Geral 10K** – R$ 22,00 (a partir de 15 anos)
 - **Morador de Macuco 10K** – Gratuita (moradores locais)
 - **60+ 10K** – Gratuita (60 anos ou mais)
 - **Infantil 2K** – Gratuita (5 a 14 anos)

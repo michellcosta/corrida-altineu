@@ -39,11 +39,9 @@ const KIT_ITEMS = [
   { title: 'Número de Peito', desc: 'Identificação oficial do atleta' },
   { title: 'Chip de Cronometragem', desc: 'Descartável, aplicado no número' },
   { title: 'Medalha Finisher', desc: 'Para todos que concluírem a prova' },
-  { title: 'Brindes de Parceiros', desc: 'Entregues na retirada do kit' },
   { title: 'Hidratação', desc: 'Pontos a cada 2km (km 2, 4, 6, 8) e na chegada' },
   { title: 'Frutas na Chegada', desc: 'Banana e laranja na área de dispersão' },
   { title: 'Resultados Oficiais', desc: 'Publicados em até 48h' },
-  { title: 'Seguro Atleta', desc: 'Cobertura durante toda a prova' },
 ]
 
 function buildAgeRule(ageMin: number, ageMax?: number, year?: number): string {

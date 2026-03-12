@@ -17,7 +17,7 @@ Este documento descreve as 4 categorias oficiais da 51ª Corrida Rústica de Mac
 
 ### Informações Básicas
 - **Distância**: 10 quilômetros
-- **Valor**: R$ 20,00
+- **Valor**: R$ 22,00
 - **Vagas**: 500
 
 ### Elegibilidade
@@ -196,7 +196,7 @@ function validateAge(birthDate: Date, categoryId: CategoryId) {
 
 | Categoria | Distância | Valor | Idade | Vagas | Documentos Extras |
 |-----------|-----------|-------|-------|-------|-------------------|
-| **Geral 10K** | 10 km | R$ 20 | 15+ anos | 500 | Nenhum |
+| **Geral 10K** | 10 km | R$ 22 | 15+ anos | 500 | Nenhum |
 | **Morador 10K** | 10 km | Gratuito | 15+ anos | 200 | Comprovante residência |
 | **60+ 10K** | 10 km | Gratuito | 60+ anos | 100 | Documento com foto |
 | **Infantil 2K** | 2 km | Gratuito | 5-14 anos | 300 | Autorização responsável |
@@ -261,7 +261,7 @@ O painel administrativo deve permitir editar:
   vagasInfantil: 300,
   
   // Valores
-  valorGeral: 20.00,           // ← Editável
+  valorGeral: 22.00,           // ← Editável
   
   // Status
   inscricoesAbertas: true,

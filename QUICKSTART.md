@@ -205,7 +205,7 @@ No painel `/admin/site/settings/event`:
    - Morador: 200
    - 60+: 100
    - Infantil: 300
-✏️ Valor Geral 10K: R$ 20,00
+✏️ Valor Geral 10K: R$ 22,00
 ✏️ Status Inscrições: Abertas/Fechadas
 
 🔄 Calculado Automaticamente:

@@ -87,7 +87,7 @@ export async function getEventConfig(year = 2026): Promise<EventConfig | null> {
       slots_60plus: event.slots_60plus ?? 100,
       slots_infantil: event.slots_infantil ?? 300,
     }
-    const priceGeral = Number(event.price_geral) ?? 20
+    const priceGeral = Number(event.price_geral) ?? 22
 
     const categoriesFormatted = (categories || []).map((c: any) => {
       const slug = c.slug

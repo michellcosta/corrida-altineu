@@ -9,7 +9,7 @@ Reestruturei completamente o fluxo de inscrição (`app/(public)/inscricao/page.
 ## 🏃 **Categorias Oficiais Implementadas**
 
 ### **1. Prova Geral 10K** 💰
-- **Valor:** R$ 20,00
+- **Valor:** R$ 22,00
 - **Idade:** A partir de 15 anos (até 31/12/2026)
 - **Vagas:** 500
 - **Documentos:** Documento oficial com foto
@@ -72,7 +72,7 @@ Reestruturei completamente o fluxo de inscrição (`app/(public)/inscricao/page.
 #### **Cards Informativos:**
 - ✅ Nome da categoria
 - ✅ Descrição com regras de idade
-- ✅ Preço formatado (R$ 20,00 ou GRATUITO)
+- ✅ Preço formatado (R$ 22,00 ou GRATUITO)
 - ✅ Quantidade de vagas
 - ✅ Lista de documentos necessários
 - ✅ Faixa etária permitida
@@ -83,7 +83,7 @@ const categories: Category[] = [
   {
     id: 'geral-10k',
     name: 'Prova Geral 10K',
-    price: 20,
+    price: 22,
     isFree: false,
     description: 'Aberta para atletas que completam 15 anos até 31/12/2026.',
     spots: 500,
@@ -258,7 +258,7 @@ const handleContinueFromPersonalData = () => {
 1. ✅ Selecionar "Prova Geral 10K"
 2. ✅ Preencher dados pessoais
 3. ✅ Ver step de pagamento
-4. ✅ Valor R$ 20,00 exibido
+4. ✅ Valor R$ 22,00 exibido
 5. ✅ Confirmar inscrição
 
 ### **Teste 2: Morador de Macuco**
