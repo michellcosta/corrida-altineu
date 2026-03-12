@@ -202,89 +202,89 @@ export default function OrgAdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Welcome */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-8 text-white">
-          <h2 className="text-3xl font-display font-bold mb-2">Dashboard Organizacional 📊</h2>
-          <p className="text-green-100 text-lg">
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4 md:p-8 text-white">
+          <h2 className="text-xl md:text-3xl font-display font-bold mb-1 md:mb-2">Dashboard Organizacional 📊</h2>
+          <p className="text-green-100 text-sm md:text-lg">
             Acompanhe métricas e relatórios em tempo real. Acesso somente leitura.
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           {loading ? (
             [...Array(4)].map((_, i) => (
               <div key={i} className="admin-card">
-                <div className="flex items-center justify-center h-24">
-                  <Loader2 className="animate-spin text-green-600" size={28} />
+                <div className="flex items-center justify-center h-16 md:h-24">
+                  <Loader2 className="animate-spin text-green-600" size={24} />
                 </div>
               </div>
             ))
           ) : (
             <>
               <div className="admin-card">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Users className="text-green-600" size={24} />
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Users className="text-green-600" size={20} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{total.toLocaleString('pt-BR')}</p>
-                <p className="text-sm text-gray-600">Total de Inscrições</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{total.toLocaleString('pt-BR')}</p>
+                <p className="text-xs md:text-sm text-gray-600">Total de Inscrições</p>
               </div>
               <div className="admin-card">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <MapPin className="text-green-600" size={24} />
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <MapPin className="text-green-600" size={20} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{citiesCount}</p>
-                <p className="text-sm text-gray-600">Cidades Representadas</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{citiesCount}</p>
+                <p className="text-xs md:text-sm text-gray-600">Cidades Representadas</p>
               </div>
               <div className="admin-card">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Globe className="text-green-600" size={24} />
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Globe className="text-green-600" size={20} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{countriesCount}</p>
-                <p className="text-sm text-gray-600">Países Representados</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{countriesCount}</p>
+                <p className="text-xs md:text-sm text-gray-600">Países Representados</p>
               </div>
               <div className="admin-card">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="text-green-600" size={24} />
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="text-green-600" size={20} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">
                   {daysToEvent != null ? daysToEvent : '—'}
                 </p>
-                <p className="text-sm text-gray-600">Dias para o Evento</p>
+                <p className="text-xs md:text-sm text-gray-600">Dias para o Evento</p>
               </div>
             </>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Age Distribution */}
           <div className="admin-card">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Distribuição por Idade e Sexo</h3>
-              <PieChart size={20} className="text-gray-400" />
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">Distribuição por Idade e Sexo</h3>
+              <PieChart size={18} className="text-gray-400" />
             </div>
             {loading ? (
-              <div className="flex items-center justify-center h-48">
+              <div className="flex items-center justify-center h-32 md:h-48">
                 <Loader2 className="animate-spin text-green-600" size={24} />
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 md:space-y-3">
                 {ageDistribution.map((item) => {
                   const total = item.male + item.female
                   return (
                     <div key={item.range}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700">{item.range} anos</span>
-                        <span className="text-sm text-gray-600">
+                      <div className="flex items-center justify-between mb-0.5 md:mb-1">
+                        <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
+                        <span className="text-xs md:text-sm text-gray-600">
                           M: {item.male} / F: {item.female}
                         </span>
                       </div>
@@ -307,7 +307,7 @@ export default function OrgAdminDashboard() {
                     </div>
                   )
                 })}
-                <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t">
+                <div className="flex items-center justify-center gap-4 md:gap-6 mt-3 md:mt-4 pt-3 md:pt-4 border-t">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded"></div>
                     <span className="text-xs text-gray-600">Masculino</span>
@@ -323,32 +323,32 @@ export default function OrgAdminDashboard() {
 
           {/* Top Cities */}
           <div className="admin-card">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Principais Cidades</h3>
-              <MapPin size={20} className="text-gray-400" />
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">Principais Cidades</h3>
+              <MapPin size={18} className="text-gray-400" />
             </div>
             {loading ? (
-              <div className="flex items-center justify-center h-48">
+              <div className="flex items-center justify-center h-32 md:h-48">
                 <Loader2 className="animate-spin text-green-600" size={24} />
               </div>
             ) : topCities.length === 0 ? (
               <p className="text-sm text-gray-500">Nenhuma inscrição ainda.</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {topCities.map((item, index) => (
                   <div key={item.city}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold">
+                    <div className="flex items-center justify-between mb-1 md:mb-2">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <span className="w-5 h-5 md:w-6 md:h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                           {index + 1}
                         </span>
-                        <span className="text-sm font-medium text-gray-700">{item.city}</span>
+                        <span className="text-xs md:text-sm font-medium text-gray-700 truncate">{item.city}</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                      <span className="text-xs md:text-sm font-bold text-gray-900 flex-shrink-0 ml-1">{item.count}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
                       <div
-                        className="bg-green-600 h-2 rounded-full transition-all"
+                        className="bg-green-600 h-1.5 md:h-2 rounded-full transition-all"
                         style={{ width: `${total > 0 ? (item.count / total) * 100 : 0}%` }}
                       />
                     </div>
@@ -360,32 +360,32 @@ export default function OrgAdminDashboard() {
 
           {/* Top Countries */}
           <div className="admin-card">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Principais Países</h3>
-              <Globe size={20} className="text-gray-400" />
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">Principais Países</h3>
+              <Globe size={18} className="text-gray-400" />
             </div>
             {loading ? (
-              <div className="flex items-center justify-center h-48">
+              <div className="flex items-center justify-center h-32 md:h-48">
                 <Loader2 className="animate-spin text-green-600" size={24} />
               </div>
             ) : topCountries.length === 0 ? (
               <p className="text-sm text-gray-500">Nenhuma inscrição ainda.</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {topCountries.map((item, index) => (
                   <div key={item.country}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold">
+                    <div className="flex items-center justify-between mb-1 md:mb-2">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <span className="w-5 h-5 md:w-6 md:h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                           {index + 1}
                         </span>
-                        <span className="text-sm font-medium text-gray-700">{item.country}</span>
+                        <span className="text-xs md:text-sm font-medium text-gray-700 truncate">{item.country}</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                      <span className="text-xs md:text-sm font-bold text-gray-900 flex-shrink-0 ml-1">{item.count}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
                       <div
-                        className="bg-green-600 h-2 rounded-full transition-all"
+                        className="bg-green-600 h-1.5 md:h-2 rounded-full transition-all"
                         style={{ width: `${total > 0 ? (item.count / total) * 100 : 0}%` }}
                       />
                     </div>
@@ -398,40 +398,40 @@ export default function OrgAdminDashboard() {
 
         {/* Payment Status */}
         <div className="admin-card">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Status de Pagamento</h3>
+          <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6">Status de Pagamento</h3>
           {loading ? (
-            <div className="flex items-center justify-center h-32">
+            <div className="flex items-center justify-center h-24 md:h-32">
               <Loader2 className="animate-spin text-green-600" size={24} />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center p-6 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-3xl font-bold text-green-600 mb-2">{paymentStats.paid}</p>
-                <p className="text-sm text-gray-600">Confirmados</p>
-                <p className="text-xs text-green-600 font-semibold mt-1">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+              <div className="text-center p-4 md:p-6 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-2xl md:text-3xl font-bold text-green-600 mb-1 md:mb-2">{paymentStats.paid}</p>
+                <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
+                <p className="text-xs text-green-600 font-semibold mt-0.5 md:mt-1">
                   {total > 0 ? `${((paymentStats.paid / total) * 100).toFixed(0)}%` : '0%'}
                 </p>
               </div>
-              <div className="text-center p-6 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-3xl font-bold text-yellow-600 mb-2">{paymentStats.pending}</p>
-                <p className="text-sm text-gray-600">Aguardando</p>
-                <p className="text-xs text-yellow-600 font-semibold mt-1">
+              <div className="text-center p-4 md:p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-2xl md:text-3xl font-bold text-yellow-600 mb-1 md:mb-2">{paymentStats.pending}</p>
+                <p className="text-xs md:text-sm text-gray-600">Aguardando</p>
+                <p className="text-xs text-yellow-600 font-semibold mt-0.5 md:mt-1">
                   {total > 0 ? `${((paymentStats.pending / total) * 100).toFixed(0)}%` : '0%'}
                 </p>
               </div>
-              <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-3xl font-bold text-blue-600 mb-2">{paymentStats.free}</p>
-                <p className="text-sm text-gray-600">Gratuitos</p>
-                <p className="text-xs text-blue-600 font-semibold mt-1">
+              <div className="text-center p-4 md:p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-2xl md:text-3xl font-bold text-blue-600 mb-1 md:mb-2">{paymentStats.free}</p>
+                <p className="text-xs md:text-sm text-gray-600">Gratuitos</p>
+                <p className="text-xs text-blue-600 font-semibold mt-0.5 md:mt-1">
                   {total > 0 ? `${((paymentStats.free / total) * 100).toFixed(0)}%` : '0%'}
                 </p>
               </div>
-              <div className="text-center p-6 bg-purple-50 rounded-lg border border-purple-200">
-                <p className="text-3xl font-bold text-purple-600 mb-2">
+              <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg border border-purple-200 col-span-2 md:col-span-1">
+                <p className="text-xl md:text-3xl font-bold text-purple-600 mb-1 md:mb-2">
                   R$ {(Number.isFinite(paymentStats.netAmount) ? paymentStats.netAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-gray-600">Líquido (após taxa)</p>
-                <p className="text-xs text-purple-600 font-semibold mt-1">
+                <p className="text-xs md:text-sm text-gray-600">Líquido (após taxa)</p>
+                <p className="text-xs text-purple-600 font-semibold mt-0.5 md:mt-1">
                   Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa
                 </p>
               </div>
@@ -440,8 +440,8 @@ export default function OrgAdminDashboard() {
         </div>
 
         {/* Info Message */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start gap-3">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
+          <div className="flex items-start gap-2 md:gap-3">
             <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-white text-sm">ℹ️</span>
             </div>

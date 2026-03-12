@@ -69,7 +69,8 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Renovar sessão se necessário
+  // Renovar sessão se necessário (persistência no PWA ao reabrir o app)
+  await supabase.auth.refreshSession()
   const {
     data: { user },
   } = await supabase.auth.getUser()

@@ -54,9 +54,9 @@
   @apply min-w-[600px] md:min-w-0;
 }
 
-/* Cards responsivos */
+/* Cards responsivos - mobile compacto */
 @media (max-width: 768px) {
   .admin-card {
-    @apply p-4;
+    @apply p-3;
   }
 }

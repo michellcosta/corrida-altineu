@@ -81,12 +81,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Persistência de sessão no PWA: renovar token quando o app volta ao foco
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const supabase = createClient()
+        supabase.auth.refreshSession().catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
   async function checkAuth() {
     try {
       setLoading(true)
       const supabase = createClient()
 
-      // Verificar se há sessão ativa
+      // Tentar renovar sessão antes de verificar (persistência no PWA)
+      await supabase.auth.refreshSession()
+
+      // Verificar se há sessão ativa (refreshSession já atualizou cookies/storage)
       const { data: { user }, error } = await supabase.auth.getUser()
 
       if (error || !user) {

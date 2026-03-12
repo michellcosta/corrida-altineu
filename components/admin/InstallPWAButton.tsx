@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { Download } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
@@ -35,8 +36,12 @@ function getManualInstructions() {
 }
 
 export default function InstallPWAButton() {
+  const pathname = usePathname()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState(false)
+
+  // Mostrar apenas na tela de login (antes de autenticar)
+  if (pathname !== '/admin/login') return null
 
   useEffect(() => {
     const handler = (e: Event) => {
