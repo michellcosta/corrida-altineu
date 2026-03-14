@@ -19,7 +19,7 @@ export const HOME_PAGE_DATA: Page = {
       type: 'hero',
       headline: '51ª Grande Corrida Rústica de São João Batista',
       subheadline: '51ª edição • Tradição desde 1972',
-      description: 'Junte-se a milhares de atletas na corrida mais querida da região.',
+      description: 'Venha correr a corrida mais antiga do Rio de Janeiro — onde tradição e comunidade se encontram há mais de 50 anos.',
       backgroundImage: {
         url: 'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?q=80&w=2574',
         alt: 'Corrida de rua'
@@ -41,7 +41,6 @@ export const HOME_PAGE_DATA: Page = {
       ],
       stats: [
         { value: '51', label: 'Edições' },
-        { value: '5.000+', label: 'Atletas Esperados' },
         { value: '4', label: 'Categorias' },
         { value: '3', label: 'Categorias Gratuitas' },
       ],

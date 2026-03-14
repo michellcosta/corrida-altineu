@@ -1,38 +1,38 @@
 'use client'
 
-import { Award, MapPin, Calendar, Gift, Users, TrendingUp } from 'lucide-react'
+import { Award, MapPin, Gift, Users, TrendingUp, Heart, Mountain } from 'lucide-react'
 import ScrollReveal from '@/components/ui/ScrollReveal'
 
 const highlights = [
   {
+    icon: Heart,
+    title: 'Corrida raiz',
+    description: 'A mais antiga do Rio de Janeiro e uma das mais tradicionais do Brasil. Uma prova que valoriza o corredor e sua essência.',
+    color: 'from-red-400 to-rose-600',
+  },
+  {
+    icon: Users,
+    title: 'Para toda a família',
+    description: 'Tem corrida para as crianças na categoria Infantil 2.5K. Diversão e esporte para todas as idades.',
+    color: 'from-pink-400 to-pink-600',
+  },
+  {
     icon: Award,
-    title: 'R$ 21.850 em Premiação',
-    description: 'Distribuídos entre categorias gerais, faixas etárias, atletas locais e corrida infanto-juvenil',
+    title: 'Premiação em dinheiro',
+    description: 'R$ 21.850 distribuídos entre todas as categorias e faixas etárias — uma das maiores premiações em dinheiro do estado.',
     color: 'from-yellow-400 to-yellow-600',
   },
   {
-    icon: MapPin,
-    title: 'Mapa do Percurso',
-    description: 'O trajeto foi desenhado em mapa digital para você conhecer o caminho. A distância real pode variar um pouco no seu GPS de pulso.',
+    icon: Mountain,
+    title: 'Na região da serra',
+    description: 'Macuco fica na região serrana fluminense, com ar puro e clima ameno para correr.',
     color: 'from-green-400 to-green-600',
   },
   {
     icon: Gift,
     title: 'Kit Premium',
-    description: 'Número de peito, chip de cronometragem e medalha finisher',
+    description: 'Número de peito, chip de cronometragem e medalha finisher.',
     color: 'from-blue-400 to-blue-600',
-  },
-  {
-    icon: Calendar,
-    title: 'Programação Completa',
-    description: 'Pegue seu kit, receba as orientações, faça o aquecimento e comemore com a gente depois da linha de chegada.',
-    color: 'from-purple-400 to-purple-600',
-  },
-  {
-    icon: Users,
-    title: 'Suporte ao Atleta',
-    description: 'Teremos pontos de água durante o caminho e equipe médica pronta para atender você.',
-    color: 'from-pink-400 to-pink-600',
   },
   {
     icon: TrendingUp,
@@ -52,7 +52,7 @@ export default function HighlightsSection() {
               Por Que Participar da <span className="text-gradient">51ª Edição</span>
             </h2>
             <p className="section-subtitle max-w-2xl mx-auto">
-              Uma experiência completa que vai muito além da corrida
+              Tradição, premiação e acolhimento em uma das corridas mais queridas do Brasil
             </p>
           </div>
         </ScrollReveal>

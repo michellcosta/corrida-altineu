@@ -43,7 +43,7 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
     content?.headline || `51ª Grande Corrida Rústica de São João Batista`
   const subheadline = content?.subheadline || `51ª edição • Tradição desde 1972`
   const description =
-    content?.description || 'Junte-se a milhares de atletas na corrida mais querida da região.'
+    content?.description || 'Venha correr a corrida mais antiga do Rio de Janeiro — onde tradição e comunidade se encontram há mais de 50 anos.'
   const primaryCTA = content?.ctaPrimary || { href: '/inscricao', label: 'Inscrever-se Agora' }
   const secondaryCTA = content?.ctaSecondary || {
     href: '/inscricao/acompanhar',
@@ -58,7 +58,6 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
       ? content.stats
       : [
           { value: `${edition}`, label: 'Edições' },
-          { value: '5.000+', label: 'Atletas' },
           { value: '4', label: 'Categorias' },
           { value: '3', label: 'Categorias Gratuitas' },
         ]
@@ -119,7 +118,9 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
               <MapPin className="mb-2 text-sky-300" size={24} aria-hidden />
               <p className="text-sm text-gray-300">Local</p>
               <p className="font-semibold text-white">
-                {location}, {city} - {state}
+                {location?.includes(' - ') && location?.includes(state || 'RJ')
+                  ? location
+                  : `${location || ''}, ${city || 'Macuco'} - ${state || 'RJ'}`.replace(/^,\s*/, '')}
               </p>
             </div>
             <div className="rounded-xl border border-white/25 bg-white/10 p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/15">
@@ -149,21 +150,21 @@ export default function HeroSection({ eventData, content }: HeroSectionProps) {
               </Link>
             )}
           </div>
-
-          <div className="mt-16 grid grid-cols-2 gap-6 border-t border-white/20 pt-10 sm:grid-cols-4">
-            {stats.map((stat, index) => (
-              <div key={index}>
-                <p className="mb-1 text-4xl font-bold text-white">{stat.value}</p>
-                <p className="text-sm text-gray-300">{stat.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
-      </div>
 
-      <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 animate-bounce" aria-hidden>
-        <div className="flex h-10 w-6 justify-center rounded-full border-2 border-white/30">
-          <div className="mt-2 h-3 w-1 rounded-full bg-white/50"></div>
+        <div className="mt-16 grid w-full grid-cols-3 gap-x-8 gap-y-8 border-t border-white/20 px-4 pt-10 sm:gap-x-16 md:gap-x-24">
+          {stats.map((stat, index) => (
+            <div key={index} className="flex flex-col items-center justify-center text-center">
+              <p className="mb-1 text-4xl font-bold tabular-nums text-white">{stat.value}</p>
+              <p className="text-sm text-gray-300">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 animate-bounce" aria-hidden>
+          <div className="flex h-10 w-6 justify-center rounded-full border-2 border-white/30">
+            <div className="mt-2 h-3 w-1 rounded-full bg-white/50"></div>
+          </div>
         </div>
       </div>
     </section>
