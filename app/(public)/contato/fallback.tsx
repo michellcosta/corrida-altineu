@@ -1,8 +1,9 @@
 'use client'
 
-import { Mail, Phone, MapPin, MessageCircle, Clock } from 'lucide-react'
+import { Mail, Phone, MapPin, MessageCircle, Clock, Loader2 } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 export default function ContatoPage() {
   const [formData, setFormData] = useState({
@@ -12,11 +13,29 @@ export default function ContatoPage() {
     assunto: 'geral',
     mensagem: '',
   })
+  const [sending, setSending] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Aqui seria feita a chamada para API
-    alert('Mensagem enviada com sucesso! Retornaremos em breve.')
+    setSending(true)
+    try {
+      const res = await fetch('/api/contato', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error || 'Erro ao enviar. Tente novamente ou use o WhatsApp.')
+        return
+      }
+      toast.success('Mensagem enviada com sucesso! Retornaremos em breve.')
+      setFormData({ nome: '', email: '', telefone: '', assunto: 'geral', mensagem: '' })
+    } catch {
+      toast.error('Erro de conexão. Tente novamente ou use o WhatsApp.')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -258,9 +277,17 @@ export default function ContatoPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                    disabled={sending}
+                    className="w-full bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                   >
-                    Enviar Mensagem
+                    {sending ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      'Enviar Mensagem'
+                    )}
                   </button>
 
                   <p className="text-sm text-gray-600 text-center">

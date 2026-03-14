@@ -67,13 +67,13 @@ KIT POR CATEGORIA:
 export const PERCURSOS_DRAWER = `
 PERCURSOS OFICIAIS (fonte: /percursos):
 
-10K (Largada às 12h, limite 90 min):
+10K (Largada às 12h):
 - Largada: Fábrica de Cimento Holcim
 - Chegada: Praça Prof. João Brasil, Macuco
 - Hidratação: Km 2, 4, 6, 8 e Chegada
 - Apoio médico: na chegada (Praça Prof. João Brasil)
 
-INFANTIL 2,5K (Largada às 10h, limite 30 min, 5 a 14 anos):
+INFANTIL 2,5K (Largada às 10h, 5 a 14 anos):
 - Largada: Entrada do Goiabal
 - Chegada: Praça Prof. João Brasil, Macuco
 - Hidratação: na chegada

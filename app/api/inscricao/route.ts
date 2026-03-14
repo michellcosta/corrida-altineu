@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
+import { sendRegistrationConfirmation } from '@/lib/email'
 
 const CATEGORY_SLUG_MAP: Record<string, string> = {
   'geral-10k': 'geral-10k',
@@ -284,26 +285,34 @@ export async function POST(request: NextRequest) {
 
     const { data: existingAthlete } = await supabase
       .from('athletes')
-      .select('id')
-      .ilike('email', email.trim())
+      .select('id, document_number')
+      .ilike('email', email.trim().toLowerCase())
       .limit(1)
-      .single()
+      .maybeSingle()
+
+    // Só reutiliza atleta se for a MESMA pessoa: email + documento devem coincidir.
+    // Caso contrário, pessoas diferentes com mesmo email sobrescreveriam os dados umas das outras.
+    const canReuseAthlete =
+      existingAthlete &&
+      athleteDocNumber &&
+      existingAthlete.document_number &&
+      String(existingAthlete.document_number).replace(/\D/g, '') === String(athleteDocNumber).replace(/\D/g, '')
 
     let athleteId: string
 
-    if (existingAthlete) {
+    if (canReuseAthlete) {
       const { error: updateErr } = await supabase
         .from('athletes')
         .update({
           ...athleteData,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', existingAthlete.id)
+        .eq('id', existingAthlete!.id)
       if (updateErr) {
         console.error('Erro ao atualizar atleta:', updateErr)
         return NextResponse.json({ error: 'Erro ao salvar dados' }, { status: 500 })
       }
-      athleteId = existingAthlete.id
+      athleteId = existingAthlete!.id
     } else {
       const { data: newAthlete, error: insertErr } = await supabase
         .from('athletes')
@@ -399,6 +408,18 @@ export async function POST(request: NextRequest) {
       console.error('[inscricao] Erro ao criar inscrição:', regErr)
       return NextResponse.json({ error: 'Erro ao finalizar inscrição' }, { status: 500 })
     }
+
+    const athleteEmail = email.trim().toLowerCase()
+    const status = category.is_free ? 'confirmed' : 'pending_payment'
+    sendRegistrationConfirmation({
+      to: athleteEmail,
+      athleteName: fullName.trim(),
+      registrationNumber,
+      confirmationCode,
+      categoryName: category.name,
+      status,
+      paymentAmount: status === 'pending_payment' ? paymentAmount : undefined,
+    }).catch((err) => console.error('[inscricao] Erro ao enviar email:', err))
 
     return NextResponse.json({
       success: true,

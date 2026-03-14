@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
+import { sendPaymentConfirmation } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,6 +81,31 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: 'Erro ao atualizar inscrição' }, { status: 500 })
+    }
+
+    const { data: regWithDetails } = await supabase
+      .from('registrations')
+      .select('registration_number, confirmation_code, athlete:athletes(full_name, email), guardian:guardians(email), categories(name)')
+      .eq('id', registrationId)
+      .single()
+
+    if (regWithDetails) {
+      const athlete = Array.isArray(regWithDetails.athlete) ? regWithDetails.athlete[0] : regWithDetails.athlete
+      const guardian = Array.isArray(regWithDetails.guardian) ? regWithDetails.guardian[0] : regWithDetails.guardian
+      const category = Array.isArray(regWithDetails.categories) ? regWithDetails.categories[0] : regWithDetails.categories
+      const toEmail = (athlete as { email?: string })?.email || (guardian as { email?: string })?.email
+      const athleteName = (athlete as { full_name?: string })?.full_name || 'Atleta'
+      const categoryName = (category as { name?: string })?.name || 'Geral'
+
+      if (toEmail?.trim()) {
+        sendPaymentConfirmation({
+          to: toEmail.trim(),
+          athleteName,
+          registrationNumber: regWithDetails.registration_number || '',
+          confirmationCode: regWithDetails.confirmation_code || '',
+          categoryName,
+        }).catch((err) => console.error('[webhook] Erro ao enviar email de pagamento:', err))
+      }
     }
 
     return NextResponse.json({ received: true })

@@ -1,6 +1,6 @@
 // lib/constants.ts - Configurações principais do evento
 
-export const CONTACT_EMAIL = 'corridarusticamacuco@gmail.com'
+export const CONTACT_EMAIL = 'contato@corridademacuco.com.br'
 
 export const RACE_CONFIG = {
   year: 2026,

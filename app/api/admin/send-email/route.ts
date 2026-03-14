@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/serverClient'
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
 
-function getSESClient() {
-  const region = process.env.AWS_SES_REGION || 'us-east-1'
-  const accessKey = process.env.AWS_ACCESS_KEY_ID
-  const secretKey = process.env.AWS_SECRET_ACCESS_KEY
-
-  if (!accessKey || !secretKey) {
-    return null
-  }
-
-  return new SESClient({
-    region,
-    credentials: {
-      accessKeyId: accessKey,
-      secretAccessKey: secretKey,
-    },
-  })
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey?.trim()) return null
+  return new Resend(apiKey.trim())
 }
 
 function getGreeting(): string {
@@ -57,18 +45,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sem permissão para enviar emails' }, { status: 403 })
     }
 
-    const ses = getSESClient()
-    if (!ses) {
+    const resend = getResendClient()
+    if (!resend) {
       return NextResponse.json(
-        { error: 'AWS SES não configurado. Adicione AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY e SES_FROM_EMAIL nas variáveis de ambiente.' },
+        { error: 'Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.' },
         { status: 500 }
       )
     }
 
-    const fromEmail = process.env.SES_FROM_EMAIL?.trim()
+    const fromEmail = process.env.RESEND_FROM_EMAIL?.trim()
     if (!fromEmail) {
       return NextResponse.json(
-        { error: 'SES_FROM_EMAIL não configurado. Use um email verificado no Amazon SES.' },
+        { error: 'RESEND_FROM_EMAIL não configurado. Use um email do domínio verificado no Resend.' },
         { status: 500 }
       )
     }
@@ -87,7 +75,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const fromName = process.env.SES_FROM_NAME || 'Corrida Rústica de Macuco'
+    const fromName = process.env.RESEND_FROM_NAME || 'Corrida Rústica de Macuco'
+    const from = fromName ? `${fromName} <${fromEmail}>` : fromEmail
 
     let sent = 0
     const errors: string[] = []
@@ -103,26 +92,13 @@ export async function POST(request: NextRequest) {
       const subj = replaceVariables(subject, vars)
 
       try {
-        const command = new SendEmailCommand({
-          Source: fromEmail, // Usar apenas o e-mail para evitar problemas de verificação de identidade
-          Destination: {
-            ToAddresses: [r.email.trim()],
-          },
-          Message: {
-            Subject: {
-              Data: subj,
-              Charset: 'UTF-8',
-            },
-            Body: {
-              Html: {
-                Data: html,
-                Charset: 'UTF-8',
-              },
-            },
-          },
+        const { error } = await resend.emails.send({
+          from,
+          to: r.email.trim(),
+          subject: subj,
+          html,
         })
-
-        await ses.send(command)
+        if (error) throw new Error(error.message)
         sent++
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err)

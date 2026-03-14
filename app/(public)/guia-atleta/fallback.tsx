@@ -109,7 +109,7 @@ const guiaSections: GuiaSection[] = [
       {
         subtitle: 'Para chegar à largada',
         items: [
-          'Acesso pela Praça de Macuco',
+          'Ônibus saindo da Praça de Macuco para a Fábrica de Cimento Holcim',
           'Recomenda-se carona solidária ou transporte por aplicativo',
         ],
       },

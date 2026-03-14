@@ -31,7 +31,7 @@ const categories: FAQCategory[] = [
       },
       {
         q: 'Há desconto para grupos ou equipes?',
-        a: 'Sim. Equipes com 10 atletas ou mais têm 10% de desconto. Entre em contato para receber um link exclusivo.',
+        a: 'Não. As inscrições são individuais e não oferecemos descontos para grupos ou equipes.',
       },
       {
         q: 'Como acompanho o status da minha inscrição?',
@@ -78,10 +78,6 @@ const categories: FAQCategory[] = [
       {
         q: 'Posso correr com fones de ouvido?',
         a: 'O uso não é recomendado por segurança. Você precisa ouvir avisos da organização e sinalização do percurso.',
-      },
-      {
-        q: 'Existe tempo limite?',
-        a: 'Sim. Corrida 10K: 90 minutos. Corrida 2K: 30 minutos. Atletas que excederem o limite poderão ser encaminhados ao ponto de dispersão.',
       },
     ],
   },
