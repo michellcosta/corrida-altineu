@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
 import { toQrCodeDataUrl } from '@/lib/utils'
+import { toast } from 'sonner'
 
 // ============================================================
 // TIPOS E INTERFACES
@@ -145,6 +146,7 @@ export default function InscricaoClient() {
   } | null>(null)
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [pendingRegistrationId, setPendingRegistrationId] = useState<string | null>(null)
+  const [pixTimeLeft, setPixTimeLeft] = useState<string | null>(null)
 
   const loadEventConfig = useCallback(
     (applyUrlPreselect = false) => {
@@ -428,6 +430,29 @@ export default function InscricaoClient() {
     }, 3000)
     return () => clearInterval(interval)
   }, [pixData?.id])
+
+  // Timer de expiração do PIX
+  useEffect(() => {
+    if (!pixData?.expiresAt) {
+      setPixTimeLeft(null)
+      return
+    }
+    const update = () => {
+      const now = Date.now()
+      const end = new Date(pixData.expiresAt!).getTime()
+      const diff = end - now
+      if (diff <= 0) {
+        setPixTimeLeft('Expirado')
+        return
+      }
+      const mins = Math.floor(diff / 60000)
+      const secs = Math.floor((diff % 60000) / 1000)
+      setPixTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`)
+    }
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [pixData?.expiresAt])
 
   // Verifica se todos os campos obrigatórios estão preenchidos (para desabilitar botão Continuar)
   const isPersonalDataComplete = (): boolean => {
@@ -1949,6 +1974,11 @@ export default function InscricaoClient() {
                     <>
                       <div className="bg-white border-2 border-primary-200 rounded-xl p-6 mb-4 text-center">
                         <p className="font-bold text-lg mb-4">Escaneie o QR Code ou copie o código PIX</p>
+                        {pixTimeLeft && (
+                          <p className={`text-sm font-medium mb-2 ${pixTimeLeft === 'Expirado' ? 'text-amber-600' : 'text-gray-600'}`}>
+                            {pixTimeLeft === 'Expirado' ? 'PIX expirado' : `Expira em ${pixTimeLeft}`}
+                          </p>
+                        )}
                         <div className="flex flex-col items-center gap-4">
                           <img
                             src={toQrCodeDataUrl(pixData.brCodeBase64)}
@@ -1967,6 +1997,7 @@ export default function InscricaoClient() {
                               type="button"
                               onClick={() => {
                                 navigator.clipboard.writeText(pixData.brCode)
+                                toast.success('Código copiado!')
                               }}
                               className="btn-secondary px-4 flex items-center gap-2"
                             >
@@ -2014,6 +2045,13 @@ export default function InscricaoClient() {
                           Voltar e gerar novo PIX
                         </button>
                       </div>
+                      <p className="mt-4 text-sm text-gray-500">
+                        PIX expirou ou saiu da página? Gere um novo QR Code aqui mesmo ou acesse{' '}
+                        <Link href="/inscricao/acompanhar" className="text-primary-600 underline hover:text-primary-700">
+                          Acompanhar inscrição
+                        </Link>
+                        , informe o documento cadastrado e clique em Gerar QR Code.
+                      </p>
                     </>
                   )}
                 </div>

@@ -10,6 +10,7 @@ import { toQrCodeDataUrl } from '@/lib/utils'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
 import { COUNTRY_OPTIONS_FOREIGN } from '@/lib/countries'
 import { formatDateOnly } from '@/lib/formatDate'
+import { toast } from 'sonner'
 
 interface AthleteData {
   full_name: string
@@ -305,9 +306,10 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   const [saveError, setSaveError] = useState('')
   const [editData, setEditData] = useState<Partial<AthleteData & { birthDay: string; birthMonth: string; birthYear: string }>>({})
   const [localReg, setLocalReg] = useState(reg)
-  const [pixData, setPixData] = useState<{ id: string; brCode: string; brCodeBase64: string } | null>(null)
+  const [pixData, setPixData] = useState<{ id: string; brCode: string; brCodeBase64: string; expiresAt?: string } | null>(null)
   const [pixLoading, setPixLoading] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
+  const [pixTimeLeft, setPixTimeLeft] = useState<string | null>(null)
   const [pixError, setPixError] = useState('')
   const [municipios, setMunicipios] = useState<string[]>([])
   const [municipiosLoading, setMunicipiosLoading] = useState(false)
@@ -376,7 +378,7 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
         throw new Error(msg)
       }
       if (json.id && json.brCode && json.brCodeBase64) {
-        setPixData({ id: json.id, brCode: json.brCode, brCodeBase64: json.brCodeBase64 })
+        setPixData({ id: json.id, brCode: json.brCode, brCodeBase64: json.brCodeBase64, expiresAt: json.expiresAt })
       } else {
         console.error('[AcompanharClient] Resposta inválida - faltando id/brCode/brCodeBase64', json)
         throw new Error('Resposta inválida')
@@ -411,6 +413,29 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
       setCheckingStatus(false)
     }
   }
+
+  // Timer de expiração do PIX
+  useEffect(() => {
+    if (!pixData?.expiresAt) {
+      setPixTimeLeft(null)
+      return
+    }
+    const update = () => {
+      const now = Date.now()
+      const end = new Date(pixData.expiresAt!).getTime()
+      const diff = end - now
+      if (diff <= 0) {
+        setPixTimeLeft('Expirado')
+        return
+      }
+      const mins = Math.floor(diff / 60000)
+      const secs = Math.floor((diff % 60000) / 1000)
+      setPixTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`)
+    }
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [pixData?.expiresAt])
 
   const getAuthBody = () => {
     const digits = searchToken.replace(/\D/g, '')
@@ -590,6 +615,11 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
           ) : (
             <div className="space-y-4">
               <p className="font-bold text-lg">Escaneie o QR Code ou copie o código PIX</p>
+              {pixTimeLeft && (
+                <p className={`text-sm font-medium ${pixTimeLeft === 'Expirado' ? 'text-amber-600' : 'text-gray-600'}`}>
+                  {pixTimeLeft === 'Expirado' ? 'PIX expirado' : `Expira em ${pixTimeLeft}`}
+                </p>
+              )}
               <div className="flex flex-col items-center gap-4">
                 <img
                   src={toQrCodeDataUrl(pixData.brCodeBase64)}
@@ -606,7 +636,10 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
                   />
                   <button
                     type="button"
-                    onClick={() => navigator.clipboard.writeText(pixData.brCode)}
+                    onClick={() => {
+                      navigator.clipboard.writeText(pixData.brCode)
+                      toast.success('Código copiado!')
+                    }}
                     className="btn-secondary px-4 flex items-center gap-2"
                   >
                     <Copy size={18} />
@@ -624,6 +657,20 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
                   {checkingStatus ? 'Verificando...' : 'Já fiz o pagamento'}
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => setPixData(null)}
+                className="btn-secondary text-sm"
+              >
+                Gerar novo QR Code
+              </button>
+              <p className="text-sm text-gray-500">
+                PIX expirou? Clique em Gerar novo QR Code acima. Saiu da página? Volte em{' '}
+                <Link href="/inscricao/acompanhar" className="text-primary-600 underline hover:text-primary-700">
+                  Acompanhar inscrição
+                </Link>
+                , informe o documento cadastrado e clique em Gerar QR Code.
+              </p>
             </div>
           )}
           {pixError && <p className="mt-3 text-sm text-red-600 font-medium text-center">{pixError}</p>}

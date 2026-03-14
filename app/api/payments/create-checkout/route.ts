@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       registrationId,
       amount,
       email,
+      fullName,
       phone,
       taxId,
     } = body
@@ -49,6 +50,9 @@ export async function POST(request: NextRequest) {
     const client = new MercadoPagoConfig({ accessToken })
     const paymentClient = new Payment(client)
 
+    const [firstName, ...lastNameParts] = (fullName || 'Atleta').trim().split(/\s+/)
+    const lastName = lastNameParts.join(' ') || 'Corrida'
+
     const docNumber = (taxId || '').replace(/\D/g, '')
     const identification = docNumber.length >= 11
       ? { type: 'CPF' as const, number: docNumber }
@@ -69,13 +73,13 @@ export async function POST(request: NextRequest) {
         transaction_amount: amountReais,
         description: 'Inscrição 51ª Corrida Rústica de Macuco',
         payment_method_id: 'pix',
-        date_of_expiration: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         external_reference: String(registrationId),
         notification_url: notificationUrl,
         payer: {
           email: email.trim(),
-          first_name: 'Corrida',
-          last_name: 'de Macuco',
+          first_name: firstName,
+          last_name: lastName,
           identification,
         },
         metadata: {
