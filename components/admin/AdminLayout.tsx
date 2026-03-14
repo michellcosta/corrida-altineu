@@ -192,9 +192,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar - Desktop: toggle com sidebarOpen | Mobile: overlay com mobileMenuOpen */}
+      {/* Sidebar - Desktop: toggle com sidebarOpen | Mobile: overlay full-width */}
       <aside
-        className={`fixed left-0 top-0 h-full w-64 bg-gray-900 text-white overflow-y-auto z-40 transition-transform duration-300 ease-out
+        className={`fixed left-0 top-0 h-full w-[85vw] max-w-[320px] md:w-64 bg-gray-900 text-white overflow-y-auto z-40 transition-transform duration-300 ease-out
+          pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
           ${sidebarOpen ? 'md:translate-x-0' : 'md:-translate-x-full'}`}
       >
@@ -317,8 +318,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content */}
       <div className={`min-h-screen bg-gray-50 transition-all duration-300 ml-0 ${sidebarOpen ? 'md:ml-64' : ''}`}>
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 gap-2">
+        <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm pt-[env(safe-area-inset-top)]">
+          <div className="flex items-center justify-between px-3 py-3 md:px-6 md:py-4 gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <button
                 onClick={() => {
@@ -328,7 +329,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     setSidebarOpen((o) => !o)
                   }
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+                className="p-2.5 min-w-[44px] min-h-[44px] hover:bg-gray-100 rounded-lg transition-colors shrink-0 flex items-center justify-center -ml-1"
                 aria-label="Abrir menu"
               >
                 <Menu size={24} />
@@ -345,7 +346,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <div className="relative">
                 <button
                   onClick={() => setNotificationsOpen((o) => !o)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                  className="p-2.5 min-w-[44px] min-h-[44px] hover:bg-gray-100 rounded-lg transition-colors relative flex items-center justify-center"
                   aria-label="Notificações"
                 >
                   <Bell size={20} />
@@ -356,7 +357,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                 </button>
                 {notificationsOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 max-h-[400px] overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                  <div className="fixed left-4 right-4 top-[4.5rem] md:absolute md:left-auto md:right-0 md:top-full mt-0 md:mt-2 w-auto md:w-80 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                     <div className="p-3 border-b border-gray-100 flex items-center justify-between">
                       <span className="font-semibold text-gray-900">Notificações</span>
                       {unreadCount > 0 && (
@@ -445,7 +446,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 href="/"
                 target="_blank"
-                className="text-xs md:text-sm text-primary-600 hover:text-primary-700 font-semibold whitespace-nowrap"
+                className="min-h-[44px] flex items-center px-2 text-xs md:text-sm text-primary-600 hover:text-primary-700 font-semibold whitespace-nowrap"
               >
                 Ver Site →
               </Link>
@@ -454,7 +455,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 md:p-6">
+        <main className="p-3 md:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           {children}
         </main>
       </div>

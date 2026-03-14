@@ -60,3 +60,30 @@
     @apply p-3;
   }
 }
+
+/* ===== Mobile-first: painel admin otimizado para telas pequenas ===== */
+@media (max-width: 768px) {
+  /* Safe area para notch e barra de status */
+  .admin-mobile-safe {
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  /* Touch targets mínimos 44px para acessibilidade */
+  .admin-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Botões em stack no mobile */
+  .admin-button-primary,
+  .admin-button-secondary {
+    @apply min-h-[44px] py-2.5;
+  }
+
+  .admin-input {
+    @apply min-h-[44px] py-3;
+  }
+}

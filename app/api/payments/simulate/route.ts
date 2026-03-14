@@ -3,28 +3,25 @@ import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
-const ABACATEPAY_API = 'https://api.abacatepay.com/v1'
-
 /**
- * Simula pagamento PIX (apenas chave abc_dev_).
- * Útil para testes em desenvolvimento.
- * Se AbacatePay retornar "Insufficient permissions", faz fallback: atualiza a inscrição no DB.
- * @see https://docs.abacatepay.com/api-reference/simular-pagamento
+ * Simula pagamento PIX (apenas modo teste - MERCADOPAGO_ACCESS_TOKEN começa com TEST-).
+ * Útil para testes em desenvolvimento sem pagar de verdade.
+ * Atualiza a inscrição no DB para status paid.
  */
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.ABACATEPAY_API_KEY
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
 
-    if (!apiKey) {
+    if (!accessToken) {
       return NextResponse.json(
-        { error: 'ABACATEPAY_API_KEY não configurada' },
+        { error: 'MERCADOPAGO_ACCESS_TOKEN não configurado' },
         { status: 500 }
       )
     }
 
-    if (!apiKey.startsWith('abc_dev_')) {
+    if (!accessToken.startsWith('TEST-')) {
       return NextResponse.json(
-        { error: 'Simulação só funciona com chave de desenvolvimento (abc_dev_)' },
+        { error: 'Simulação só funciona com credenciais de teste (TEST-)' },
         { status: 403 }
       )
     }
@@ -39,61 +36,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const res = await fetch(
-      `${ABACATEPAY_API}/pixQrCode/simulate-payment?id=${encodeURIComponent(paymentId)}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ metadata: {} }),
-      }
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
     )
 
-    const json = await res.json().catch(() => ({}))
-    const apiError = json?.error ?? json?.message
-    const isInsufficientPermissions = typeof apiError === 'string' && apiError.toLowerCase().includes('insufficient permissions')
+    const { data: reg } = await supabase
+      .from('registrations')
+      .select('id, payment_status')
+      .eq('payment_id', String(paymentId))
+      .maybeSingle()
 
-    if (!res.ok || (json?.success === false && apiError)) {
-      if (isInsufficientPermissions) {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { persistSession: false } }
-        )
-        const { data: reg } = await supabase
-          .from('registrations')
-          .select('id, payment_status')
-          .eq('payment_id', paymentId)
-          .single()
-
-        if (reg && reg.payment_status !== 'paid') {
-          await supabase
-            .from('registrations')
-            .update({
-              payment_status: 'paid',
-              status: 'confirmed',
-              payment_method: 'pix',
-              confirmed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', reg.id)
-          return NextResponse.json({ success: true, status: 'PAID', fallback: true })
-        }
-      }
-      const message = apiError || `Erro ao simular (${res.status})`
-      console.error('[simulate] AbacatePay error:', { status: res.status, json })
+    if (!reg) {
       return NextResponse.json(
-        { error: message, details: json },
-        { status: res.ok ? 502 : res.status }
+        { error: 'Inscrição não encontrada para este payment_id' },
+        { status: 404 }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      status: json.data?.status ?? 'PAID',
-    })
+    if (reg.payment_status === 'paid') {
+      return NextResponse.json({ success: true, status: 'PAID', message: 'Já estava pago' })
+    }
+
+    await supabase
+      .from('registrations')
+      .update({
+        payment_status: 'paid',
+        status: 'confirmed',
+        payment_method: 'pix',
+        confirmed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reg.id)
+
+    return NextResponse.json({ success: true, status: 'PAID', simulated: true })
   } catch (err: unknown) {
     console.error('Erro ao simular:', err)
     return NextResponse.json(

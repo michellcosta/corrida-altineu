@@ -127,17 +127,17 @@ export default function FinanceiroPage() {
 
     return (
         <AdminLayout>
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
+            <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
+                        <h1 className="text-xl md:text-3xl font-display font-bold text-gray-900 mb-1 md:mb-2">
                             Painel Financeiro 💰
                         </h1>
-                        <p className="text-gray-600">
+                        <p className="text-sm md:text-base text-gray-600">
                             Acompanhamento de faturamento e taxas (Somente PIX)
                         </p>
                     </div>
-                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold border border-emerald-100 flex items-center gap-2">
+                    <div className="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-full text-xs md:text-sm font-semibold border border-emerald-100 flex items-center gap-2 w-fit">
                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                         Dados em Tempo Real
                     </div>
@@ -150,7 +150,7 @@ export default function FinanceiroPage() {
                             <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Faturamento Bruto</p>
                             <DollarSign className="text-blue-500 opacity-20 group-hover:opacity-40 transition-opacity" size={48} />
                         </div>
-                        <p className="text-3xl font-bold text-gray-900">
+                        <p className="text-2xl md:text-3xl font-bold text-gray-900">
                             R$ {stats.totalGross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                         <div className="mt-4 flex items-center text-xs text-blue-600 font-semibold bg-blue-50 w-fit px-2 py-1 rounded">
@@ -164,7 +164,7 @@ export default function FinanceiroPage() {
                             <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Taxas Estimadas (R$ 0,80/PIX)</p>
                             <PieChart className="text-amber-500 opacity-20 group-hover:opacity-40 transition-opacity" size={48} />
                         </div>
-                        <p className="text-3xl font-bold text-gray-900">
+                        <p className="text-2xl md:text-3xl font-bold text-gray-900">
                             R$ {stats.totalFees.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                         <p className="mt-4 text-xs text-amber-600 font-medium">
@@ -177,7 +177,7 @@ export default function FinanceiroPage() {
                             <p className="text-sm font-medium text-emerald-800 uppercase tracking-wider">Valor Líquido</p>
                             <TrendingUp className="text-emerald-500 opacity-20 group-hover:opacity-40 transition-opacity" size={48} />
                         </div>
-                        <p className="text-3xl font-bold text-emerald-700">
+                        <p className="text-2xl md:text-3xl font-bold text-emerald-700">
                             R$ {stats.totalNet.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                         <p className="mt-4 text-xs text-emerald-600 font-medium italic">
@@ -197,7 +197,7 @@ export default function FinanceiroPage() {
                             <Calendar className="text-gray-400" size={20} />
                         </div>
 
-                        <div className="h-[350px] w-full">
+                        <div className="h-[280px] md:h-[350px] w-full">
                             {chartData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <ReBarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>

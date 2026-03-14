@@ -426,7 +426,7 @@ export default function OrgAdminDashboard() {
                   {total > 0 ? `${((paymentStats.free / total) * 100).toFixed(0)}%` : '0%'}
                 </p>
               </div>
-              <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg border border-purple-200 col-span-2 md:col-span-1">
+              <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg border border-purple-200 md:col-span-1">
                 <p className="text-xl md:text-3xl font-bold text-purple-600 mb-1 md:mb-2">
                   R$ {(Number.isFinite(paymentStats.netAmount) ? paymentStats.netAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>

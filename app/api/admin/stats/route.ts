@@ -31,8 +31,7 @@ export async function GET(request: NextRequest) {
         const { error: dbError } = await supabaseService.from('events').select('id').limit(1)
         const dbHealth = !dbError
 
-        // Assumindo que ABACATEPAY_API_KEY ou STRIPE_SECRET_KEY existem se a config tá feita (vamos checar genérico pra MP ou Abacate)
-        const paymentHealth = !!process.env.MERCADOPAGO_ACCESS_TOKEN || !!process.env.ABACATEPAY_API_KEY
+        const paymentHealth = !!process.env.MERCADOPAGO_ACCESS_TOKEN
         const emailHealth = !!process.env.RESEND_API_KEY
 
         // 2. Analytics Básico (Últimos 7 dias)

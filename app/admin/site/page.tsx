@@ -174,17 +174,17 @@ export default function SiteAdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">
+            <h1 className="text-xl md:text-3xl font-display font-bold text-gray-900">
               Painel do site
             </h1>
-            <p className="mt-1 text-gray-600">
+            <p className="mt-1 text-sm md:text-base text-gray-600">
               Centralize a gestão de páginas, seções, posts e configurações do portal oficial.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             <button
               onClick={handleRefresh}
               className="admin-button-secondary flex items-center gap-2"
@@ -423,7 +423,7 @@ export default function SiteAdminDashboard() {
         </div>
       </div>
 
-      <div className="fixed bottom-6 right-6 space-y-2">
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 space-y-2 pb-[env(safe-area-inset-bottom)]">
         {toasts.map((toast) => (
           <div
             key={toast.id}

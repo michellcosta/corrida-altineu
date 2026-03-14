@@ -204,6 +204,13 @@ export default function InscricaoClient() {
     }
   }, [selectedCategory?.id])
 
+  // Scroll para o topo ao entrar em Pagamento ou Confirmação
+  useEffect(() => {
+    if (currentStep === 3 || currentStep === 4) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [currentStep])
+
   const [formData, setFormData] = useState({
     // Dados pessoais básicos
     fullName: '',
@@ -1856,6 +1863,38 @@ export default function InscricaoClient() {
 
                   {!pixData ? (
                     <>
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-6">
+                        <h3 className="font-bold text-lg mb-4">Confira seus dados antes de gerar o PIX</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                          <div><span className="text-gray-600">Nome:</span> <span className="font-medium">{formData.fullName || '-'}</span></div>
+                          <div>
+                            <span className="text-gray-600">CPF/RG:</span>{' '}
+                            <span className="font-medium">
+                              {selectedCategory?.id === 'infantil-2k'
+                                ? (formData.guardianCpf ? formatCPF(formData.guardianCpf) : '-')
+                                : shouldShowGuardianDocument && formData.guardianDocumentType
+                                  ? formatDocumentNumber(formData.guardianDocumentNumber, formData.guardianDocumentType as DocumentType)
+                                  : shouldShowAthleteDocument && documentNumber
+                                    ? formatDocumentNumber(documentNumber, documentType)
+                                    : '-'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Data de nascimento:</span>{' '}
+                            <span className="font-medium">
+                              {formData.birthDay && formData.birthMonth && formData.birthYear
+                                ? `${formData.birthDay.padStart(2, '0')}/${formData.birthMonth.padStart(2, '0')}/${formData.birthYear}`
+                                : '-'}
+                            </span>
+                          </div>
+                          <div><span className="text-gray-600">E-mail:</span> <span className="font-medium">{formData.email || '-'}</span></div>
+                          {formData.hasTeam && formData.teamName ? (
+                            <div className="sm:col-span-2"><span className="text-gray-600">Clube/Equipe:</span> <span className="font-medium">{formData.teamName}</span></div>
+                          ) : null}
+                          <div><span className="text-gray-600">Categoria:</span> <span className="font-medium">{selectedCategory?.name || '-'}</span></div>
+                        </div>
+                      </div>
+
                       <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-6 mb-6">
                         <div className="flex justify-between items-center">
                           <div>

@@ -292,17 +292,17 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
+                    <h1 className="text-xl md:text-3xl font-display font-bold text-gray-900 mb-1 md:mb-2">
                         Central de Inscritos
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-sm md:text-base text-gray-600">
                         {canEdit ? 'Gestão completa: listar, editar e excluir inscrições' : 'Visualização e acompanhamento de inscrições'}
                     </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-2 md:gap-3">
                     {isChipAdmin && (
                         <Button
                             variant="secondary"
@@ -361,8 +361,8 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="admin-card">
+            {/* Table - Desktop */}
+            <div className="admin-card hidden md:block">
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
                         <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
@@ -438,6 +438,74 @@ export default function AthletesManagement({ userRole }: AthletesManagementProps
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                )}
+            </div>
+
+            {/* Cards - Mobile */}
+            <div className="admin-card md:hidden">
+                {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <p className="text-center py-12 text-gray-500">Nenhuma inscrição encontrada</p>
+                ) : (
+                    <div className="space-y-3">
+                        {filtered.map((reg) => (
+                            <div
+                                key={reg.id}
+                                className="p-4 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-gray-900 truncate">{reg.athlete?.full_name || '-'}</p>
+                                        <p className="text-xs text-gray-500 font-mono">{reg.registration_number || '-'}</p>
+                                    </div>
+                                    <Badge variant={STATUS_BADGE_MAP[reg.status] || 'neutral'} className="shrink-0">
+                                        {STATUS_LABELS[reg.status] || reg.status}
+                                    </Badge>
+                                </div>
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600 mb-3">
+                                    <span>{reg.category?.name || '-'}</span>
+                                    <span>•</span>
+                                    <span>{reg.athlete?.gender || '-'}</span>
+                                    <span>•</span>
+                                    <span className="truncate">{formatOrigin(reg.athlete)}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm">
+                                        {reg.bib_number != null ? (
+                                            <span className="font-mono text-primary-600 font-bold">Peito {reg.bib_number}</span>
+                                        ) : (
+                                            <span className="text-gray-400 italic">Peito pendente</span>
+                                        )}
+                                    </span>
+                                    {(canEdit || canDelete) && (
+                                        <div className="flex items-center gap-2">
+                                            {canEdit && (
+                                                <button
+                                                    onClick={() => openEdit(reg)}
+                                                    className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
+                                                    aria-label="Editar"
+                                                >
+                                                    <Pencil size={20} />
+                                                </button>
+                                            )}
+                                            {canDelete && (
+                                                <button
+                                                    onClick={() => openDelete(reg)}
+                                                    className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                                    aria-label="Excluir"
+                                                >
+                                                    <Trash2 size={20} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

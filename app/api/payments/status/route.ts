@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { MercadoPagoConfig, Payment } from 'mercadopago'
 
 export const dynamic = 'force-dynamic'
 
-const ABACATEPAY_API = 'https://api.abacatepay.com/v1'
-
 /**
- * Checa status do PIX via AbacatePay GET /pixQrCode/check
- * @see https://docs.abacatepay.com/pages/pix-qrcode/check
- * Status: PENDING | EXPIRED | CANCELLED | PAID | REFUNDED
+ * Checa status do PIX via Mercado Pago GET /v1/payments/{id}
+ * Status: pending | approved | authorized | in_process | in_mediation | rejected | cancelled | refunded | charged_back
  */
 export async function GET(request: NextRequest) {
   try {
-    const apiKey = process.env.ABACATEPAY_API_KEY
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     const paymentId = request.nextUrl.searchParams.get('payment_id') || request.nextUrl.searchParams.get('id')
 
-    if (!apiKey) {
+    if (!accessToken) {
       return NextResponse.json(
         { error: 'Pagamento não configurado' },
         { status: 500 }
@@ -35,7 +33,6 @@ export async function GET(request: NextRequest) {
       { auth: { persistSession: false } }
     )
 
-    // 1. Verifica no nosso DB primeiro (webhook pode ter atualizado)
     const { data: reg } = await supabase
       .from('registrations')
       .select('id, payment_status, status')
@@ -46,34 +43,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: 'PAID', expiresAt: null, source: 'db' })
     }
 
-    // 2. Consulta AbacatePay
-    const res = await fetch(
-      `${ABACATEPAY_API}/pixQrCode/check?id=${encodeURIComponent(paymentId)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-        cache: 'no-store',
-      }
-    )
+    const client = new MercadoPagoConfig({ accessToken })
+    const paymentClient = new Payment(client)
+    const payment = await paymentClient.get({ id: paymentId })
 
-    const json = await res.json()
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: json?.error || 'Erro ao consultar status' },
-        { status: res.status }
-      )
+    const statusMap: Record<string, string> = {
+      approved: 'PAID',
+      authorized: 'PAID',
+      pending: 'PENDING',
+      in_process: 'PENDING',
+      in_mediation: 'PENDING',
+      rejected: 'REJECTED',
+      cancelled: 'CANCELLED',
+      refunded: 'REFUNDED',
+      charged_back: 'REFUNDED',
     }
+    const status = statusMap[payment.status ?? ''] ?? 'PENDING'
 
-    // AbacatePay pode retornar status em data.status ou data.pixQrCode?.status
-    const rawStatus = json.data?.status ?? json.data?.pixQrCode?.status ?? json.status ?? 'PENDING'
-    const status = typeof rawStatus === 'string'
-      ? rawStatus.toUpperCase().replace('PAGO', 'PAID')
-      : 'PENDING'
-    const expiresAt = json.data?.expiresAt ?? json.data?.pixQrCode?.expiresAt
-
-    // Se PAID, atualiza a inscrição no DB (fallback caso webhook não tenha chegado)
     if (status === 'PAID' && reg && reg.payment_status !== 'paid') {
       await supabase
         .from('registrations')
@@ -87,9 +73,12 @@ export async function GET(request: NextRequest) {
         .eq('id', reg.id)
     }
 
-    const result: Record<string, unknown> = { status, expiresAt }
+    const result: Record<string, unknown> = {
+      status,
+      expiresAt: payment.date_of_expiration ?? null,
+    }
     if (request.nextUrl.searchParams.get('_debug') === '1') {
-      result._raw = json
+      result._raw = payment
     }
     return NextResponse.json(result)
   } catch (err: unknown) {

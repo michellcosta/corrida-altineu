@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-
-const ABACATEPAY_API = 'https://api.abacatepay.com/v1'
+import { MercadoPagoConfig, Payment } from 'mercadopago'
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.ABACATEPAY_API_KEY
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
 
-    if (!apiKey) {
-      console.error('ABACATEPAY_API_KEY não configurada')
+    if (!accessToken) {
+      console.error('MERCADOPAGO_ACCESS_TOKEN não configurado')
       return NextResponse.json(
-        { error: 'Pagamento não configurado. Configure AbacatePay.' },
+        { error: 'Pagamento não configurado. Configure Mercado Pago.' },
         { status: 500 }
       )
     }
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest) {
       registrationId,
       amount,
       email,
-      fullName,
       phone,
       taxId,
     } = body
@@ -39,54 +37,81 @@ export async function POST(request: NextRequest) {
     }
 
     const amountNum = Number(amount)
-    const amountInCents = Math.round((Number.isNaN(amountNum) ? 22 : amountNum) * 100)
+    const amountReais = Number.isNaN(amountNum) ? 22 : amountNum
 
-    if (amountInCents < 50) {
+    if (amountReais < 0.5) {
       return NextResponse.json(
         { error: 'Valor mínimo para PIX é R$ 0,50' },
         { status: 400 }
       )
     }
 
-    const payload: Record<string, unknown> = {
-      amount: amountInCents,
-      expiresIn: 3600,
-      description: 'Inscrição 51ª Corrida Rústica de Macuco',
-      metadata: {
-        registration_id: registrationId,
-      },
-    }
+    const client = new MercadoPagoConfig({ accessToken })
+    const paymentClient = new Payment(client)
 
-    const res = await fetch(`${ABACATEPAY_API}/pixQrCode/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+    const docNumber = (taxId || '').replace(/\D/g, '')
+    const identification = docNumber.length >= 11
+      ? { type: 'CPF' as const, number: docNumber }
+      : docNumber.length >= 14
+        ? { type: 'CNPJ' as const, number: docNumber }
+        : undefined
+
+    // Mercado Pago exige notification_url com https:// - localhost não é aceito
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://corridademacuco.vercel.app'
+    const baseUrl = appUrl.startsWith('https://') ? appUrl.replace(/\/$/, '') : 'https://corridademacuco.vercel.app'
+    const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET
+    const notificationUrl = webhookSecret
+      ? `${baseUrl}/api/payments/webhook?webhookSecret=${encodeURIComponent(webhookSecret)}`
+      : `${baseUrl}/api/payments/webhook`
+
+    const payment = await paymentClient.create({
+      body: {
+        transaction_amount: amountReais,
+        description: 'Inscrição 51ª Corrida Rústica de Macuco',
+        payment_method_id: 'pix',
+        date_of_expiration: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        external_reference: String(registrationId),
+        notification_url: notificationUrl,
+        payer: {
+          email: email.trim(),
+          first_name: 'Corrida',
+          last_name: 'de Macuco',
+          identification,
+        },
+        metadata: {
+          registration_id: registrationId,
+        },
+        additional_info: {
+          items: [
+            {
+              id: String(registrationId),
+              title: 'Inscrição 51ª Corrida Rústica de Macuco',
+              description: 'Inscrição para a prova',
+              category_id: 'events',
+              quantity: 1,
+              unit_price: amountReais,
+            },
+          ],
+        },
       },
-      body: JSON.stringify(payload),
+      requestOptions: {
+        idempotencyKey: `reg-${registrationId}-${Date.now()}`,
+      },
     })
 
-    const json = await res.json()
-    if (!res.ok) {
-      const abacateError = json?.error || json?.message || JSON.stringify(json)
-      console.error('AbacatePay create error:', { status: res.status, json })
-      return NextResponse.json(
-        { error: typeof abacateError === 'string' ? abacateError : 'Erro ao criar cobrança PIX' },
-        { status: res.status }
-      )
-    }
+    const poi = payment.point_of_interaction?.transaction_data
+    const qrCode = poi?.qr_code
+    const qrCodeBase64 = poi?.qr_code_base64
 
-    const data = json.data
-    if (!data?.id || !data?.brCode || !data?.brCodeBase64) {
-      console.error('AbacatePay resposta incompleta:', JSON.stringify({ id: data?.id, hasBrCode: !!data?.brCode, hasBrCodeBase64: !!data?.brCodeBase64 }))
+    if (!payment.id || !qrCode || !qrCodeBase64) {
+      console.error('Mercado Pago resposta incompleta:', { id: payment.id, hasQrCode: !!qrCode, hasQrCodeBase64: !!qrCodeBase64 })
       return NextResponse.json(
-        { error: 'Resposta inválida da AbacatePay' },
+        { error: 'Resposta inválida do Mercado Pago' },
         { status: 500 }
       )
     }
 
-    // Garantir que brCodeBase64 seja data URL válida para <img src>
-    let brCodeBase64 = String(data.brCodeBase64 || '')
+    let brCodeBase64 = String(qrCodeBase64)
     if (brCodeBase64 && !brCodeBase64.startsWith('data:')) {
       brCodeBase64 = `data:image/png;base64,${brCodeBase64}`
     }
@@ -100,22 +125,23 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('registrations')
       .update({
-        payment_id: data.id,
+        payment_id: String(payment.id),
         updated_at: new Date().toISOString(),
       })
       .eq('id', registrationId)
 
     return NextResponse.json({
-      id: data.id,
-      brCode: data.brCode,
+      id: String(payment.id),
+      brCode: qrCode,
       brCodeBase64,
-      amount: data.amount,
-      expiresAt: data.expiresAt,
+      amount: payment.transaction_amount ? payment.transaction_amount * 100 : Math.round(amountReais * 100),
+      expiresAt: payment.date_of_expiration ?? null,
     })
   } catch (err: unknown) {
     console.error('Erro ao criar checkout:', err)
+    const msg = err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : 'Erro ao processar pagamento'
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Erro ao processar pagamento' },
+      { error: msg },
       { status: 500 }
     )
   }
