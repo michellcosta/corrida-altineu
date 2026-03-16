@@ -100,3 +100,37 @@ export async function sendPaymentConfirmation(params: {
   })
   return { ok: !error, error: error?.message }
 }
+
+export async function sendCodeResend(params: {
+  to: string
+  athleteName: string
+  confirmationCode: string
+  registrationNumber: string
+}) {
+  const resend = getResendClient()
+  const from = getFrom()
+  if (!resend || !from) return { ok: false }
+
+  const { to, athleteName, confirmationCode, registrationNumber } = params
+  const appUrl = getAppUrl()
+  const acompanharUrl = `${appUrl}/inscricao/acompanhar`
+
+  const html = `
+    <h2>Reenvio do código de confirmação - Corrida Rústica de Macuco</h2>
+    <p>Olá, <strong>${athleteName}</strong>!</p>
+    <p>Segue o código de confirmação da sua inscrição:</p>
+    <p><strong>Nº Inscrição:</strong> ${registrationNumber}</p>
+    <p><strong>Código de confirmação:</strong> ${confirmationCode}</p>
+    <p><a href="${acompanharUrl}" style="display:inline-block;background:#0d9488;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Acompanhar inscrição</a></p>
+    <p><a href="${acompanharUrl}">${acompanharUrl}</a></p>
+    <p>Até a largada! 🏃‍♂️</p>
+  `
+
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: `Código de confirmação - ${registrationNumber} | Corrida de Macuco`,
+    html,
+  })
+  return { ok: !error, error: error?.message }
+}

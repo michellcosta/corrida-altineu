@@ -1,18 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
+import { hashIp, getClientIp, parseBirthDate, datesMatch } from '@/lib/rateLimit'
+
+const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_WINDOW_MS = 60 * 1000
+const LOCKOUT_DURATION_MS = 60 * 60 * 1000 // 1 hora
 
 /**
  * Busca inscrição por CPF, RG, código de confirmação ou e-mail.
- * Retorna todos os dados do formulário para exibição e edição.
+ * Protegido por: rate limit (10 req/min), validação de data de nascimento (CPF/RG/email),
+ * bloqueio após 5 tentativas erradas.
  */
 export async function POST(request: NextRequest) {
   try {
-    const { cpf, rg, codigo, email } = (await request.json()) as {
+    const ip = getClientIp(request)
+    const ipHash = hashIp(ip)
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    )
+
+    // 1. Rate limit
+    const now = new Date().toISOString()
+    const { data: rateRow } = await supabase
+      .from('buscar_rate_limit')
+      .select('count, window_start')
+      .eq('ip_hash', ipHash)
+      .single()
+
+    const windowStart = rateRow?.window_start ? new Date(rateRow.window_start).getTime() : 0
+    const elapsed = Date.now() - windowStart
+    let count = rateRow?.count ?? 0
+
+    if (elapsed > RATE_LIMIT_WINDOW_MS) {
+      count = 0
+    }
+    if (count >= RATE_LIMIT_MAX) {
+      return NextResponse.json(
+        { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
+        { status: 429 }
+      )
+    }
+
+    await supabase.from('buscar_rate_limit').upsert(
+      {
+        ip_hash: ipHash,
+        count: elapsed > RATE_LIMIT_WINDOW_MS ? 1 : count + 1,
+        window_start: elapsed > RATE_LIMIT_WINDOW_MS ? now : rateRow?.window_start ?? now,
+      },
+      { onConflict: 'ip_hash' }
+    )
+
+    const { cpf, rg, codigo, email, birthDate } = (await request.json()) as {
       cpf?: string
       rg?: string
       codigo?: string
       email?: string
+      birthDate?: string
     }
 
     const searchCodigo = codigo?.toString().trim()
@@ -23,12 +70,6 @@ export async function POST(request: NextRequest) {
     if (!searchCodigo && !searchDoc && !searchEmail) {
       return NextResponse.json({ error: 'Informe CPF, RG, código ou e-mail' }, { status: 400 })
     }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    )
 
     const { data: event } = await supabase.from('events').select('id, price_geral').eq('year', 2026).single()
     if (!event) {
@@ -61,6 +102,7 @@ export async function POST(request: NextRequest) {
     let regs: any[] = []
 
     if (searchCodigo) {
+      // Busca por código: fluxo direto, sem birthDate, sem lockout
       const { data, error } = await supabase
         .from('registrations')
         .select(regSelect)
@@ -73,106 +115,153 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
       }
       regs = data || []
-    } else if (searchEmail) {
-      // Busca por e-mail do atleta
-      const { data: athletes } = await supabase
-        .from('athletes')
-        .select('id')
-        .ilike('email', searchEmail)
-        .limit(10)
-      const athleteIds = (athletes || []).map((a) => a.id)
-      if (athleteIds.length === 0) {
-        return NextResponse.json({ data: [] })
+
+      if (regs.length > 0) {
+        // Resetar lockout para este IP ao acertar com código
+        await supabase
+          .from('buscar_lockout')
+          .delete()
+          .eq('ip_hash', ipHash)
       }
-      const { data, error } = await supabase
-        .from('registrations')
-        .select(regSelect)
-        .eq('event_id', event.id)
-        .in('athlete_id', athleteIds)
-        .order('registered_at', { ascending: false })
-        .limit(5)
-      if (error) {
-        console.error('Erro ao buscar inscrição:', error)
-        return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
-      }
-      regs = data || []
     } else {
-      // Busca por documento do atleta ou responsável (normalizado)
-      const docVariants = [searchDoc]
-      if (searchDoc.length === 9 && searchDoc.startsWith('0')) {
-        docVariants.push(searchDoc.slice(1))
+      // Busca por CPF/RG/email: exige birthDate
+      const parsedBirth = parseBirthDate(birthDate ?? '')
+      if (!parsedBirth) {
+        return NextResponse.json(
+          { error: 'Para buscar por CPF, RG ou e-mail, informe a data de nascimento.' },
+          { status: 400 }
+        )
       }
 
-      // 1. Buscar atleta(s) pelo documento
-      let athleteIds: string[] = []
-      for (const doc of docVariants) {
+      const identifier = searchEmail || searchDoc
+      const identifierType = searchEmail ? 'email' : (searchDoc.length === 11 ? 'cpf' : 'rg')
+
+      // Verificar lockout
+      const { data: lockoutRow } = await supabase
+        .from('buscar_lockout')
+        .select('id, locked_until, failed_count')
+        .eq('ip_hash', ipHash)
+        .eq('identifier', identifier)
+        .eq('identifier_type', identifierType)
+        .single()
+
+      if (lockoutRow?.locked_until && new Date(lockoutRow.locked_until) > new Date()) {
+        return NextResponse.json(
+          {
+            locked: true,
+            error: 'Muitas tentativas. Use o código de confirmação enviado no seu e-mail.',
+          },
+          { status: 403 }
+        )
+      }
+
+      if (searchEmail) {
         const { data: athletes } = await supabase
           .from('athletes')
           .select('id')
-          .eq('document_number', doc)
-          .limit(20)
-        if (athletes && athletes.length > 0) {
-          athleteIds = [...athleteIds, ...athletes.map((a) => a.id)]
+          .ilike('email', searchEmail)
+          .limit(10)
+        const athleteIds = (athletes || []).map((a) => a.id)
+        if (athleteIds.length === 0) {
+          await incrementLockout(supabase, ipHash, identifier, identifierType)
+          return NextResponse.json({ data: [] })
         }
-      }
-
-      // 2. Buscar responsável(is) pelo documento
-      let guardianIds: string[] = []
-      for (const doc of docVariants) {
-        const { data: guardians } = await supabase
-          .from('guardians')
-          .select('id')
-          .eq('document_number', doc)
-          .limit(20)
-        if (guardians && guardians.length > 0) {
-          guardianIds = [...guardianIds, ...guardians.map((g) => g.id)]
-        }
-      }
-
-      // 3. Buscar todas as IDs de inscrições relacionadas
-      let regIdsSet = new Set<string>()
-
-      // Inscrições onde o documento é do atleta
-      if (athleteIds.length > 0) {
-        const { data: regsByAthlete } = await supabase
+        const { data, error } = await supabase
           .from('registrations')
-          .select('id')
+          .select(regSelect)
           .eq('event_id', event.id)
           .in('athlete_id', athleteIds)
-        if (regsByAthlete) {
-          regsByAthlete.forEach((r) => regIdsSet.add(r.id))
+          .order('registered_at', { ascending: false })
+          .limit(5)
+        if (error) {
+          console.error('Erro ao buscar inscrição:', error)
+          return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
         }
-      }
+        regs = data || []
+      } else {
+        const docVariants = [searchDoc]
+        if (searchDoc.length === 9 && searchDoc.startsWith('0')) {
+          docVariants.push(searchDoc.slice(1))
+        }
 
-      // Inscrições onde o documento é do responsável
-      if (guardianIds.length > 0) {
-        const { data: regsByGuardian } = await supabase
+        let athleteIds: string[] = []
+        for (const doc of docVariants) {
+          const { data: athletes } = await supabase
+            .from('athletes')
+            .select('id')
+            .eq('document_number', doc)
+            .limit(20)
+          if (athletes && athletes.length > 0) {
+            athleteIds = [...athleteIds, ...athletes.map((a) => a.id)]
+          }
+        }
+
+        let guardianIds: string[] = []
+        for (const doc of docVariants) {
+          const { data: guardians } = await supabase
+            .from('guardians')
+            .select('id')
+            .eq('document_number', doc)
+            .limit(20)
+          if (guardians && guardians.length > 0) {
+            guardianIds = [...guardianIds, ...guardians.map((g) => g.id)]
+          }
+        }
+
+        let regIdsSet = new Set<string>()
+        if (athleteIds.length > 0) {
+          const { data: regsByAthlete } = await supabase
+            .from('registrations')
+            .select('id')
+            .eq('event_id', event.id)
+            .in('athlete_id', athleteIds)
+          if (regsByAthlete) regsByAthlete.forEach((r) => regIdsSet.add(r.id))
+        }
+        if (guardianIds.length > 0) {
+          const { data: regsByGuardian } = await supabase
+            .from('registrations')
+            .select('id')
+            .eq('event_id', event.id)
+            .in('guardian_id', guardianIds)
+          if (regsByGuardian) regsByGuardian.forEach((r) => regIdsSet.add(r.id))
+        }
+
+        const regIdsToFetch = Array.from(regIdsSet)
+        if (regIdsToFetch.length === 0) {
+          await incrementLockout(supabase, ipHash, identifier, identifierType)
+          return NextResponse.json({ data: [] })
+        }
+
+        const { data, error } = await supabase
           .from('registrations')
-          .select('id')
-          .eq('event_id', event.id)
-          .in('guardian_id', guardianIds)
-        if (regsByGuardian) {
-          regsByGuardian.forEach((r) => regIdsSet.add(r.id))
+          .select(regSelect)
+          .in('id', regIdsToFetch)
+          .order('registered_at', { ascending: false })
+          .limit(20)
+        if (error) {
+          console.error('Erro ao buscar inscrição:', error)
+          return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
         }
+        regs = data || []
       }
 
-      const regIdsToFetch = Array.from(regIdsSet)
+      // Validar birthDate contra athlete.birth_date
+      const firstAthlete = regs[0]
+      const athlete = Array.isArray(firstAthlete?.athlete) ? firstAthlete?.athlete[0] : firstAthlete?.athlete
+      const dbBirth = athlete?.birth_date
 
-      if (regIdsToFetch.length === 0) {
+      if (!datesMatch(dbBirth, parsedBirth)) {
+        await incrementLockout(supabase, ipHash, identifier, identifierType)
         return NextResponse.json({ data: [] })
       }
 
-      const { data, error } = await supabase
-        .from('registrations')
-        .select(regSelect)
-        .in('id', regIdsToFetch)
-        .order('registered_at', { ascending: false })
-        .limit(20)
-      if (error) {
-        console.error('Erro ao buscar inscrição:', error)
-        return NextResponse.json({ error: 'Erro ao buscar' }, { status: 500 })
-      }
-      regs = data || []
+      // Acertou: resetar lockout
+      await supabase
+        .from('buscar_lockout')
+        .delete()
+        .eq('ip_hash', ipHash)
+        .eq('identifier', identifier)
+        .eq('identifier_type', identifierType)
     }
 
     const list = regs.map((r: any) => {
@@ -232,4 +321,36 @@ export async function POST(request: NextRequest) {
     console.error('Erro:', err)
     return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 })
   }
+}
+
+async function incrementLockout(
+  supabase: any,
+  ipHash: string,
+  identifier: string,
+  identifierType: string
+) {
+  const { data: existing } = await supabase
+    .from('buscar_lockout')
+    .select('id, failed_count')
+    .eq('ip_hash', ipHash)
+    .eq('identifier', identifier)
+    .eq('identifier_type', identifierType)
+    .single()
+
+  const failedCount = (existing?.failed_count ?? 0) + 1
+  const lockedUntil = failedCount >= 5 ? new Date(Date.now() + LOCKOUT_DURATION_MS).toISOString() : null
+
+  await supabase.from('buscar_lockout').upsert(
+    {
+      ip_hash: ipHash,
+      identifier,
+      identifier_type: identifierType,
+      failed_count: failedCount,
+      locked_until: lockedUntil,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: 'ip_hash,identifier,identifier_type',
+    }
+  )
 }

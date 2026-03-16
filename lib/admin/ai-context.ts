@@ -383,7 +383,7 @@ export async function getDynamicContext(searchQuery?: string) {
                 const regDoc = (athletesData as any)?.document_number
                 const isConfirmed = ['confirmed', 'paid'].includes(finalReg.status)
 
-                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: ENCONTRADA ✅\n - Atleta: ${athleteName}\n - CPF do Atleta: ${regDoc}\n - Status: ${isConfirmed ? 'CONFIRMADA ✅' : 'PENDENTE ⏳'} \n - Categoria: ${categoryName} \n - Código: ${finalReg.confirmation_code || finalReg.registration_number} \n - CPF / Código consultado: ${searchQuery} \n`
+                searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: ENCONTRADA ✅\n - Atleta: ${athleteName}\n - Status: ${isConfirmed ? 'CONFIRMADA ✅' : 'PENDENTE ⏳'} \n - Categoria: ${categoryName} \n - CPF / Código consultado: ${searchQuery}\n - IMPORTANTE: NUNCA informe o código de confirmação no chat. Direcione o usuário para [Acompanhar Inscrição](/inscricao/acompanhar).\n`
                 console.log(`DEBUG DYNAMIC CONTEXT: Search Success for ${athleteName}`)
             } else {
                 searchResult = `\nRESULTADO DA BUSCA DE INSCRIÇÃO: NÃO ENCONTRADA ❌\n - CPF / Código consultado: ${searchQuery} \n - Motivo: Nenhum registro vinculado ao evento de 2026 foi localizado para este documento.\n`

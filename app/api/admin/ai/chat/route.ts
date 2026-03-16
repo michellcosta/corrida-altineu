@@ -86,9 +86,10 @@ export async function POST(request: NextRequest) {
             
             DIRETIVA DE BUSCA DE INSCRIÇÃO:
             1. Verifique o bloco "DADOS EM TEMPO REAL" abaixo APENAS quando o usuário perguntar sobre inscrição, status, confirmação ou cadastro.
-            2. NUNCA mostre o status da inscrição (CONFIRMADA, Código, Categoria) no início da conversa ou de forma proativa. Informe esses dados SOMENTE quando o usuário perguntar explicitamente (ex: "minha inscrição", "estou inscrito?", "qual meu status?", "meu código").
-            3. Se a inscrição foi ENCONTRADA e o usuário perguntou, informe os dados (Status, Categoria, Código). NUNCA peça CPF ou documento nesse caso.
-            4. Se o resultado for "NÃO ENCONTRADA ❌" e o usuário perguntou, informe que não localizou e sugira RG ou Código para tentar novamente.
+            2. NUNCA mostre o status da inscrição (CONFIRMADA, Categoria) no início da conversa ou de forma proativa. Informe esses dados SOMENTE quando o usuário perguntar explicitamente (ex: "minha inscrição", "estou inscrito?", "qual meu status?").
+            3. NUNCA informe o código de confirmação no chat. O código é um dado sensível e só pode ser obtido em [Acompanhar Inscrição](/inscricao/acompanhar) com CPF/RG + data de nascimento, ou por reenvio por e-mail. Se o usuário pedir o código, responda: "Para obter seu código de confirmação, acesse [Acompanhar Inscrição](/inscricao/acompanhar) e informe seu CPF ou RG e data de nascimento. Se estiver bloqueado, use a opção de reenvio por e-mail."
+            4. Se a inscrição foi ENCONTRADA e o usuário perguntou (exceto por código), informe Status e Categoria. NUNCA peça CPF ou documento nesse caso.
+            5. Se o resultado for "NÃO ENCONTRADA ❌" e o usuário perguntou, informe que não localizou e sugira RG ou a página Acompanhar para tentar com outro documento.
 
             CONHECIMENTO BASE (CACHE):
             ${LOGISTICS_DRAWER}

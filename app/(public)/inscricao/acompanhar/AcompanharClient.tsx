@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useEventConfigRealtime } from '@/hooks/useEventConfigRealtime'
 import Link from 'next/link'
-import { Search, CheckCircle, AlertCircle, Loader2, Users, Pencil, Save, X, Copy, CreditCard } from 'lucide-react'
+import { Search, CheckCircle, AlertCircle, Loader2, Users, Pencil, Save, X, Copy, CreditCard, Mail } from 'lucide-react'
 import { CONTACT_EMAIL } from '@/lib/constants'
 import { toQrCodeDataUrl } from '@/lib/utils'
 import { BRAZILIAN_STATES } from '@/lib/brazilian-states'
@@ -107,10 +107,29 @@ const YEARS = Array.from({ length: 101 }, (_, i) => {
   return { value: String(y), label: String(y) }
 })
 
+function getSearchType(value: string): 'codigo' | 'cpf' | 'rg' | 'email' {
+  const trimmed = value?.trim() || ''
+  if (trimmed.includes('@')) return 'email'
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length === 11) return 'cpf'
+  if (digits.length === 9) return 'rg'
+  return 'codigo'
+}
+
 export default function AcompanharClient() {
   const searchParams = useSearchParams()
   const [edition, setEdition] = useState<number>(51)
   const [search, setSearch] = useState('')
+  const [step, setStep] = useState<'search' | 'birthDate'>('search')
+  const [birthDay, setBirthDay] = useState('')
+  const [birthMonth, setBirthMonth] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+  const [locked, setLocked] = useState(false)
+  const [showResendModal, setShowResendModal] = useState(false)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendLoading, setResendLoading] = useState(false)
+  const [lastIdentifier, setLastIdentifier] = useState('')
+  const [lastIdentifierType, setLastIdentifierType] = useState<'cpf' | 'rg' | 'email'>('cpf')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<RegistrationResult[]>([])
   const [error, setError] = useState('')
@@ -133,43 +152,56 @@ export default function AcompanharClient() {
     loadEventConfig()
   }, [loadEventConfig])
 
-  const hasSearchedDoc = useRef(false)
-  const fallbackEmailRef = useRef<string | null>(null)
+  const hasInitializedFromUrl = useRef(false)
   useEffect(() => {
     const doc = searchParams.get('doc')
     const email = searchParams.get('email')
-    if (hasSearchedDoc.current) return
+    if (hasInitializedFromUrl.current) return
     if (doc) {
       const digits = doc.replace(/\D/g, '')
       if (digits.length >= 9) {
-        hasSearchedDoc.current = true
-        if (email?.trim() && email.includes('@')) fallbackEmailRef.current = email.trim()
+        hasInitializedFromUrl.current = true
         const formatted = digits.length === 11 ? formatDocForSearch(digits) : digits.length === 9 ? formatDocForSearch(digits) : doc
         setSearch(formatted)
-        doSearch(formatted, true)
+        const st = getSearchType(formatted)
+        if (st === 'cpf' || st === 'rg') setStep('birthDate')
       }
     } else if (email?.trim() && email.includes('@')) {
-      hasSearchedDoc.current = true
+      hasInitializedFromUrl.current = true
       setSearch(email.trim())
-      doSearch(email.trim(), false)
+      setStep('birthDate')
     }
   }, [searchParams])
 
-  async function doSearch(searchValue: string, tryEmailFallback = false) {
+  async function doSearch(searchValue: string, birthDateStr?: string) {
     if (!searchValue.trim()) return
     setError('')
+    setLocked(false)
     setLoading(true)
     setResults([])
     try {
       const trimmed = searchValue.trim()
+      const st = getSearchType(trimmed)
       const body: Record<string, string> = {}
-      if (trimmed.includes('@')) {
+
+      if (st === 'codigo') {
+        body.codigo = trimmed
+      } else if (st === 'email') {
         body.email = trimmed
+        if (!birthDateStr) {
+          setError('Para buscar por e-mail, informe a data de nascimento.')
+          setLoading(false)
+          return
+        }
+        body.birthDate = birthDateStr
       } else {
-        const digits = trimmed.replace(/\D/g, '')
-        if (digits.length === 11) body.cpf = trimmed
-        else if (digits.length === 9) body.rg = trimmed
-        else body.codigo = trimmed
+        body[st] = trimmed
+        if (!birthDateStr) {
+          setError('Para buscar por CPF ou RG, informe a data de nascimento.')
+          setLoading(false)
+          return
+        }
+        body.birthDate = birthDateStr
       }
 
       const res = await fetch('/api/inscricao/buscar', {
@@ -178,19 +210,24 @@ export default function AcompanharClient() {
         body: JSON.stringify(body),
       })
       const json = await res.json()
+
+      if (res.status === 403 && json.locked) {
+        setLocked(true)
+        setLastIdentifier(trimmed)
+        setLastIdentifierType(st as 'cpf' | 'rg' | 'email')
+        setError(json.error || 'Muitas tentativas. Use o código de confirmação enviado no seu e-mail.')
+        return
+      }
+
+      if (res.status === 429) {
+        setError(json.error || 'Muitas requisições. Tente novamente em alguns minutos.')
+        return
+      }
+
       if (!res.ok) throw new Error(json.error || 'Erro ao buscar')
       const data = json.data || []
       setResults(data)
-      if (!data.length) {
-        if (tryEmailFallback && fallbackEmailRef.current) {
-          const fallback = fallbackEmailRef.current
-          fallbackEmailRef.current = null
-          setSearch(fallback)
-          await doSearch(fallback, false)
-          return
-        }
-        setError('Nenhuma inscrição encontrada.')
-      }
+      if (!data.length) setError('Nenhuma inscrição encontrada.')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao buscar')
     } finally {
@@ -198,9 +235,61 @@ export default function AcompanharClient() {
     }
   }
 
+  function getBirthDateStr() {
+    if (birthYear && birthMonth && birthDay) {
+      return `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`
+    }
+    return undefined
+  }
+
+  async function handleResend() {
+    if (!resendEmail.trim()) return
+    setResendLoading(true)
+    try {
+      const res = await fetch('/api/inscricao/reenviar-codigo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: lastIdentifier,
+          identifierType: lastIdentifierType,
+          email: resendEmail.trim(),
+        }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        toast.success('Código reenviado! Verifique seu e-mail.')
+        setShowResendModal(false)
+        setResendEmail('')
+      } else {
+        toast.error(json.error || 'Erro ao reenviar')
+      }
+    } catch {
+      toast.error('Erro ao reenviar')
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    doSearch(search, false)
+    const st = getSearchType(search)
+    if (st === 'codigo') {
+      doSearch(search)
+    } else if (step === 'search') {
+      setStep('birthDate')
+    } else {
+      const bd = getBirthDateStr()
+      if (!bd) {
+        setError('Informe a data de nascimento completa.')
+        return
+      }
+      doSearch(search, bd)
+    }
+  }
+
+  function handleBack() {
+    setStep('search')
+    setError('')
   }
 
   return (
@@ -229,28 +318,135 @@ export default function AcompanharClient() {
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">CPF, RG, e-mail ou código</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {getSearchType(search) === 'codigo' ? 'Código de confirmação' : 'CPF, RG ou e-mail'}
+                  </label>
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     maxLength={50}
-                    placeholder="000.000.000-00, 00.000.000-0, e-mail ou código"
+                    placeholder={
+                      getSearchType(search) === 'codigo'
+                        ? 'Digite o código recebido por e-mail'
+                        : '000.000.000-00, 00.000.000-0 ou e-mail'
+                    }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                  {loading ? 'Buscando...' : 'Consultar Status'}
-                </button>
+
+                {getSearchType(search) !== 'codigo' && step === 'birthDate' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Data de nascimento</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        value={birthDay}
+                        onChange={(e) => setBirthDay(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                      >
+                        <option value="">Dia</option>
+                        {DAYS.map((d) => (
+                          <option key={d.value} value={d.value}>{d.label}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={birthMonth}
+                        onChange={(e) => setBirthMonth(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                      >
+                        <option value="">Mês</option>
+                        {MONTHS.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={birthYear}
+                        onChange={(e) => setBirthYear(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                      >
+                        <option value="">Ano</option>
+                        {YEARS.map((y) => (
+                          <option key={y.value} value={y.value}>{y.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  {step === 'birthDate' && getSearchType(search) !== 'codigo' && (
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Voltar
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                    {loading ? 'Buscando...' : getSearchType(search) === 'codigo' || step === 'birthDate' ? 'Consultar Status' : 'Continuar'}
+                  </button>
+                </div>
               </form>
               {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+              {locked && (
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800 mb-3">
+                    Muitas tentativas. Use o código de confirmação enviado no seu e-mail.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowResendModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium"
+                  >
+                    <Mail size={18} />
+                    Reenviar e-mail
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+
+          {showResendModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Reenviar código por e-mail</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Informe o e-mail cadastrado na inscrição para receber o código de confirmação.
+                </p>
+                <input
+                  type="email"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 mb-4"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowResendModal(false); setResendEmail('') }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendLoading || !resendEmail.trim()}
+                    className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {resendLoading ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+                    {resendLoading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -258,7 +454,12 @@ export default function AcompanharClient() {
         <section className="py-8 px-4">
           <div className="max-w-4xl mx-auto space-y-6">
             {results.map((reg) => (
-              <ComprovanteCard key={reg.id} reg={reg} searchToken={search.trim()} />
+              <ComprovanteCard
+                key={reg.id}
+                reg={reg}
+                searchToken={search.trim()}
+                searchType={getSearchType(search)}
+              />
             ))}
           </div>
         </section>
@@ -300,7 +501,7 @@ export default function AcompanharClient() {
   )
 }
 
-function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; searchToken: string }) {
+function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationResult; searchToken: string; searchType: 'codigo' | 'cpf' | 'rg' | 'email' }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -438,6 +639,7 @@ function ComprovanteCard({ reg, searchToken }: { reg: RegistrationResult; search
   }, [pixData?.expiresAt])
 
   const getAuthBody = () => {
+    if (searchType === 'email') return { codigo: reg.confirmation_code || '' }
     const digits = searchToken.replace(/\D/g, '')
     if (digits.length === 11) return { cpf: searchToken }
     if (digits.length === 9) return { rg: searchToken }
