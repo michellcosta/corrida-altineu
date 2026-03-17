@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import {
   Users,
@@ -9,6 +9,7 @@ import {
   PieChart,
   Loader2,
   Globe,
+  X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
 import { getCountryLabel } from '@/lib/countries'
@@ -62,6 +63,10 @@ export default function OrgAdminDashboard() {
   >([])
   const [topCities, setTopCities] = useState<{ city: string; count: number }[]>([])
   const [topCountries, setTopCountries] = useState<{ country: string; count: number }[]>([])
+  const [allCities, setAllCities] = useState<{ city: string; count: number }[]>([])
+  const [allCountries, setAllCountries] = useState<{ country: string; count: number }[]>([])
+  const [citiesModalOpen, setCitiesModalOpen] = useState(false)
+  const [countriesModalOpen, setCountriesModalOpen] = useState(false)
   const [paymentStats, setPaymentStats] = useState({
     paid: 0,
     pending: 0,
@@ -72,6 +77,9 @@ export default function OrgAdminDashboard() {
 
   const FEE_PER_TRANSACTION = 0.8
   const [loading, setLoading] = useState(true)
+
+  const totalMale = useMemo(() => ageDistribution.reduce((acc, item) => acc + item.male, 0), [ageDistribution])
+  const totalFemale = useMemo(() => ageDistribution.reduce((acc, item) => acc + item.female, 0), [ageDistribution])
 
   useEffect(() => {
     loadDashboard()
@@ -96,6 +104,8 @@ export default function OrgAdminDashboard() {
         setAgeDistribution([])
         setTopCities([])
         setTopCountries([])
+        setAllCities([])
+        setAllCountries([])
         setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
         return
       }
@@ -133,22 +143,22 @@ export default function OrgAdminDashboard() {
         if (city) acc[city] = (acc[city] || 0) + 1
         return acc
       }, {})
-      const topC = Object.entries(byCity)
+      const allC = Object.entries(byCity)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
         .map(([city, count]) => ({ city, count }))
-      setTopCities(topC)
+      setAllCities(allC)
+      setTopCities(allC.slice(0, 5))
 
       const byCountry = list.reduce<Record<string, number>>((acc, r) => {
         const country = formatCountry(r.athlete)
         if (country) acc[country] = (acc[country] || 0) + 1
         return acc
       }, {})
-      const topP = Object.entries(byCountry)
+      const allP = Object.entries(byCountry)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
         .map(([country, count]) => ({ country, count }))
-      setTopCountries(topP)
+      setAllCountries(allP)
+      setTopCountries(allP.slice(0, 5))
 
       const ageByRange: Record<string, { male: number; female: number }> = {}
       AGE_RANGES.forEach((r) => {
@@ -288,7 +298,7 @@ export default function OrgAdminDashboard() {
                           M: {item.male} / F: {item.female}
                         </span>
                       </div>
-                      <div className="flex gap-1 h-2">
+                      <div className="flex gap-1 h-3 md:h-2">
                         {total > 0 ? (
                           <>
                             <div
@@ -301,7 +311,7 @@ export default function OrgAdminDashboard() {
                             />
                           </>
                         ) : (
-                          <div className="w-full bg-gray-200 rounded h-2" />
+                          <div className="w-full bg-gray-200 rounded h-3 md:h-2" />
                         )}
                       </div>
                     </div>
@@ -310,11 +320,11 @@ export default function OrgAdminDashboard() {
                 <div className="flex items-center justify-center gap-4 md:gap-6 mt-3 md:mt-4 pt-3 md:pt-4 border-t">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span className="text-xs text-gray-600">Masculino</span>
+                    <span className="text-xs text-gray-600">Masculino ({totalMale})</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-pink-500 rounded"></div>
-                    <span className="text-xs text-gray-600">Feminino</span>
+                    <span className="text-xs text-gray-600">Feminino ({totalFemale})</span>
                   </div>
                 </div>
               </div>
@@ -354,6 +364,14 @@ export default function OrgAdminDashboard() {
                     </div>
                   </div>
                 ))}
+                {allCities.length > 5 && (
+                  <button
+                    onClick={() => setCitiesModalOpen(true)}
+                    className="w-full mt-2 text-sm font-medium text-green-600 hover:text-green-700 hover:underline"
+                  >
+                    Ver todas ({allCities.length})
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -391,6 +409,14 @@ export default function OrgAdminDashboard() {
                     </div>
                   </div>
                 ))}
+                {allCountries.length > 5 && (
+                  <button
+                    onClick={() => setCountriesModalOpen(true)}
+                    className="w-full mt-2 text-sm font-medium text-green-600 hover:text-green-700 hover:underline"
+                  >
+                    Ver todos ({allCountries.length})
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -426,12 +452,12 @@ export default function OrgAdminDashboard() {
                   {total > 0 ? `${((paymentStats.free / total) * 100).toFixed(0)}%` : '0%'}
                 </p>
               </div>
-              <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg border border-purple-200 md:col-span-1">
+              <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg border border-purple-200 col-span-2 md:col-span-1">
                 <p className="text-xl md:text-3xl font-bold text-purple-600 mb-1 md:mb-2">
                   R$ {(Number.isFinite(paymentStats.netAmount) ? paymentStats.netAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs md:text-sm text-gray-600">Líquido (após taxa)</p>
-                <p className="text-xs text-purple-600 font-semibold mt-0.5 md:mt-1">
+                <p className="text-[10px] md:text-xs text-purple-600 font-semibold mt-0.5 md:mt-1">
                   Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa
                 </p>
               </div>
@@ -454,6 +480,60 @@ export default function OrgAdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal: Todas as cidades */}
+      {citiesModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCitiesModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Todas as cidades</h3>
+              <button onClick={() => setCitiesModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-2">
+              {allCities.map((item, index) => (
+                <div key={item.city} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.city}</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 flex-shrink-0 ml-2">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Todos os países */}
+      {countriesModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCountriesModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Todos os países</h3>
+              <button onClick={() => setCountriesModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-2">
+              {allCountries.map((item, index) => (
+                <div key={item.country} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.country}</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 flex-shrink-0 ml-2">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   )
 }

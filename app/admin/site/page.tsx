@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { parseLocalDate } from '@/lib/utils/dates'
+import { createClient } from '@/lib/supabase/browserClient'
+import { getCountryLabel } from '@/lib/countries'
 import {
   Activity,
   AlertCircle,
@@ -15,8 +17,23 @@ import {
   Globe,
   Loader2,
   Mail,
+  MapPin,
+  PieChart,
   RefreshCw,
+  Users,
+  X,
 } from 'lucide-react'
+
+const AGE_RANGES = [
+  { key: '15-19', min: 15, max: 19 },
+  { key: '20-29', min: 20, max: 29 },
+  { key: '30-39', min: 30, max: 39 },
+  { key: '40-49', min: 40, max: 49 },
+  { key: '50-59', min: 50, max: 59 },
+  { key: '60+', min: 60, max: 150 },
+]
+
+const FEE_PER_TRANSACTION = 0.8
 
 interface SiteStats {
   health: {
@@ -33,19 +50,49 @@ interface SiteStats {
 }
 
 interface EventSummary {
+  id: string
   edition: number
   year: number
   raceDate?: string
+  ageCutoffDate?: string
   registrationsOpen: boolean
   city?: string
   state?: string
 }
 
+interface RegistrationWithAthlete {
+  id: string
+  payment_status: string
+  payment_amount: number
+  athlete: { birth_date: string; gender: string | null; city: string | null; state: string | null; country: string | null }
+}
+
 type ToastState = { id: string; message: string; type: 'success' | 'error' }
+
+function formatCity(athlete: { city?: string | null; state?: string | null; country?: string | null }): string | null {
+  if (athlete?.country && athlete.country !== 'BRA') return null
+  if (athlete?.city && athlete?.state) return `${athlete.city} - ${athlete.state}`
+  if (athlete?.city) return athlete.city
+  return null
+}
+
+function formatCountry(athlete: { country?: string | null }): string | null {
+  if (!athlete?.country) return null
+  return getCountryLabel(athlete.country)
+}
+
+function getAge(birthDate: string, cutoffDate: string): number {
+  const birth = new Date(birthDate)
+  const cutoff = new Date(cutoffDate)
+  return cutoff.getFullYear() - birth.getFullYear()
+}
+
+function getAgeRange(age: number): string {
+  return AGE_RANGES.find((r) => age >= r.min && age <= r.max)?.key ?? '60+'
+}
 
 async function fetchEventSummary(): Promise<EventSummary | null> {
   try {
-    const { createClient } = await import('@/lib/supabase/browserClient')
     const supabase = createClient()
     const { data, error } = await supabase
       .from('events')
@@ -54,14 +101,14 @@ async function fetchEventSummary(): Promise<EventSummary | null> {
       .limit(1)
       .single()
 
-    if (error || !data) {
-      return null
-    }
+    if (error || !data) return null
 
     return {
+      id: data.id,
       edition: data.edition,
       year: data.year,
       raceDate: data.race_date ?? undefined,
+      ageCutoffDate: data.age_cutoff_date ?? undefined,
       registrationsOpen: Boolean(data.registrations_open),
       city: data.city ?? undefined,
       state: data.state ?? undefined,
@@ -80,6 +127,28 @@ export default function SiteAdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastState[]>([])
   const [togglingRegistrations, setTogglingRegistrations] = useState(false)
+
+  // Org-style metrics
+  const [total, setTotal] = useState(0)
+  const [citiesCount, setCitiesCount] = useState(0)
+  const [countriesCount, setCountriesCount] = useState(0)
+  const [daysToEvent, setDaysToEvent] = useState<number | null>(null)
+  const [ageDistribution, setAgeDistribution] = useState<
+    { range: string; male: number; female: number }[]
+  >([])
+  const [topCities, setTopCities] = useState<{ city: string; count: number }[]>([])
+  const [topCountries, setTopCountries] = useState<{ country: string; count: number }[]>([])
+  const [allCities, setAllCities] = useState<{ city: string; count: number }[]>([])
+  const [allCountries, setAllCountries] = useState<{ country: string; count: number }[]>([])
+  const [citiesModalOpen, setCitiesModalOpen] = useState(false)
+  const [countriesModalOpen, setCountriesModalOpen] = useState(false)
+  const [paymentStats, setPaymentStats] = useState({
+    paid: 0,
+    pending: 0,
+    free: 0,
+    totalAmount: 0,
+    netAmount: 0,
+  })
 
   useEffect(() => {
     loadDashboard()
@@ -105,9 +174,110 @@ export default function SiteAdminDashboard() {
 
       setEventSummary(event)
       setSiteStats(siteStatsData)
-    } catch (err: any) {
+
+      // Org-style metrics (from latest event)
+      if (!event) {
+        setTotal(0)
+        setCitiesCount(0)
+        setCountriesCount(0)
+        setDaysToEvent(null)
+        setAgeDistribution([])
+        setTopCities([])
+        setTopCountries([])
+        setAllCities([])
+        setAllCountries([])
+        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
+      } else {
+        const cutoffDate = event.ageCutoffDate ?? event.raceDate ?? new Date().toISOString().slice(0, 10)
+        if (event.raceDate) {
+          const today = new Date()
+          const race = new Date(event.raceDate)
+          setDaysToEvent(Math.max(0, Math.ceil((race.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))))
+        } else {
+          setDaysToEvent(null)
+        }
+
+        const supabase = createClient()
+        const { data: regs } = await supabase
+          .from('registrations')
+          .select(`
+            id,
+            payment_status,
+            payment_amount,
+            athlete:athletes(birth_date, gender, city, state, country)
+          `)
+          .eq('event_id', event.id)
+
+        const list = (regs || []) as unknown as RegistrationWithAthlete[]
+        setTotal(list.length)
+
+        const citySet = new Set(list.map((r) => formatCity(r.athlete)).filter((c): c is string => c != null))
+        setCitiesCount(citySet.size)
+
+        const countrySet = new Set(list.map((r) => formatCountry(r.athlete)).filter((c): c is string => c != null))
+        setCountriesCount(countrySet.size)
+
+        const byCity = list.reduce<Record<string, number>>((acc, r) => {
+          const city = formatCity(r.athlete)
+          if (city) acc[city] = (acc[city] || 0) + 1
+          return acc
+        }, {})
+        const allC = Object.entries(byCity)
+          .sort(([, a], [, b]) => b - a)
+          .map(([city, count]) => ({ city, count }))
+        setAllCities(allC)
+        setTopCities(allC.slice(0, 5))
+
+        const byCountry = list.reduce<Record<string, number>>((acc, r) => {
+          const country = formatCountry(r.athlete)
+          if (country) acc[country] = (acc[country] || 0) + 1
+          return acc
+        }, {})
+        const allP = Object.entries(byCountry)
+          .sort(([, a], [, b]) => b - a)
+          .map(([country, count]) => ({ country, count }))
+        setAllCountries(allP)
+        setTopCountries(allP.slice(0, 5))
+
+        const ageByRange: Record<string, { male: number; female: number }> = {}
+        AGE_RANGES.forEach((r) => {
+          ageByRange[r.key] = { male: 0, female: 0 }
+        })
+        list.forEach((r) => {
+          if (!r.athlete?.birth_date) return
+          const age = getAge(r.athlete.birth_date, cutoffDate)
+          const range = getAgeRange(age)
+          const gender = (r.athlete.gender ?? 'M').toUpperCase()
+          if (gender === 'M') {
+            ageByRange[range].male++
+          } else {
+            ageByRange[range].female++
+          }
+        })
+        setAgeDistribution(
+          AGE_RANGES.map((r) => ({
+            range: r.key,
+            male: ageByRange[r.key].male,
+            female: ageByRange[r.key].female,
+          }))
+        )
+
+        const paid = list.filter((r) => r.payment_status === 'paid').length
+        const pending = list.filter((r) => ['pending', 'processing'].includes(r.payment_status ?? '')).length
+        const free = list.filter((r) => r.payment_status === 'free' || !r.payment_status).length
+        const totalAmount = list
+          .filter((r) => r.payment_status === 'paid')
+          .reduce((sum, r) => {
+            const v = r.payment_amount
+            const n = typeof v === 'string' ? parseFloat(String(v).replace(',', '.')) : Number(v)
+            return sum + (Number.isFinite(n) ? n : 0)
+          }, 0)
+        const netAmount = Number.isFinite(totalAmount) ? Math.max(0, totalAmount - paid * FEE_PER_TRANSACTION) : 0
+        setPaymentStats({ paid, pending, free, totalAmount, netAmount })
+      }
+    } catch (err: unknown) {
       console.error('Erro ao carregar painel:', err)
-      setError(err?.message ?? 'Nao foi possivel carregar os dados do painel.')
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar os dados do painel.')
       setEventSummary(null)
     } finally {
       setLoading(false)
@@ -152,12 +322,15 @@ export default function SiteAdminDashboard() {
         newState ? 'Inscrições reabertas com sucesso!' : 'Inscrições encerradas com sucesso!',
         'success'
       )
-    } catch (err: any) {
-      notify(err.message || 'Erro ao alternar inscrições', 'error')
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : 'Erro ao alternar inscrições', 'error')
     } finally {
       setTogglingRegistrations(false)
     }
   }
+
+  const totalMale = useMemo(() => ageDistribution.reduce((acc, item) => acc + item.male, 0), [ageDistribution])
+  const totalFemale = useMemo(() => ageDistribution.reduce((acc, item) => acc + item.female, 0), [ageDistribution])
 
   const formattedRaceDate = useMemo(() => {
     if (!eventSummary?.raceDate) return null
@@ -175,19 +348,18 @@ export default function SiteAdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-4 md:space-y-6">
+        {/* Gradient header - estilo org */}
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
-          <div>
-            <h1 className="text-xl md:text-3xl font-display font-bold text-gray-900">
-              Painel do site
-            </h1>
-            <p className="mt-1 text-sm md:text-base text-gray-600">
-              Centralize a gestão de páginas, seções, posts e configurações do portal oficial.
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 md:p-8 text-white flex-1">
+            <h2 className="text-xl md:text-3xl font-display font-bold mb-1 md:mb-2">Painel do site</h2>
+            <p className="text-blue-100 text-sm md:text-lg">
+              Centralize a gestão de páginas, seções, posts e métricas do portal oficial.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
             <button
               onClick={handleRefresh}
-              className="admin-button-secondary flex items-center gap-2"
+              className="admin-button-secondary flex items-center justify-center gap-2 flex-1 md:flex-none"
               disabled={refreshing}
             >
               {refreshing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
@@ -195,7 +367,7 @@ export default function SiteAdminDashboard() {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="admin-button-secondary"
+              className="admin-button-secondary flex-1 md:flex-none"
             >
               Ver site
             </button>
@@ -211,7 +383,63 @@ export default function SiteAdminDashboard() {
           </div>
         )}
 
+        {/* Stats Grid - estilo org */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+          {loading ? (
+            [...Array(4)].map((_, i) => (
+              <div key={i} className="admin-card">
+                <div className="flex items-center justify-center h-16 md:h-24">
+                  <Loader2 className="animate-spin text-blue-600" size={24} />
+                </div>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="admin-card">
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Users className="text-blue-600" size={20} />
+                  </div>
+                </div>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{total.toLocaleString('pt-BR')}</p>
+                <p className="text-xs md:text-sm text-gray-600">Total de Inscrições</p>
+              </div>
+              <div className="admin-card">
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <MapPin className="text-blue-600" size={20} />
+                  </div>
+                </div>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{citiesCount}</p>
+                <p className="text-xs md:text-sm text-gray-600">Cidades Representadas</p>
+              </div>
+              <div className="admin-card">
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Globe className="text-blue-600" size={20} />
+                  </div>
+                </div>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{countriesCount}</p>
+                <p className="text-xs md:text-sm text-gray-600">Países Representados</p>
+              </div>
+              <div className="admin-card">
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                  <div className="w-9 h-9 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="text-blue-600" size={20} />
+                  </div>
+                </div>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">
+                  {daysToEvent != null ? daysToEvent : '—'}
+                </p>
+                <p className="text-xs md:text-sm text-gray-600">Dias para o Evento</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Event card + Age/Cities/Countries */}
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Event summary card */}
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
             <div className="flex items-start justify-between">
               <div>
@@ -270,8 +498,200 @@ export default function SiteAdminDashboard() {
               </div>
             )}
           </div>
+
+          {/* Age Distribution */}
+          <div className="admin-card">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">Distribuição por Idade e Sexo</h3>
+              <PieChart size={18} className="text-gray-400" />
+            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-32 md:h-48">
+                <Loader2 className="animate-spin text-blue-600" size={24} />
+              </div>
+            ) : (
+              <div className="space-y-2 md:space-y-3">
+                {ageDistribution.map((item) => {
+                  const itemTotal = item.male + item.female
+                  return (
+                    <div key={item.range}>
+                      <div className="flex items-center justify-between mb-0.5 md:mb-1">
+                        <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
+                        <span className="text-xs md:text-sm text-gray-600">
+                          M: {item.male} / F: {item.female}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 h-3 md:h-2">
+                        {itemTotal > 0 ? (
+                          <>
+                            <div
+                              className="bg-blue-500 rounded-l"
+                              style={{ width: `${(item.male / itemTotal) * 100}%` }}
+                            />
+                            <div
+                              className="bg-pink-500 rounded-r"
+                              style={{ width: `${(item.female / itemTotal) * 100}%` }}
+                            />
+                          </>
+                        ) : (
+                          <div className="w-full bg-gray-200 rounded h-3 md:h-2" />
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="flex items-center justify-center gap-4 md:gap-6 mt-3 md:mt-4 pt-3 md:pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span className="text-xs text-gray-600">Masculino ({totalMale})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-pink-500 rounded"></div>
+                    <span className="text-xs text-gray-600">Feminino ({totalFemale})</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Top Cities */}
+          <div className="admin-card">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">Principais Cidades</h3>
+              <MapPin size={18} className="text-gray-400" />
+            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-32 md:h-48">
+                <Loader2 className="animate-spin text-blue-600" size={24} />
+              </div>
+            ) : topCities.length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhuma inscrição ainda.</p>
+            ) : (
+              <div className="space-y-3 md:space-y-4">
+                {topCities.map((item, index) => (
+                  <div key={item.city}>
+                    <div className="flex items-center justify-between mb-1 md:mb-2">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <span className="w-5 h-5 md:w-6 md:h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-xs md:text-sm font-medium text-gray-700 truncate">{item.city}</span>
+                      </div>
+                      <span className="text-xs md:text-sm font-bold text-gray-900 flex-shrink-0 ml-1">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
+                      <div
+                        className="bg-blue-600 h-1.5 md:h-2 rounded-full transition-all"
+                        style={{ width: `${total > 0 ? (item.count / total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {allCities.length > 5 && (
+                  <button
+                    onClick={() => setCitiesModalOpen(true)}
+                    className="w-full mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    Ver todas ({allCities.length})
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* Top Countries + Payment Status */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Top Countries */}
+          <div className="admin-card">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900">Principais Países</h3>
+              <Globe size={18} className="text-gray-400" />
+            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-32 md:h-48">
+                <Loader2 className="animate-spin text-blue-600" size={24} />
+              </div>
+            ) : topCountries.length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhuma inscrição ainda.</p>
+            ) : (
+              <div className="space-y-3 md:space-y-4">
+                {topCountries.map((item, index) => (
+                  <div key={item.country}>
+                    <div className="flex items-center justify-between mb-1 md:mb-2">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <span className="w-5 h-5 md:w-6 md:h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-xs md:text-sm font-medium text-gray-700 truncate">{item.country}</span>
+                      </div>
+                      <span className="text-xs md:text-sm font-bold text-gray-900 flex-shrink-0 ml-1">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
+                      <div
+                        className="bg-blue-600 h-1.5 md:h-2 rounded-full transition-all"
+                        style={{ width: `${total > 0 ? (item.count / total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {allCountries.length > 5 && (
+                  <button
+                    onClick={() => setCountriesModalOpen(true)}
+                    className="w-full mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    Ver todos ({allCountries.length})
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Payment Status */}
+          <div className="admin-card">
+            <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6">Status de Pagamento</h3>
+            {loading ? (
+              <div className="flex items-center justify-center h-24 md:h-32">
+                <Loader2 className="animate-spin text-blue-600" size={24} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                <div className="text-center p-4 md:p-6 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-2xl md:text-3xl font-bold text-green-600 mb-1 md:mb-2">{paymentStats.paid}</p>
+                  <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
+                  <p className="text-xs text-green-600 font-semibold mt-0.5 md:mt-1">
+                    {total > 0 ? `${((paymentStats.paid / total) * 100).toFixed(0)}%` : '0%'}
+                  </p>
+                </div>
+                <div className="text-center p-4 md:p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-2xl md:text-3xl font-bold text-yellow-600 mb-1 md:mb-2">{paymentStats.pending}</p>
+                  <p className="text-xs md:text-sm text-gray-600">Aguardando</p>
+                  <p className="text-xs text-yellow-600 font-semibold mt-0.5 md:mt-1">
+                    {total > 0 ? `${((paymentStats.pending / total) * 100).toFixed(0)}%` : '0%'}
+                  </p>
+                </div>
+                <div className="text-center p-4 md:p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-2xl md:text-3xl font-bold text-blue-600 mb-1 md:mb-2">{paymentStats.free}</p>
+                  <p className="text-xs md:text-sm text-gray-600">Gratuitos</p>
+                  <p className="text-xs text-blue-600 font-semibold mt-0.5 md:mt-1">
+                    {total > 0 ? `${((paymentStats.free / total) * 100).toFixed(0)}%` : '0%'}
+                  </p>
+                </div>
+                <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg border border-purple-200 col-span-2 md:col-span-1">
+                  <p className="text-xl md:text-3xl font-bold text-purple-600 mb-1 md:mb-2">
+                    R$ {(Number.isFinite(paymentStats.netAmount) ? paymentStats.netAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600">Líquido (após taxa)</p>
+                  <p className="text-[10px] md:text-xs text-purple-600 font-semibold mt-0.5 md:mt-1">
+                    Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Analytics + System Health */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Analytics Básico */}
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col justify-between">
@@ -323,7 +743,7 @@ export default function SiteAdminDashboard() {
                     Nenhuma visualização registrada nos últimos 7 dias.
                   </div>
                 ) : (
-                  siteStats.analytics.topPages.map((page, idx) => {
+                  siteStats.analytics.topPages.map((page) => {
                     const maxCount = Math.max(...siteStats.analytics.topPages.map((p) => p.count), 1)
                     const widthPct = Math.round((page.count / maxCount) * 100)
                     return (
@@ -348,7 +768,7 @@ export default function SiteAdminDashboard() {
             </div>
           </div>
 
-          {/* NOVO WIDGET: Status do Sistema */}
+          {/* Saúde do Sistema */}
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -421,7 +841,83 @@ export default function SiteAdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Quick links */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => router.push('/admin/site/inscritos')}
+            className="admin-button-secondary text-sm flex-1 md:flex-none py-3"
+          >
+            Inscritos
+          </button>
+          <button
+            onClick={() => router.push('/admin/site/content/pages')}
+            className="admin-button-secondary text-sm flex-1 md:flex-none py-3"
+          >
+            Conteúdo
+          </button>
+          <button
+            onClick={() => router.push('/admin/site/settings/event')}
+            className="admin-button-secondary text-sm flex-1 md:flex-none py-3"
+          >
+            Configurações
+          </button>
+        </div>
       </div>
+
+      {/* Modal: Todas as cidades */}
+      {citiesModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCitiesModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Todas as cidades</h3>
+              <button onClick={() => setCitiesModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-2">
+              {allCities.map((item, index) => (
+                <div key={item.city} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.city}</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 flex-shrink-0 ml-2">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Todos os países */}
+      {countriesModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCountriesModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Todos os países</h3>
+              <button onClick={() => setCountriesModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-2">
+              {allCountries.map((item, index) => (
+                <div key={item.country} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.country}</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 flex-shrink-0 ml-2">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 space-y-2 pb-[env(safe-area-inset-bottom)]">
         {toasts.map((toast) => (
@@ -435,12 +931,6 @@ export default function SiteAdminDashboard() {
           </div>
         ))}
       </div>
-    </AdminLayout >
+    </AdminLayout>
   )
 }
-
-
-
-
-
-

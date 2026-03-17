@@ -12,7 +12,7 @@ type Message = {
     content: string
 }
 
-type Step = 'identify' | 'name' | 'chat'
+type Step = 'identify' | 'birthDate' | 'locked' | 'chat'
 
 const QUICK_PROMPTS = [
     "Onde retiro meu kit?",
@@ -22,6 +22,18 @@ const QUICK_PROMPTS = [
 ]
 
 const MAX_FREE_MESSAGES = 15
+
+const MONTHS = [
+  { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
+  { value: '4', label: 'Abril' }, { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Setembro' },
+  { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+]
+const DAYS = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))
+const YEARS = Array.from({ length: 101 }, (_, i) => {
+  const y = new Date().getFullYear() - i
+  return { value: String(y), label: String(y) }
+})
 
 const MarkdownText = ({ content, onLinkClick }: { content: string, onLinkClick?: () => void }): any => {
     if (!content) return null;
@@ -91,6 +103,11 @@ export default function FloatingAIChat() {
     const [history, setHistory] = useState<Message[]>([])
     const [loading, setLoading] = useState(false)
     const [identifying, setIdentifying] = useState(false)
+    const [unlocking, setUnlocking] = useState(false)
+    const [birthDay, setBirthDay] = useState('')
+    const [birthMonth, setBirthMonth] = useState('')
+    const [birthYear, setBirthYear] = useState('')
+    const [unlockCode, setUnlockCode] = useState('')
     const [isAdmin, setIsAdmin] = useState(false)
     const [messageCount, setMessageCount] = useState(0)
     const [showTooltip, setShowTooltip] = useState(false)
@@ -129,60 +146,28 @@ export default function FloatingAIChat() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    // Tentar carregar sessão anterior e autodetectar CPF
+    // Admin pode pular verificação; outros precisam verificar CPF + data
     useEffect(() => {
         const savedCpf = localStorage.getItem('chat_user_cpf')
         const savedName = localStorage.getItem('chat_user_name')
+        const clean = savedCpf?.replace(/\D/g, '') || ''
 
-        if (savedCpf && savedName) {
-            const clean = savedCpf.replace(/\D/g, '')
-            // Validar se o usuário ainda existe (atleta ou ai_usage) antes de restaurar sessão
-            const supabase = createClient()
-            Promise.all([
-                supabase.from('athletes').select('full_name').eq('document_number', clean).limit(1),
-                supabase.from('ai_usage').select('full_name').eq('cpf', clean).limit(1)
-            ]).then(([athleteRes, usageRes]) => {
-                const athlete = athleteRes.data?.[0]
-                const usage = usageRes.data?.[0]
-                if (athlete || usage) {
-                    const name = athlete?.full_name || usage?.full_name || savedName
-                    setUserCpf(clean)
-                    setUserName(name)
-                    setIsAdmin(clean === '13017905756')
-                    setStep('chat')
-                    fetchUsage(clean)
-                    if (name !== savedName) {
-                        localStorage.setItem('chat_user_name', name)
-                    }
-                } else {
-                    // Usuário excluído: limpar localStorage e forçar nova identificação
-                    localStorage.removeItem('chat_user_cpf')
-                    localStorage.removeItem('chat_user_name')
-                    setUserCpf('')
-                    setStep('identify')
-                }
-            })
-        } else {
-            // Autodetecção: Se estiver na página de acompanhamento, tentar pegar o CPF da tela ou URL
-            const urlParams = new URLSearchParams(window.location.search)
-            const cpfParam = urlParams.get('cpf') || urlParams.get('doc')
+        // Admin: restaurar sessão sem verificar
+        if (clean === '13017905756' && savedName) {
+            setUserCpf(clean)
+            setUserName(savedName)
+            setIsAdmin(true)
+            setStep('chat')
+            fetchUsage(clean)
+            return
+        }
 
-            if (cpfParam) {
-                const clean = cpfParam.replace(/\D/g, '')
-                setUserCpf(clean)
-                fetchUsage(clean)
-            } else {
-                // Tenta buscar no DOM se houver algum elemento com data-cpf (ex: no componente de acompanhamento)
-                const cpfElement = document.querySelector('[data-user-document]')
-                if (cpfElement) {
-                    const docValue = cpfElement.getAttribute('data-user-document')
-                    if (docValue) {
-                        const clean = docValue.replace(/\D/g, '')
-                        setUserCpf(clean)
-                        fetchUsage(clean)
-                    }
-                }
-            }
+        // Preencher CPF da URL se disponível
+        const urlParams = new URLSearchParams(window.location.search)
+        const cpfParam = urlParams.get('cpf') || urlParams.get('doc')
+        if (cpfParam) {
+            const urlClean = cpfParam.replace(/\D/g, '')
+            if (urlClean.length >= 9) setUserCpf(urlClean)
         }
     }, [])
 
@@ -210,79 +195,100 @@ export default function FloatingAIChat() {
         }
     }, [history, loading, step])
 
-    async function handleIdentify() {
+    function handleIdentify() {
         const cleanDoc = userCpf.replace(/\D/g, '')
-        if (cleanDoc.length < 5) {
-            toast.error('Informe um documento válido (CPF ou RG)')
+        if (cleanDoc.length < 9) {
+            toast.error('Informe CPF (11 dígitos) ou RG (9 dígitos) válido')
+            return
+        }
+        setStep('birthDate')
+    }
+
+    async function handleVerifyBirthDate() {
+        const cleanDoc = userCpf.replace(/\D/g, '')
+        const birthDateStr = birthYear && birthMonth && birthDay
+            ? `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`
+            : ''
+
+        if (!birthDateStr) {
+            toast.error('Informe a data de nascimento completa')
             return
         }
 
         setIdentifying(true)
         try {
-            const supabase = createClient()
+            const res = await fetch('/api/admin/ai/chat/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    identifier: cleanDoc,
+                    identifierType: cleanDoc.length === 11 ? 'cpf' : 'rg',
+                    birthDate: birthDateStr,
+                }),
+            })
+            const json = await res.json()
 
-            // 1. Buscar na base de atletas (usando o documento limpo)
-            const { data: athletes, error: athleteErr } = await supabase
-                .from('athletes')
-                .select('full_name')
-                .eq('document_number', cleanDoc)
-                .limit(1)
+            if (res.status === 403 && json.locked) {
+                setStep('locked')
+                toast.error(json.error || 'Muitas tentativas. Use o código para desbloquear.')
+                return
+            }
 
-            const athlete = athletes?.[0]
-
-            if (athlete) {
-                setUserName(athlete.full_name)
+            if (json.valid) {
+                setUserName(json.userName)
                 localStorage.setItem('chat_user_cpf', cleanDoc)
-                localStorage.setItem('chat_user_name', athlete.full_name)
+                localStorage.setItem('chat_user_name', json.userName)
                 setIsAdmin(cleanDoc === '13017905756')
                 setStep('chat')
                 fetchUsage(cleanDoc)
-                toast.success(`Bem-vindo de volta, ${athlete.full_name.split(' ')[0]}!`)
+                toast.success(`Bem-vindo, ${json.userName.split(' ')[0]}!`)
             } else {
-                if (athleteErr) {
-                    console.error('ERRO SUPABASE FRONTEND:', athleteErr)
-                    toast.error(`Erro de conexão: ${athleteErr.message}`)
-                }
-                // 2. Buscar na base de uso da IA (se já passou por aqui anteriormente)
-                const { data: usageData } = await supabase
-                    .from('ai_usage')
-                    .select('full_name, message_count')
-                    .eq('cpf', cleanDoc)
-                    .limit(1)
-
-                const usage = usageData?.[0]
-
-                if (usage && usage.full_name && usage.full_name !== 'Visitante') {
-                    setUserName(usage.full_name)
-                    setMessageCount(usage.message_count || 0)
-                    localStorage.setItem('chat_user_cpf', cleanDoc)
-                    localStorage.setItem('chat_user_name', usage.full_name)
-                    setIsAdmin(cleanDoc === '13017905756')
-                    setStep('chat')
-                    toast.success(`Olá novamente, ${usage.full_name.split(' ')[0]}!`)
-                } else {
-                    setStep('name')
-                }
+                toast.error(json.error || 'Dados não conferem.')
             }
-        } catch (error) {
-            console.error('Erro na identificação:', error)
-            setStep('name')
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao verificar.')
         } finally {
             setIdentifying(false)
         }
     }
 
-    async function handleStartChat() {
-        if (!userName.trim()) {
-            toast.error('Informe seu nome para começar.')
+    async function handleUnlock() {
+        const cleanDoc = userCpf.replace(/\D/g, '')
+        if (!unlockCode.trim()) {
+            toast.error('Informe o código de confirmação')
             return
         }
-        const cleanDoc = userCpf.replace(/\D/g, '')
-        localStorage.setItem('chat_user_cpf', cleanDoc)
-        localStorage.setItem('chat_user_name', userName)
-        setIsAdmin(cleanDoc === '13017905756')
-        setStep('chat')
-        toast.success(`Ótimo, ${userName.split(' ')[0]}! Como posso te ajudar?`)
+
+        setUnlocking(true)
+        try {
+            const res = await fetch('/api/admin/ai/chat/unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    identifier: cleanDoc,
+                    identifierType: cleanDoc.length === 11 ? 'cpf' : 'rg',
+                    codigo: unlockCode.trim(),
+                }),
+            })
+            const json = await res.json()
+
+            if (!res.ok) {
+                toast.error(json.error || 'Código inválido.')
+                return
+            }
+
+            setUserName(json.userName)
+            localStorage.setItem('chat_user_cpf', cleanDoc)
+            localStorage.setItem('chat_user_name', json.userName)
+            setStep('chat')
+            setUnlockCode('')
+            fetchUsage(cleanDoc)
+            toast.success('Desbloqueado! Bem-vindo de volta.')
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao desbloquear.')
+        } finally {
+            setUnlocking(false)
+        }
     }
 
     function handleLogout() {
@@ -415,54 +421,77 @@ export default function FloatingAIChat() {
                                     <div className="space-y-2">
                                         <h4 className="font-bold text-gray-800 text-lg">Identificação</h4>
                                         <p className="text-sm text-gray-500 leading-relaxed">
-                                            <MarkdownText content="Informe seu **CPF ou RG** usado na inscrição para que o assistente possa encontrar suas informações." />
-                                        </p>
-                                    </div>
-                                    <div className="w-full space-y-4">
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={userCpf}
-                                                onChange={(e) => setUserCpf(e.target.value)}
-                                                placeholder="Digite apenas números"
-                                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-center font-semibold tracking-wider text-gray-700"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={handleIdentify}
-                                            disabled={identifying}
-                                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
-                                        >
-                                            {identifying ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continuar'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {step === 'name' && (
-                                <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-6">
-                                    <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                                        <User className="w-8 h-8 text-blue-600" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h4 className="font-bold text-gray-800">Quase lá!</h4>
-                                        <p className="text-sm text-gray-500">
-                                            Ainda não te encontramos. Qual o seu nome completo?
+                                            Informe seu CPF ou RG usado na inscrição para que o assistente possa encontrar suas informações.
                                         </p>
                                     </div>
                                     <div className="w-full space-y-4">
                                         <input
                                             type="text"
-                                            value={userName}
-                                            onChange={(e) => setUserName(e.target.value)}
-                                            placeholder="Seu nome completo"
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none text-center"
+                                            value={userCpf}
+                                            onChange={(e) => setUserCpf(e.target.value)}
+                                            placeholder="Digite apenas números (CPF ou RG)"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-center font-semibold tracking-wider text-gray-700"
                                         />
                                         <button
-                                            onClick={handleStartChat}
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200"
+                                            onClick={handleIdentify}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
                                         >
-                                            Começar Chat
+                                            Continuar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step === 'birthDate' && (
+                                <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-6">
+                                    <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                                        <User className="w-8 h-8 text-blue-600" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="font-bold text-gray-800">Confirmação de segurança</h4>
+                                        <p className="text-sm text-gray-500">
+                                            Informe sua data de nascimento para confirmar sua identidade.
+                                        </p>
+                                    </div>
+                                    <div className="w-full space-y-4">
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <select
+                                                value={birthDay}
+                                                onChange={(e) => setBirthDay(e.target.value)}
+                                                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            >
+                                                <option value="">Dia</option>
+                                                {DAYS.map((d) => (
+                                                    <option key={d.value} value={d.value}>{d.label}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={birthMonth}
+                                                onChange={(e) => setBirthMonth(e.target.value)}
+                                                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            >
+                                                <option value="">Mês</option>
+                                                {MONTHS.map((m) => (
+                                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                value={birthYear}
+                                                onChange={(e) => setBirthYear(e.target.value)}
+                                                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            >
+                                                <option value="">Ano</option>
+                                                {YEARS.map((y) => (
+                                                    <option key={y.value} value={y.value}>{y.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <button
+                                            onClick={handleVerifyBirthDate}
+                                            disabled={identifying}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+                                        >
+                                            {identifying ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar'}
                                         </button>
                                         <button
                                             onClick={() => setStep('identify')}
@@ -470,6 +499,42 @@ export default function FloatingAIChat() {
                                         >
                                             Voltar
                                         </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step === 'locked' && (
+                                <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-6">
+                                    <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
+                                        <AlertCircle className="w-8 h-8 text-amber-600" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="font-bold text-gray-800">Acesso bloqueado</h4>
+                                        <p className="text-sm text-gray-500">
+                                            Muitas tentativas incorretas. Use o código de confirmação enviado no seu e-mail para desbloquear.
+                                        </p>
+                                    </div>
+                                    <div className="w-full space-y-4">
+                                        <input
+                                            type="text"
+                                            value={unlockCode}
+                                            onChange={(e) => setUnlockCode(e.target.value.toUpperCase())}
+                                            placeholder="Código de confirmação"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none text-center font-mono tracking-widest uppercase"
+                                        />
+                                        <button
+                                            onClick={handleUnlock}
+                                            disabled={unlocking}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+                                        >
+                                            {unlocking ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Desbloquear'}
+                                        </button>
+                                        <p className="text-xs text-gray-400">
+                                            Não tem o código?{' '}
+                                            <Link href="/inscricao/acompanhar" className="text-blue-600 underline hover:text-blue-700">
+                                                Acompanhar inscrição
+                                            </Link>
+                                        </p>
                                     </div>
                                 </div>
                             )}
