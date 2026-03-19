@@ -2,8 +2,90 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unstable_noStore } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/serverClient'
 import { formatDateOnly } from '@/lib/formatDate'
+import { getCountryLabel } from '@/lib/countries'
 
 export const dynamic = 'force-dynamic'
+
+/** Top N exibido na lista pública (municípios BR e países). */
+const TOP_MUNICIPIOS = 5
+const TOP_PAISES = 5
+
+/** Município (BR): cidade - UF ou cidade. Estrangeiros não entram aqui. */
+function formatMunicipio(athlete: {
+  city?: string | null
+  state?: string | null
+  country?: string | null
+}): string | null {
+  if (athlete?.country && athlete.country !== 'BRA') return null
+  if (athlete?.city && athlete?.state) return `${athlete.city} - ${athlete.state}`
+  if (athlete?.city) return athlete.city
+  return null
+}
+
+function formatPais(athlete: { country?: string | null }): string | null {
+  if (!athlete?.country) return null
+  return getCountryLabel(athlete.country)
+}
+
+type AthleteRow = {
+  gender?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+}
+
+type RegItem = {
+  id: string
+  athlete_id: string
+  category_id?: string
+  registration_number: string | null
+  confirmation_code: string | null
+  status: string
+  payment_status?: string | null
+  bib_number: number | null
+  notes: string | null
+}
+
+function buildPublicRankings(
+  allRegs: RegItem[],
+  athleteMap: Map<string, unknown>,
+  isConfirmed: (s: string) => boolean
+) {
+  const confirmedList = allRegs.filter((r) => isConfirmed(r.status))
+  const totalConfirmados = confirmedList.length
+
+  const byMunicipio: Record<string, number> = {}
+  const byPais: Record<string, number> = {}
+  let masculino = 0
+  let feminino = 0
+  let outros = 0
+
+  for (const r of confirmedList) {
+    const a = athleteMap.get(r.athlete_id) as AthleteRow | undefined
+    if (!a) continue
+    const muni = formatMunicipio(a)
+    if (muni) byMunicipio[muni] = (byMunicipio[muni] || 0) + 1
+    const pais = formatPais(a)
+    if (pais) byPais[pais] = (byPais[pais] || 0) + 1
+    const g = (a.gender ?? 'M').toUpperCase()
+    if (g === 'M') masculino++
+    else if (g === 'F') feminino++
+    else outros++
+  }
+
+  const topN = (rec: Record<string, number>, n: number) =>
+    Object.entries(rec)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, n)
+      .map(([label, count]) => ({ label, count }))
+
+  return {
+    totalConfirmados,
+    municipios: topN(byMunicipio, TOP_MUNICIPIOS),
+    paises: topN(byPais, TOP_PAISES),
+    genero: { masculino, feminino, outros },
+  }
+}
 
 /**
  * Lista inscritos por categoria para o evento atual.
@@ -72,18 +154,6 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Erro ao listar inscritos:', error)
       return NextResponse.json({ error: 'Erro ao listar inscritos' }, { status: 500 })
-    }
-
-    type RegItem = {
-      id: string
-      athlete_id: string
-      category_id?: string
-      registration_number: string | null
-      confirmation_code: string | null
-      status: string
-      payment_status?: string | null
-      bib_number: number | null
-      notes: string | null
     }
 
     const catMap = new Map((cats || []).map((c: { id: string; name: string; slug?: string }) => [c.id, { id: c.id, name: c.name, slug: c.slug || '' }]))
@@ -219,8 +289,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const rankings = buildPublicRankings(allRegs, athleteMap, isConfirmed)
+
     const debug = searchParams.get('_debug') === '1'
-    const payload: Record<string, unknown> = { data: categories, edition: event.edition ?? 51 }
+    const payload: Record<string, unknown> = {
+      data: categories,
+      edition: event.edition ?? 51,
+      rankings,
+    }
     if (debug) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
       const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? '?'
