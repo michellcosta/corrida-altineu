@@ -433,15 +433,17 @@ export async function POST(request: NextRequest) {
 
     const athleteEmail = email.trim().toLowerCase()
     const status = category.is_free ? 'confirmed' : 'pending_payment'
-    sendRegistrationConfirmation({
-      to: athleteEmail,
-      athleteName: fullName.trim(),
-      registrationNumber,
-      confirmationCode,
-      categoryName: category.name,
-      status,
-      paymentAmount: status === 'pending_payment' ? paymentAmount : undefined,
-    }).catch((err) => console.error('[inscricao] Erro ao enviar email:', err))
+    // Categoria paga: e-mail único apenas após PIX aprovado (webhook).
+    if (category.is_free) {
+      sendRegistrationConfirmation({
+        to: athleteEmail,
+        athleteName: fullName.trim(),
+        registrationNumber,
+        confirmationCode,
+        categoryName: category.name,
+        status: 'confirmed',
+      }).catch((err) => console.error('[inscricao] Erro ao enviar email:', err))
+    }
 
     return NextResponse.json({
       success: true,

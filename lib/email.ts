@@ -82,20 +82,38 @@ export async function sendPaymentConfirmation(params: {
   const acompanharUrl = `${appUrl}/inscricao/acompanhar`
 
   const html = `
-    <h2>Pagamento confirmado - 51ª Corrida Rústica de Macuco</h2>
+    <h2 style="margin:0 0 16px;">Inscrição confirmada — 51ª Corrida Rústica de Macuco</h2>
     <p>Olá, <strong>${athleteName}</strong>!</p>
-    <p>Recebemos seu pagamento. Sua inscrição na categoria <strong>${categoryName}</strong> está confirmada! ✅</p>
-    <p><strong>Nº Inscrição:</strong> ${registrationNumber}</p>
-    <p><strong>Código de confirmação:</strong> ${confirmationCode}</p>
-    <p>Guarde o código de confirmação e leve um documento com foto na retirada do kit.</p>
-    <p><a href="${acompanharUrl}">Acompanhar inscrição</a></p>
-    <p>Até a largada! 🏃‍♂️</p>
+    <p>Recebemos seu <strong>pagamento via PIX</strong>. Sua inscrição na categoria <strong>${categoryName}</strong> está <strong>confirmada e garantida</strong>. ✅</p>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+
+    <p style="margin:0 0 8px;font-weight:bold;color:#111827;">Para acessar o portal (acompanhar ou corrigir dados)</p>
+    <p style="margin:0 0 12px;color:#374151;">Você pode acessar de duas formas:</p>
+    <ul style="margin:0 0 12px;padding-left:20px;color:#374151;">
+      <li><strong>Código de confirmação:</strong> use o código abaixo para entrar direto na página Acompanhar inscrição e visualizar/corrigir seus dados;</li>
+      <li><strong>OU</strong></li>
+      <li><strong>CPF, RG ou e-mail:</strong> informe um desses dados + data de nascimento na página Acompanhar inscrição para visualizar/corrigir seus dados.</li>
+    </ul>
+    <p style="margin:0 0 8px;color:#374151;"><strong>Código de confirmação:</strong> ${confirmationCode}</p>
+    <p style="margin:0 0 16px;">
+      <a href="${acompanharUrl}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Acompanhar minha inscrição</a>
+    </p>
+    <p style="margin:0;font-size:14px;"><a href="${acompanharUrl}" style="color:#0d9488;">${acompanharUrl}</a></p>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+
+    <p style="margin:0 0 8px;font-weight:bold;color:#111827;">Na retirada do kit</p>
+    <p style="margin:0;color:#374151;">Apresente <strong>documento oficial com foto</strong> (RG, CNH ou equivalente). <strong>Não é necessário</strong> levar o código de confirmação para retirar o kit — ele é apenas para uso no site.</p>
+
+    <p style="margin:24px 0 0;color:#374151;">Qualquer dúvida, entre em contato conosco.</p>
+    <p style="margin:8px 0 0;">Até a largada! 🏃‍♂️</p>
   `
 
   const { error } = await resend.emails.send({
     from,
     to,
-    subject: `Pagamento confirmado - ${registrationNumber} | Corrida de Macuco`,
+    subject: `Inscrição confirmada — pagamento recebido | Corrida de Macuco`,
     html,
   })
   return { ok: !error, error: error?.message }
