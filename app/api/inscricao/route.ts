@@ -432,7 +432,6 @@ export async function POST(request: NextRequest) {
     }
 
     const athleteEmail = email.trim().toLowerCase()
-    const status = category.is_free ? 'confirmed' : 'pending_payment'
     // Categoria paga: e-mail único apenas após PIX aprovado (webhook).
     if (category.is_free) {
       sendRegistrationConfirmation({
