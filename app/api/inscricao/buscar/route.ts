@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
 import { hashIp, getClientIp, parseBirthDate, datesMatch } from '@/lib/rateLimit'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 const RATE_LIMIT_MAX = 10
 const RATE_LIMIT_WINDOW_MS = 60 * 1000
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Informe CPF, RG, código ou e-mail' }, { status: 400 })
     }
 
-    const { data: event } = await supabase.from('events').select('id, price_geral').eq('year', 2026).single()
+    const { data: event } = await supabase.from('events').select('id, price_geral').eq('year', CURRENT_EVENT_YEAR).single()
     if (!event) {
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
     }

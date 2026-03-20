@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
 import { hashIp, getClientIp } from '@/lib/rateLimit'
 import { sendCodeResend } from '@/lib/email'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 const RESEND_BLOCK_DURATION_MS = 60 * 60 * 1000 // 1 hora
 const WRONG_RESEND_LIMIT = 5
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Buscar inscrição por identifier (evento 2026)
-    const { data: event } = await supabase.from('events').select('id').eq('year', 2026).single()
+    const { data: event } = await supabase.from('events').select('id').eq('year', CURRENT_EVENT_YEAR).single()
     if (!event) {
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
     }

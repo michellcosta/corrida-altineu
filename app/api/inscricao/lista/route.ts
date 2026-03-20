@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { unstable_noStore } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/serverClient'
-import { formatDateOnly } from '@/lib/formatDate'
 import { getCountryLabel } from '@/lib/countries'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
+import { formatDateOnly } from '@/lib/formatDate'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
     const { data: event } = await supabaseService
       .from('events')
       .select('id, edition')
-      .eq('year', 2026)
+      .eq('year', CURRENT_EVENT_YEAR)
       .single()
 
     if (!event) {
@@ -200,7 +201,7 @@ export async function GET(request: NextRequest) {
         confirmation_code: (r as RegItem).confirmation_code ?? null,
         status: r.status,
         full_name: athlete?.full_name ?? '',
-        birth_date: athlete?.birth_date ?? null,
+        birth_date: formatDateOnly(athlete?.birth_date) || null,
         document_number: athlete?.document_number ?? null,
         category_id: r.category_id,
         category_slug: cat?.slug ?? 'outros',
@@ -247,7 +248,7 @@ export async function GET(request: NextRequest) {
             id: i.id,
             registration_number: i.registration_number,
             full_name: i.full_name,
-            birth_date: formatDateOnly(i.birth_date) || null,
+            birth_date: i.birth_date,
           })),
         }
       })
@@ -283,7 +284,7 @@ export async function GET(request: NextRequest) {
             id: i.id,
             registration_number: i.registration_number,
             full_name: i.full_name,
-            birth_date: formatDateOnly(i.birth_date) || null,
+            birth_date: i.birth_date,
           })),
         })
       }

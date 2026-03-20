@@ -122,7 +122,7 @@ export default function InscricaoSucessoClient() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/inscricao/acompanhar" className="btn-primary">
+            <Link href={`/inscricao/acompanhar?doc=${encodeURIComponent(data.confirmation_code)}`} className="btn-primary">
               Acompanhar Inscrição
             </Link>
             <Link href="/guia-atleta" className="btn-secondary">

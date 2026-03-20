@@ -585,10 +585,16 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
         throw new Error('Resposta inválida')
       }
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : 'Erro ao gerar PIX'
-      const msg = raw.toLowerCase().includes('payer.email')
-        ? 'O e-mail cadastrado na inscrição é inválido. Edite os dados da inscrição e corrija o e-mail antes de gerar o PIX.'
-        : raw
+      const raw = err instanceof Error ? err.message : ''
+      let msg = 'Erro ao gerar PIX. Tente novamente ou entre em contato com a organização.'
+      if (raw.toLowerCase().includes('payer.email'))
+        msg = 'O e-mail cadastrado é inválido. Edite os dados da inscrição e corrija o e-mail antes de gerar o PIX.'
+      else if (raw.toLowerCase().includes('identification'))
+        msg = 'O CPF cadastrado é inválido. Edite os dados da inscrição e corrija antes de gerar o PIX.'
+      else if (raw === 'Resposta inválida')
+        msg = 'Não foi possível gerar o QR Code. Tente novamente em alguns instantes.'
+      else if (raw === 'Failed to fetch')
+        msg = 'Sem conexão com a internet. Verifique sua rede e tente novamente.'
       setPixError(msg)
     } finally {
       setPixLoading(false)
@@ -821,11 +827,19 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
           ) : (
             <div className="space-y-4">
               <p className="font-bold text-lg">Escaneie o QR Code ou copie o código PIX</p>
-              {pixTimeLeft && (
-                <p className={`text-sm font-medium ${pixTimeLeft === 'Expirado' ? 'text-amber-600' : 'text-gray-600'}`}>
-                  {pixTimeLeft === 'Expirado' ? 'PIX expirado' : `Expira em ${pixTimeLeft}`}
-                </p>
-              )}
+              {pixTimeLeft && (() => {
+                const isExpired = pixTimeLeft === 'Expirado'
+                const isUrgent = !isExpired && parseInt(pixTimeLeft) < 5
+                return (
+                  <p className={`text-sm font-medium ${isExpired ? 'text-amber-600' : isUrgent ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                    {isExpired
+                      ? 'PIX expirado'
+                      : isUrgent
+                        ? `⚠️ Atenção: expira em ${pixTimeLeft}! Realize o pagamento agora.`
+                        : `Expira em ${pixTimeLeft}`}
+                  </p>
+                )
+              })()}
               <div className="flex flex-col items-center gap-4">
                 <img
                   src={toQrCodeDataUrl(pixData.brCodeBase64)}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClientFromRequest, createServiceClient } from '@/lib/supabase/serverClient'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +32,7 @@ export async function PATCH(request: Request) {
     const { error: updateError } = await serviceClient
       .from('events')
       .update({ registrations_open: open })
-      .eq('year', 2026)
+      .eq('year', CURRENT_EVENT_YEAR)
 
     if (updateError) {
       console.error('Erro ao alternar inscrições:', updateError)

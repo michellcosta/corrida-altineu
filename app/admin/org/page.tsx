@@ -27,6 +27,8 @@ function formatCountry(athlete: { country?: string | null }): string | null {
 }
 
 const AGE_RANGES = [
+  { key: '5-11',  min: 5,  max: 11 },
+  { key: '12-14', min: 12, max: 14 },
   { key: '15-19', min: 15, max: 19 },
   { key: '20-29', min: 20, max: 29 },
   { key: '30-39', min: 30, max: 39 },
@@ -34,17 +36,18 @@ const AGE_RANGES = [
   { key: '50-59', min: 50, max: 59 },
   { key: '60-69', min: 60, max: 69 },
   { key: '70-79', min: 70, max: 79 },
-  { key: '80+',   min: 80, max: 150 },
+  { key: '80-89', min: 80, max: 89 },
+  { key: '90+',   min: 90, max: 999 },
 ]
 
-const AGE_RANGES_MAIN = AGE_RANGES.slice(0, 5)
-const AGE_RANGES_EXTRA = AGE_RANGES.slice(5)
+const AGE_RANGES_MAIN = AGE_RANGES.slice(0, 7)
+const AGE_RANGES_EXTRA = AGE_RANGES.slice(7)
 
 interface RegistrationWithAthlete {
   id: string
   payment_status: string
   payment_amount: number
-  athlete: { birth_date: string; gender: string | null; city: string | null; state: string | null; country: string | null }
+  athlete: { full_name: string; birth_date: string; gender: string | null; city: string | null; state: string | null; country: string | null }
 }
 
 
@@ -55,7 +58,7 @@ function getAge(birthDate: string, cutoffDate: string): number {
 }
 
 function getAgeRange(age: number): string {
-  return AGE_RANGES.find((r) => age >= r.min && age <= r.max)?.key ?? '80+'
+  return AGE_RANGES.find((r) => age >= r.min && age <= r.max)?.key ?? '90-99'
 }
 
 export default function OrgAdminDashboard() {
@@ -73,6 +76,8 @@ export default function OrgAdminDashboard() {
   const [citiesModalOpen, setCitiesModalOpen] = useState(false)
   const [countriesModalOpen, setCountriesModalOpen] = useState(false)
   const [showAllAges, setShowAllAges] = useState(false)
+  const [ageModalRange, setAgeModalRange] = useState<string | null>(null)
+  const [ageAthleteMap, setAgeAthleteMap] = useState<Record<string, { name: string; gender: string; age: number; city: string }[]>>({})
   const [paymentStats, setPaymentStats] = useState({
     paid: 0,
     pending: 0,
@@ -131,7 +136,7 @@ export default function OrgAdminDashboard() {
           id,
           payment_status,
           payment_amount,
-          athlete:athletes(birth_date, gender, city, state, country)
+          athlete:athletes(full_name, birth_date, gender, city, state, country)
         `)
         .eq('event_id', event.id)
         .in('payment_status', ['paid', 'free'])
@@ -168,8 +173,10 @@ export default function OrgAdminDashboard() {
       setTopCountries(allP.slice(0, 5))
 
       const ageByRange: Record<string, { male: number; female: number }> = {}
+      const ageMap: Record<string, { name: string; gender: string; age: number; city: string }[]> = {}
       AGE_RANGES.forEach((r) => {
         ageByRange[r.key] = { male: 0, female: 0 }
+        ageMap[r.key] = []
       })
       list.forEach((r) => {
         if (!r.athlete?.birth_date) return
@@ -181,6 +188,15 @@ export default function OrgAdminDashboard() {
         } else {
           ageByRange[range].female++
         }
+        ageMap[range].push({
+          name: r.athlete.full_name ?? '-',
+          gender,
+          age,
+          city: formatCity(r.athlete) ?? '-',
+        })
+      })
+      AGE_RANGES.forEach((r) => {
+        ageMap[r.key].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
       })
       setAgeDistribution(
         AGE_RANGES.map((r) => ({
@@ -189,6 +205,7 @@ export default function OrgAdminDashboard() {
           female: ageByRange[r.key].female,
         }))
       )
+      setAgeAthleteMap(ageMap)
 
       const paid = list.filter((r) => r.payment_status === 'paid').length
       const pending = list.filter((r) => ['pending', 'processing'].includes(r.payment_status ?? '')).length
@@ -300,7 +317,7 @@ export default function OrgAdminDashboard() {
                   .map((item) => {
                     const rowTotal = item.male + item.female
                     return (
-                      <div key={item.range}>
+                      <div key={item.range} onClick={() => rowTotal > 0 && setAgeModalRange(item.range)} className={rowTotal > 0 ? 'cursor-pointer hover:bg-gray-50 rounded px-1 -mx-1' : ''}>
                         <div className="flex items-center justify-between mb-0.5 md:mb-1">
                           <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
                           <span className="text-xs md:text-sm text-gray-600">M: {item.male} / F: {item.female}</span>
@@ -325,7 +342,7 @@ export default function OrgAdminDashboard() {
                     .map((item) => {
                       const rowTotal = item.male + item.female
                       return (
-                        <div key={item.range}>
+                        <div key={item.range} onClick={() => rowTotal > 0 && setAgeModalRange(item.range)} className={rowTotal > 0 ? 'cursor-pointer hover:bg-gray-50 rounded px-1 -mx-1' : ''}>
                           <div className="flex items-center justify-between mb-0.5 md:mb-1">
                             <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
                             <span className="text-xs md:text-sm text-gray-600">M: {item.male} / F: {item.female}</span>
@@ -515,6 +532,42 @@ export default function OrgAdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modal: Atletas por faixa etária */}
+      {ageModalRange && (() => {
+        const athletes = ageAthleteMap[ageModalRange] ?? []
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setAgeModalRange(null)}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{ageModalRange} anos</h3>
+                  <p className="text-sm text-gray-500">{athletes.length} atleta{athletes.length !== 1 ? 's' : ''}</p>
+                </div>
+                <button onClick={() => setAgeModalRange(null)} className="text-gray-400 hover:text-gray-600 p-1">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="overflow-y-auto p-4 space-y-1">
+                {athletes.map((a, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${a.gender === 'M' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                        {a.gender === 'M' ? 'M' : 'F'}
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 truncate">{a.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 text-xs text-gray-500">
+                      <span>{a.age} anos</span>
+                      <span className="hidden sm:inline truncate max-w-[120px]">{a.city}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Modal: Todas as cidades */}
       {citiesModalOpen && (

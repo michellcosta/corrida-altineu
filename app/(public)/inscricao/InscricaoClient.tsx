@@ -1826,6 +1826,13 @@ export default function InscricaoClient() {
                   {submitError && (
                     <p className="mt-4 text-sm text-red-600">{submitError}</p>
                   )}
+                  {Object.keys(fieldErrors).length > 0 && (
+                    <p className="mt-4 text-sm text-red-600 font-medium">
+                      {Object.keys(fieldErrors).length === 1
+                        ? 'Há 1 campo que precisa ser corrigido antes de continuar.'
+                        : `Há ${Object.keys(fieldErrors).length} campos que precisam ser corrigidos antes de continuar.`}
+                    </p>
+                  )}
                   <div className="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-0">
                     <button
                       onClick={() => setCurrentStep(1)}

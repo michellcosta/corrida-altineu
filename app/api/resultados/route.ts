@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { unstable_noStore } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/serverClient'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const yearParam = searchParams.get('year')?.trim()
-    const year = yearParam ? parseInt(yearParam, 10) : 2026
+    const year = yearParam ? parseInt(yearParam, 10) : CURRENT_EVENT_YEAR
     const cutoffYear = year
     const isExport = searchParams.get('export') === '1'
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))

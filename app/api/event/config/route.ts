@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { unstable_noStore } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/serverClient'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,7 @@ export async function GET() {
     const { data: event, error: eventError } = await supabase
       .from('events')
       .select('*')
-      .eq('year', 2026)
+      .eq('year', CURRENT_EVENT_YEAR)
       .single()
 
     if (eventError || !event) {

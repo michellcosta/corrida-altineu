@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 /** Campos editáveis pelo atleta na página Acompanhar Inscrição.
  * Travados: registration_number, confirmation_code, document_type, document_number */
@@ -52,7 +53,7 @@ export async function PATCH(request: NextRequest) {
       { auth: { persistSession: false } }
     )
 
-    const { data: event } = await supabase.from('events').select('id').eq('year', 2026).single()
+    const { data: event } = await supabase.from('events').select('id').eq('year', CURRENT_EVENT_YEAR).single()
     if (!event) {
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
     }

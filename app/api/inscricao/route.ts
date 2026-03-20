@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
 import { sendRegistrationConfirmation } from '@/lib/email'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 const CATEGORY_SLUG_MAP: Record<string, string> = {
   'geral-10k': 'geral-10k',
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
     const { data: event, error: eventError } = await supabase
       .from('events')
       .select('id, race_date, year, price_geral, registrations_open, slots_geral, slots_morador, slots_60plus, slots_infantil')
-      .eq('year', 2026)
+      .eq('year', CURRENT_EVENT_YEAR)
       .single()
 
     if (eventError || !event) {
@@ -365,15 +366,27 @@ export async function POST(request: NextRequest) {
 
     const confirmationCode = generateConfirmationCode()
 
-    const { count: regCount } = await supabase
+    const prefix = slug.replace(/-10k|-2k/g, '').toUpperCase().replace('-', '')
+
+    // Use the highest existing number for this category to avoid collisions when
+    // records are deleted from the DB (count-based seq would reuse old numbers).
+    const { data: maxRegRow } = await supabase
       .from('registrations')
-      .select('*', { count: 'exact', head: true })
+      .select('registration_number')
       .eq('event_id', event.id)
       .eq('category_id', category.id)
+      .order('registration_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    const seq = (regCount || 0) + 1
-    const prefix = slug.replace(/-10k|-2k/g, '').toUpperCase().replace('-', '')
-    const registrationNumber = `2026-${prefix}-${String(seq).padStart(4, '0')}`
+    let seq = 1
+    if (maxRegRow?.registration_number) {
+      const parts = (maxRegRow.registration_number as string).split('-')
+      const lastNum = parseInt(parts[parts.length - 1], 10)
+      if (!isNaN(lastNum)) seq = lastNum + 1
+    }
+
+    const registrationNumber = `${CURRENT_EVENT_YEAR}-${prefix}-${String(seq).padStart(4, '0')}`
 
     const priceGeral = Number(event.price_geral) ?? 22
     const categoryPrice = Number(category.price) || priceGeral
@@ -397,13 +410,22 @@ export async function POST(request: NextRequest) {
 
     if (regErr) {
       if (regErr.code === '23505') {
-        return NextResponse.json(
-          {
-            error: 'Já existe uma inscrição com este e-mail para esta categoria. Consulte em Acompanhar Inscrição.',
-            already_registered: true,
-          },
-          { status: 409 }
-        )
+        // If the duplicate is on the athlete+category (not on the number/code),
+        // it means the pre-check missed a concurrent insert — treat as already registered.
+        const isAthleteConflict =
+          typeof regErr.message === 'string' &&
+          !regErr.message.includes('registration_number') &&
+          !regErr.message.includes('confirmation_code')
+        if (isAthleteConflict) {
+          return NextResponse.json(
+            {
+              error: 'Você já possui uma inscrição nesta categoria. Consulte em Acompanhar Inscrição para editar ou concluir o pagamento.',
+              already_registered: true,
+            },
+            { status: 409 }
+          )
+        }
+        // Otherwise it's a technical collision (number/code) — let it fall through to the generic error.
       }
       console.error('[inscricao] Erro ao criar inscrição:', regErr)
       return NextResponse.json({ error: 'Erro ao finalizar inscrição' }, { status: 500 })

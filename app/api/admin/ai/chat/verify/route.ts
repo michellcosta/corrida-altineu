@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { normalizeDocument } from '@/lib/document'
 import { hashIp, getClientIp, parseBirthDate, datesMatch } from '@/lib/rateLimit'
+import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 
 const LOCKOUT_DURATION_MS = 60 * 60 * 1000 // 1 hora
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar inscrição por documento (evento 2026)
-    const { data: event } = await supabase.from('events').select('id').eq('year', 2026).single()
+    const { data: event } = await supabase.from('events').select('id').eq('year', CURRENT_EVENT_YEAR).single()
     if (!event) {
       return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
     }
