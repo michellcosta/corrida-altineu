@@ -53,13 +53,6 @@ export async function POST(request: NextRequest) {
     const [firstName, ...lastNameParts] = (fullName || 'Atleta').trim().split(/\s+/)
     const lastName = lastNameParts.join(' ') || 'Corrida'
 
-    const docNumber = (taxId || '').replace(/\D/g, '')
-    const identification = docNumber.length >= 11
-      ? { type: 'CPF' as const, number: docNumber }
-      : docNumber.length >= 14
-        ? { type: 'CNPJ' as const, number: docNumber }
-        : undefined
-
     // Mercado Pago exige notification_url com https:// - localhost não é aceito
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://corridademacuco.vercel.app'
     const baseUrl = appUrl.startsWith('https://') ? appUrl.replace(/\/$/, '') : 'https://corridademacuco.vercel.app'
@@ -80,7 +73,6 @@ export async function POST(request: NextRequest) {
           email: email.trim(),
           first_name: firstName,
           last_name: lastName,
-          identification,
         },
         metadata: {
           registration_id: registrationId,
