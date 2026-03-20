@@ -32,8 +32,13 @@ const AGE_RANGES = [
   { key: '30-39', min: 30, max: 39 },
   { key: '40-49', min: 40, max: 49 },
   { key: '50-59', min: 50, max: 59 },
-  { key: '60+', min: 60, max: 150 },
+  { key: '60-69', min: 60, max: 69 },
+  { key: '70-79', min: 70, max: 79 },
+  { key: '80+',   min: 80, max: 150 },
 ]
+
+const AGE_RANGES_MAIN = AGE_RANGES.slice(0, 5)
+const AGE_RANGES_EXTRA = AGE_RANGES.slice(5)
 
 interface RegistrationWithAthlete {
   id: string
@@ -50,7 +55,7 @@ function getAge(birthDate: string, cutoffDate: string): number {
 }
 
 function getAgeRange(age: number): string {
-  return AGE_RANGES.find((r) => age >= r.min && age <= r.max)?.key ?? '60+'
+  return AGE_RANGES.find((r) => age >= r.min && age <= r.max)?.key ?? '80+'
 }
 
 export default function OrgAdminDashboard() {
@@ -67,6 +72,7 @@ export default function OrgAdminDashboard() {
   const [allCountries, setAllCountries] = useState<{ country: string; count: number }[]>([])
   const [citiesModalOpen, setCitiesModalOpen] = useState(false)
   const [countriesModalOpen, setCountriesModalOpen] = useState(false)
+  const [showAllAges, setShowAllAges] = useState(false)
   const [paymentStats, setPaymentStats] = useState({
     paid: 0,
     pending: 0,
@@ -128,6 +134,7 @@ export default function OrgAdminDashboard() {
           athlete:athletes(birth_date, gender, city, state, country)
         `)
         .eq('event_id', event.id)
+        .in('payment_status', ['paid', 'free'])
 
       const list = (regs || []) as unknown as RegistrationWithAthlete[]
       setTotal(list.length)
@@ -240,7 +247,7 @@ export default function OrgAdminDashboard() {
                   </div>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{total.toLocaleString('pt-BR')}</p>
-                <p className="text-xs md:text-sm text-gray-600">Total de Inscrições</p>
+                <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
               </div>
               <div className="admin-card">
                 <div className="flex items-center justify-between mb-2 md:mb-4">
@@ -288,36 +295,64 @@ export default function OrgAdminDashboard() {
               </div>
             ) : (
               <div className="space-y-2 md:space-y-3">
-                {ageDistribution.map((item) => {
-                  const total = item.male + item.female
-                  return (
-                    <div key={item.range}>
-                      <div className="flex items-center justify-between mb-0.5 md:mb-1">
-                        <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
-                        <span className="text-xs md:text-sm text-gray-600">
-                          M: {item.male} / F: {item.female}
-                        </span>
+                {ageDistribution
+                  .filter((item) => AGE_RANGES_MAIN.some((r) => r.key === item.range))
+                  .map((item) => {
+                    const rowTotal = item.male + item.female
+                    return (
+                      <div key={item.range}>
+                        <div className="flex items-center justify-between mb-0.5 md:mb-1">
+                          <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
+                          <span className="text-xs md:text-sm text-gray-600">M: {item.male} / F: {item.female}</span>
+                        </div>
+                        <div className="flex gap-1 h-3 md:h-2">
+                          {rowTotal > 0 ? (
+                            <>
+                              <div className="bg-blue-500 rounded-l" style={{ width: `${(item.male / rowTotal) * 100}%` }} />
+                              <div className="bg-pink-500 rounded-r" style={{ width: `${(item.female / rowTotal) * 100}%` }} />
+                            </>
+                          ) : (
+                            <div className="w-full bg-gray-200 rounded h-3 md:h-2" />
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-1 h-3 md:h-2">
-                        {total > 0 ? (
-                          <>
-                            <div
-                              className="bg-blue-500 rounded-l"
-                              style={{ width: `${(item.male / total) * 100}%` }}
-                            />
-                            <div
-                              className="bg-pink-500 rounded-r"
-                              style={{ width: `${(item.female / total) * 100}%` }}
-                            />
-                          </>
-                        ) : (
-                          <div className="w-full bg-gray-200 rounded h-3 md:h-2" />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-                <div className="flex items-center justify-center gap-4 md:gap-6 mt-3 md:mt-4 pt-3 md:pt-4 border-t">
+                    )
+                  })}
+
+                {showAllAges &&
+                  ageDistribution
+                    .filter((item) => AGE_RANGES_EXTRA.some((r) => r.key === item.range))
+                    .map((item) => {
+                      const rowTotal = item.male + item.female
+                      return (
+                        <div key={item.range}>
+                          <div className="flex items-center justify-between mb-0.5 md:mb-1">
+                            <span className="text-xs md:text-sm font-medium text-gray-700">{item.range} anos</span>
+                            <span className="text-xs md:text-sm text-gray-600">M: {item.male} / F: {item.female}</span>
+                          </div>
+                          <div className="flex gap-1 h-3 md:h-2">
+                            {rowTotal > 0 ? (
+                              <>
+                                <div className="bg-blue-500 rounded-l" style={{ width: `${(item.male / rowTotal) * 100}%` }} />
+                                <div className="bg-pink-500 rounded-r" style={{ width: `${(item.female / rowTotal) * 100}%` }} />
+                              </>
+                            ) : (
+                              <div className="w-full bg-gray-200 rounded h-3 md:h-2" />
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+
+                <button
+                  type="button"
+                  onClick={() => setShowAllAges((v) => !v)}
+                  className="w-full text-xs font-medium text-green-600 hover:text-green-700 hover:underline mt-1"
+                >
+                  {showAllAges ? 'Recolher' : 'Ver todas (60+)'}
+                </button>
+
+                <div className="flex items-center justify-center gap-4 md:gap-6 mt-2 pt-3 md:pt-4 border-t">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded"></div>
                     <span className="text-xs text-gray-600">Masculino ({totalMale})</span>

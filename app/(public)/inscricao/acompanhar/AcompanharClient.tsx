@@ -585,7 +585,11 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
         throw new Error('Resposta inválida')
       }
     } catch (err: unknown) {
-      setPixError(err instanceof Error ? err.message : 'Erro ao gerar PIX')
+      const raw = err instanceof Error ? err.message : 'Erro ao gerar PIX'
+      const msg = raw.toLowerCase().includes('payer.email')
+        ? 'O e-mail cadastrado na inscrição é inválido. Edite os dados da inscrição e corrija o e-mail antes de gerar o PIX.'
+        : raw
+      setPixError(msg)
     } finally {
       setPixLoading(false)
     }
