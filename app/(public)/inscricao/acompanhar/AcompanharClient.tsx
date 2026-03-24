@@ -668,7 +668,7 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
       }
     }
     setEditData({
-      full_name: athlete?.full_name ?? '',
+      full_name: (athlete?.full_name ?? '').toUpperCase(),
       birthDay: d,
       birthMonth: m,
       birthYear: y,
@@ -679,7 +679,7 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
       email: athlete?.email ?? '',
       phone: athlete?.phone ?? '',
       whatsapp: athlete?.whatsapp ?? '',
-      team_name: athlete?.team_name ?? '',
+      team_name: (athlete?.team_name ?? '').toUpperCase(),
       emergency_contact_name: athlete?.emergency_contact_name ?? '',
       emergency_contact_phone: athlete?.emergency_contact_phone ?? '',
       tshirt_size: athlete?.tshirt_size ?? '',
@@ -914,7 +914,7 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
           <h4 className="font-semibold text-gray-800 border-b pb-2">Dados Pessoais</h4>
           {editing ? (
             <>
-              <EditField label="Nome completo" value={editData.full_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, full_name: v }))} />
+              <EditField label="Nome completo" value={editData.full_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, full_name: v.toUpperCase() }))} />
               <div>
                 <label className="block text-sm text-gray-600 mb-1.5">Data de Nascimento</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1056,7 +1056,7 @@ function ComprovanteCard({ reg, searchToken, searchType }: { reg: RegistrationRe
           <h4 className="font-semibold text-gray-800 border-b pb-2">Outros</h4>
           {editing ? (
             <>
-              <EditField label="Equipe/Clube" value={editData.team_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, team_name: v }))} />
+              <EditField label="Equipe/Clube" value={editData.team_name ?? ''} onChange={(v) => setEditData((d) => ({ ...d, team_name: v.toUpperCase() }))} />
             </>
           ) : (
             <>
