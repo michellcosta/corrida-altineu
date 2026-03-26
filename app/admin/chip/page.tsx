@@ -43,6 +43,7 @@ interface RecentRegistration {
   id: string
   registration_number: string | null
   status: string
+  payment_status: string | null
   bib_number: number | null
   registered_at: string
   athlete: { full_name: string }
@@ -87,6 +88,7 @@ export default function ChipAdminDashboard() {
           id,
           registration_number,
           status,
+          payment_status,
           bib_number,
           kit_picked_at,
           registered_at,
@@ -106,7 +108,10 @@ export default function ChipAdminDashboard() {
       setStats({ total, confirmed, kitsRetirados, pending, numerados })
       setRecentRegs(list.slice(0, 8))
 
-      const byCategory = list.reduce<Record<string, number>>((acc, r) => {
+      const confirmedPayment = (ps: string | null | undefined) => ps === 'paid' || ps === 'free'
+      const confirmedList = list.filter((r) => confirmedPayment(r.payment_status))
+      const confirmedTotal = confirmedList.length
+      const byCategory = confirmedList.reduce<Record<string, number>>((acc, r) => {
         const name = r.category?.name ?? 'Outros'
         acc[name] = (acc[name] || 0) + 1
         return acc
@@ -114,7 +119,7 @@ export default function ChipAdminDashboard() {
       const breakdown: CategoryBreakdown[] = Object.entries(byCategory).map(([category, count]) => ({
         category,
         count,
-        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        percentage: confirmedTotal > 0 ? Math.round((count / confirmedTotal) * 100) : 0,
       }))
       setCategoryBreakdown(breakdown)
 
@@ -219,7 +224,7 @@ export default function ChipAdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Category Breakdown */}
           <div className="admin-card">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Distribuição por Categoria</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Distribuição por Categoria (confirmados)</h3>
             {loading ? (
               <div className="flex items-center justify-center h-32">
                 <Loader2 className="animate-spin text-primary-600" size={24} />
