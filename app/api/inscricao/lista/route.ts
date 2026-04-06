@@ -157,7 +157,10 @@ export async function GET(request: NextRequest) {
       athlete: Array.isArray(r.athlete) ? r.athlete[0] : r.athlete,
     }))
 
-    const athleteMap = new Map(regs.map((r: any) => [r.athlete_id as string, r.athlete]).filter(([, a]: any) => a))
+    const athleteMap = new Map<string, unknown>()
+    for (const r of regs) {
+      if ((r as any).athlete) athleteMap.set((r as any).athlete_id, (r as any).athlete)
+    }
 
     const catMap = new Map((cats || []).map((c: { id: string; name: string; slug?: string }) => [c.id, { id: c.id, name: c.name, slug: c.slug || '' }]))
 
