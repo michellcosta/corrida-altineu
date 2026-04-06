@@ -137,25 +137,27 @@ export async function GET(request: NextRequest) {
       .eq('event_id', event.id)
       .order('name')
 
-    const { data: regs, error } = await supabaseService
+    const { data: regsRaw, error } = await supabaseService
       .from('registrations')
-      .select('id, athlete_id, category_id, registration_number, confirmation_code, status, payment_status, bib_number, notes')
+      .select(`
+        id, athlete_id, category_id, registration_number, confirmation_code, status, payment_status, bib_number, notes,
+        athlete:athletes(id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size, document_number)
+      `)
       .eq('event_id', event.id)
       .order('registered_at', { ascending: isAdmin ? false : true })
       .limit(10000)
-
-    const athleteIds = [...new Set((regs || []).map((r: { athlete_id: string }) => r.athlete_id))]
-
-    const { data: athletes } = athleteIds.length > 0
-      ? await supabaseService.from('athletes').select('id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size, document_number').in('id', athleteIds)
-      : { data: [] }
-
-    const athleteMap = new Map((athletes || []).map((a: Record<string, unknown>) => [a.id as string, a]))
 
     if (error) {
       console.error('Erro ao listar inscritos:', error)
       return NextResponse.json({ error: 'Erro ao listar inscritos' }, { status: 500 })
     }
+
+    const regs = (regsRaw || []).map((r: any) => ({
+      ...r,
+      athlete: Array.isArray(r.athlete) ? r.athlete[0] : r.athlete,
+    }))
+
+    const athleteMap = new Map(regs.map((r: any) => [r.athlete_id as string, r.athlete]).filter(([, a]: any) => a))
 
     const catMap = new Map((cats || []).map((c: { id: string; name: string; slug?: string }) => [c.id, { id: c.id, name: c.name, slug: c.slug || '' }]))
 
@@ -167,12 +169,10 @@ export async function GET(request: NextRequest) {
     const allRegs = (regs || []) as RegItem[]
 
     if (isAdmin) {
-      const merged = allRegs.map((r) => {
-        const athlete = athleteMap.get(r.athlete_id)
+      const merged = allRegs.map((r: any) => {
         const cat = r.category_id ? catMap.get(r.category_id) : null
         return {
           ...r,
-          athlete,
           category: cat ? { id: cat.id, name: cat.name } : null,
         }
       })
@@ -192,13 +192,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Lista pública: iterar por categorias do banco (fonte da verdade) e incluir inscritos confirmados
-    const confirmedRegs = allRegs.filter((r) => isConfirmed(r.status)).map((r) => {
-      const athlete = athleteMap.get(r.athlete_id) as { full_name?: string; birth_date?: string | number; document_number?: string } | undefined
+    const confirmedRegs = allRegs.filter((r: any) => isConfirmed(r.status)).map((r: any) => {
+      const athlete = r.athlete as { full_name?: string; birth_date?: string | number; document_number?: string } | undefined
       const cat = r.category_id ? catMap.get(r.category_id) : null
       return {
         id: r.id,
         registration_number: r.registration_number,
-        confirmation_code: (r as RegItem).confirmation_code ?? null,
+        confirmation_code: r.confirmation_code ?? null,
         status: r.status,
         full_name: athlete?.full_name ?? '',
         birth_date: formatDateOnly(athlete?.birth_date) || null,
