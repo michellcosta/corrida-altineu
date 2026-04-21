@@ -107,6 +107,8 @@ create table if not exists public.events (
   city text default 'Macuco',
   state text default 'RJ',
   total_prize numeric default 0,
+  withdrawal_amount numeric default 0,
+  withdrawal_note text,
   registrations_open boolean default false,
   registration_open_date timestamptz,
   registration_close_date timestamptz,

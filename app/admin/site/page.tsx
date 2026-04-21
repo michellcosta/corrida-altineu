@@ -41,7 +41,7 @@ const AGE_RANGES = [
 const AGE_RANGES_MAIN = AGE_RANGES.slice(0, 7)
 const AGE_RANGES_EXTRA = AGE_RANGES.slice(7)
 
-const FEE_PER_TRANSACTION = 0.8
+const FEE_PER_TRANSACTION = 0.22
 
 interface SiteStats {
   health: {
@@ -66,6 +66,8 @@ interface EventSummary {
   registrationsOpen: boolean
   city?: string
   state?: string
+  withdrawalAmount?: number
+  withdrawalNote?: string
 }
 
 interface RegistrationWithAthlete {
@@ -120,6 +122,8 @@ async function fetchEventSummary(): Promise<EventSummary | null> {
       registrationsOpen: Boolean(data.registrations_open),
       city: data.city ?? undefined,
       state: data.state ?? undefined,
+      withdrawalAmount: Number(data.withdrawal_amount ?? 0),
+      withdrawalNote: data.withdrawal_note ?? '',
     }
   } catch {
     return null
@@ -159,11 +163,65 @@ export default function SiteAdminDashboard() {
     free: 0,
     totalAmount: 0,
     netAmount: 0,
+    withdrawalAmount: 0,
+    withdrawalNote: '',
   })
+  const [withdrawalInput, setWithdrawalInput] = useState('0,00')
+  const [withdrawalNoteInput, setWithdrawalNoteInput] = useState('')
+  const [savingWithdrawal, setSavingWithdrawal] = useState(false)
 
   useEffect(() => {
     loadDashboard()
   }, [])
+
+  useEffect(() => {
+    const amount = Number(eventSummary?.withdrawalAmount ?? 0)
+    setWithdrawalInput(
+      amount.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    )
+  }, [eventSummary?.withdrawalAmount])
+
+  useEffect(() => {
+    setWithdrawalNoteInput(eventSummary?.withdrawalNote ?? '')
+  }, [eventSummary?.withdrawalNote])
+
+  const parseCurrencyInput = (value: string): number => {
+    const normalized = value
+      .replace(/\s/g, '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .replace(/[^\d.-]/g, '')
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0
+  }
+
+  const saveWithdrawalAmount = async () => {
+    if (!eventSummary?.id) return
+    setSavingWithdrawal(true)
+    try {
+      const amount = parseCurrencyInput(withdrawalInput)
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('events')
+        .update({
+          withdrawal_amount: amount,
+          withdrawal_note: withdrawalNoteInput.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', eventSummary.id)
+
+      if (error) throw error
+      notify('Valor de retirada atualizado.', 'success')
+      await loadDashboard()
+    } catch (err: unknown) {
+      notify(err instanceof Error ? err.message : 'Erro ao salvar retirada.', 'error')
+    } finally {
+      setSavingWithdrawal(false)
+    }
+  }
 
   const loadDashboard = async () => {
     try {
@@ -197,7 +255,7 @@ export default function SiteAdminDashboard() {
         setTopCountries([])
         setAllCities([])
         setAllCountries([])
-        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
+        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0, withdrawalAmount: 0, withdrawalNote: '' })
       } else {
         const cutoffDate = event.ageCutoffDate ?? event.raceDate ?? new Date().toISOString().slice(0, 10)
         if (event.raceDate) {
@@ -296,8 +354,19 @@ export default function SiteAdminDashboard() {
             const n = typeof v === 'string' ? parseFloat(String(v).replace(',', '.')) : Number(v)
             return sum + (Number.isFinite(n) ? n : 0)
           }, 0)
-        const netAmount = Number.isFinite(totalAmount) ? Math.max(0, totalAmount - paid * FEE_PER_TRANSACTION) : 0
-        setPaymentStats({ paid, pending, free, totalAmount, netAmount })
+        const withdrawalAmount = Number(event.withdrawalAmount ?? 0)
+        const netAmount = Number.isFinite(totalAmount)
+          ? Math.max(0, totalAmount - paid * FEE_PER_TRANSACTION - withdrawalAmount)
+          : 0
+        setPaymentStats({
+          paid,
+          pending,
+          free,
+          totalAmount,
+          netAmount,
+          withdrawalAmount,
+          withdrawalNote: event.withdrawalNote ?? '',
+        })
       }
     } catch (err: unknown) {
       console.error('Erro ao carregar painel:', err)
@@ -426,7 +495,7 @@ export default function SiteAdminDashboard() {
                   </div>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{total.toLocaleString('pt-BR')}</p>
-                <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
+                <p className="text-xs md:text-sm text-gray-600">Pagantes</p>
               </div>
               <div className="admin-card">
                 <div className="flex items-center justify-between mb-2 md:mb-4">
@@ -707,19 +776,13 @@ export default function SiteAdminDashboard() {
                 <Loader2 className="animate-spin text-blue-600" size={24} />
               </div>
             ) : (
+              <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                 <div className="text-center p-4 md:p-6 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-2xl md:text-3xl font-bold text-green-600 mb-1 md:mb-2">{paymentStats.paid}</p>
-                  <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
+                  <p className="text-xs md:text-sm text-gray-600">Pagantes</p>
                   <p className="text-xs text-green-600 font-semibold mt-0.5 md:mt-1">
                     {total > 0 ? `${((paymentStats.paid / total) * 100).toFixed(0)}%` : '0%'}
-                  </p>
-                </div>
-                <div className="text-center p-4 md:p-6 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <p className="text-2xl md:text-3xl font-bold text-yellow-600 mb-1 md:mb-2">{paymentStats.pending}</p>
-                  <p className="text-xs md:text-sm text-gray-600">Aguardando</p>
-                  <p className="text-xs text-yellow-600 font-semibold mt-0.5 md:mt-1">
-                    {total > 0 ? `${((paymentStats.pending / total) * 100).toFixed(0)}%` : '0%'}
                   </p>
                 </div>
                 <div className="text-center p-4 md:p-6 bg-blue-50 rounded-lg border border-blue-200">
@@ -735,10 +798,54 @@ export default function SiteAdminDashboard() {
                   </p>
                   <p className="text-xs md:text-sm text-gray-600">Líquido (após taxa)</p>
                   <p className="text-[10px] md:text-xs text-purple-600 font-semibold mt-0.5 md:mt-1">
-                    Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa
+                    Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa − R$ {paymentStats.withdrawalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} retirada
                   </p>
+                  {paymentStats.withdrawalNote ? (
+                    <p className="text-[10px] md:text-xs text-gray-600 mt-0.5 md:mt-1">
+                      {paymentStats.withdrawalNote}
+                    </p>
+                  ) : null}
+                  <details className="mt-2 text-left">
+                    <summary className="text-[10px] md:text-xs text-purple-700 font-semibold cursor-pointer select-none">
+                      ℹ️ Como calculamos este valor
+                    </summary>
+                    <div className="mt-1 text-[10px] md:text-xs text-gray-700 leading-relaxed">
+                      <p><strong>Bruto:</strong> soma de todos os pagamentos aprovados (paid).</p>
+                      <p><strong>Taxa:</strong> taxa fixa do Mercado Pago de R$ {FEE_PER_TRANSACTION.toFixed(2)} por pagamento aprovado.</p>
+                      <p><strong>Retirada:</strong> valor manual informado no painel do Site Admin.</p>
+                      <p><strong>Líquido:</strong> Bruto - Taxa - Retirada.</p>
+                    </div>
+                  </details>
                 </div>
               </div>
+              <div className="mt-4 p-3 md:p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <p className="text-xs md:text-sm font-semibold text-gray-700 mb-2">Retirada (deduz do líquido)</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={withdrawalInput}
+                    onChange={(e) => setWithdrawalInput(e.target.value)}
+                    placeholder="0,00"
+                    className="w-full sm:max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={saveWithdrawalAmount}
+                    disabled={savingWithdrawal}
+                    className="px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold disabled:opacity-60"
+                  >
+                    {savingWithdrawal ? 'Salvando...' : 'Salvar retirada'}
+                  </button>
+                </div>
+                <textarea
+                  value={withdrawalNoteInput}
+                  onChange={(e) => setWithdrawalNoteInput(e.target.value)}
+                  placeholder="Descreva a retirada (ex.: pagamento de estrutura, premiação, equipe de apoio)"
+                  rows={3}
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              </>
             )}
           </div>
         </div>

@@ -84,9 +84,11 @@ export default function OrgAdminDashboard() {
     free: 0,
     totalAmount: 0,
     netAmount: 0,
+    withdrawalAmount: 0,
+    withdrawalNote: '',
   })
 
-  const FEE_PER_TRANSACTION = 0.8
+  const FEE_PER_TRANSACTION = 0.22
   const [loading, setLoading] = useState(true)
 
   const totalMale = useMemo(() => ageDistribution.reduce((acc, item) => acc + item.male, 0), [ageDistribution])
@@ -103,7 +105,7 @@ export default function OrgAdminDashboard() {
 
       const { data: event } = await supabase
         .from('events')
-        .select('id, race_date, age_cutoff_date')
+        .select('id, race_date, age_cutoff_date, withdrawal_amount, withdrawal_note')
         .eq('year', 2026)
         .single()
 
@@ -117,7 +119,7 @@ export default function OrgAdminDashboard() {
         setTopCountries([])
         setAllCities([])
         setAllCountries([])
-        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
+        setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0, withdrawalAmount: 0, withdrawalNote: '' })
         return
       }
 
@@ -217,8 +219,19 @@ export default function OrgAdminDashboard() {
           const n = typeof v === 'string' ? parseFloat(String(v).replace(',', '.')) : Number(v)
           return sum + (Number.isFinite(n) ? n : 0)
         }, 0)
-      const netAmount = Number.isFinite(totalAmount) ? Math.max(0, totalAmount - paid * FEE_PER_TRANSACTION) : 0
-      setPaymentStats({ paid, pending, free, totalAmount, netAmount })
+      const withdrawalAmount = Number((event as { withdrawal_amount?: number | null }).withdrawal_amount ?? 0)
+      const netAmount = Number.isFinite(totalAmount)
+        ? Math.max(0, totalAmount - paid * FEE_PER_TRANSACTION - withdrawalAmount)
+        : 0
+      setPaymentStats({
+        paid,
+        pending,
+        free,
+        totalAmount,
+        netAmount,
+        withdrawalAmount,
+        withdrawalNote: String((event as { withdrawal_note?: string | null }).withdrawal_note ?? ''),
+      })
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err)
       setTotal(0)
@@ -228,7 +241,7 @@ export default function OrgAdminDashboard() {
       setAgeDistribution([])
       setTopCities([])
       setTopCountries([])
-      setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0 })
+      setPaymentStats({ paid: 0, pending: 0, free: 0, totalAmount: 0, netAmount: 0, withdrawalAmount: 0, withdrawalNote: '' })
     } finally {
       setLoading(false)
     }
@@ -264,7 +277,7 @@ export default function OrgAdminDashboard() {
                   </div>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{total.toLocaleString('pt-BR')}</p>
-                <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
+                <p className="text-xs md:text-sm text-gray-600">Pagantes</p>
               </div>
               <div className="admin-card">
                 <div className="flex items-center justify-between mb-2 md:mb-4">
@@ -482,19 +495,13 @@ export default function OrgAdminDashboard() {
               <Loader2 className="animate-spin text-green-600" size={24} />
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
               <div className="text-center p-4 md:p-6 bg-green-50 rounded-lg border border-green-200">
                 <p className="text-2xl md:text-3xl font-bold text-green-600 mb-1 md:mb-2">{paymentStats.paid}</p>
-                <p className="text-xs md:text-sm text-gray-600">Confirmados</p>
+                <p className="text-xs md:text-sm text-gray-600">Pagantes</p>
                 <p className="text-xs text-green-600 font-semibold mt-0.5 md:mt-1">
                   {total > 0 ? `${((paymentStats.paid / total) * 100).toFixed(0)}%` : '0%'}
-                </p>
-              </div>
-              <div className="text-center p-4 md:p-6 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-2xl md:text-3xl font-bold text-yellow-600 mb-1 md:mb-2">{paymentStats.pending}</p>
-                <p className="text-xs md:text-sm text-gray-600">Aguardando</p>
-                <p className="text-xs text-yellow-600 font-semibold mt-0.5 md:mt-1">
-                  {total > 0 ? `${((paymentStats.pending / total) * 100).toFixed(0)}%` : '0%'}
                 </p>
               </div>
               <div className="text-center p-4 md:p-6 bg-blue-50 rounded-lg border border-blue-200">
@@ -510,27 +517,31 @@ export default function OrgAdminDashboard() {
                 </p>
                 <p className="text-xs md:text-sm text-gray-600">Líquido (após taxa)</p>
                 <p className="text-[10px] md:text-xs text-purple-600 font-semibold mt-0.5 md:mt-1">
-                  Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa
+                  Bruto R$ {(Number.isFinite(paymentStats.totalAmount) ? paymentStats.totalAmount : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} − R$ {(paymentStats.paid * FEE_PER_TRANSACTION).toFixed(2)} taxa − R$ {paymentStats.withdrawalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} retirada
                 </p>
+                <details className="mt-2 text-left">
+                  <summary className="text-[10px] md:text-xs text-purple-700 font-semibold cursor-pointer select-none">
+                    ℹ️ Como calculamos este valor
+                  </summary>
+                  <div className="mt-1 text-[10px] md:text-xs text-gray-700 leading-relaxed">
+                    <p><strong>Bruto:</strong> soma de todos os pagamentos aprovados (paid).</p>
+                    <p><strong>Taxa:</strong> taxa fixa do Mercado Pago de R$ {FEE_PER_TRANSACTION.toFixed(2)} por pagamento aprovado.</p>
+                    <p><strong>Retirada:</strong> valor manual informado no painel do Site Admin.</p>
+                    <p><strong>Líquido:</strong> Bruto - Taxa - Retirada.</p>
+                  </div>
+                </details>
               </div>
             </div>
+            <div className="mt-4 p-3 md:p-4 rounded-lg border border-gray-200 bg-gray-50">
+              <p className="text-xs md:text-sm font-semibold text-gray-700">Retirada aplicada (Site Admin): R$ {paymentStats.withdrawalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              {paymentStats.withdrawalNote ? (
+                <p className="text-xs text-gray-600 mt-1">{paymentStats.withdrawalNote}</p>
+              ) : null}
+            </div>
+            </>
           )}
         </div>
 
-        {/* Info Message */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
-          <div className="flex items-start gap-2 md:gap-3">
-            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-white text-sm">ℹ️</span>
-            </div>
-            <div>
-              <p className="font-semibold text-blue-900 mb-1">Acesso Somente Leitura</p>
-              <p className="text-sm text-blue-700">
-                Este painel fornece visualização de dados e relatórios. Para realizar alterações ou ações administrativas, entre em contato com o administrador do site.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Modal: Atletas por faixa etária */}

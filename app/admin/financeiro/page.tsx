@@ -23,7 +23,7 @@ import {
 import { createClient } from '@/lib/supabase/browserClient'
 import { Card } from '@/components/ui'
 
-const FEE_PER_TRANSACTION = 0.8 // R$ 0,80 por PIX confirmado
+const FEE_PER_TRANSACTION = 0.22 // R$ 0,22 por PIX confirmado
 
 interface RegistrationData {
     id: string
@@ -40,7 +40,9 @@ export default function FinanceiroPage() {
         totalFees: 0,
         totalNet: 0,
         paidCount: 0,
-        pendingCount: 0
+        pendingCount: 0,
+        withdrawalAmount: 0,
+        withdrawalNote: ''
     })
 
     useEffect(() => {
@@ -54,7 +56,7 @@ export default function FinanceiroPage() {
 
             const { data: event } = await supabase
                 .from('events')
-                .select('id')
+                .select('id, withdrawal_amount, withdrawal_note')
                 .eq('year', 2026)
                 .single()
 
@@ -79,14 +81,18 @@ export default function FinanceiroPage() {
             }, 0)
 
             const fees = paid.length * FEE_PER_TRANSACTION
-            const net = gross - fees
+            const withdrawalAmount = Number((event as { withdrawal_amount?: number | null }).withdrawal_amount ?? 0)
+            const withdrawalNote = String((event as { withdrawal_note?: string | null }).withdrawal_note ?? '')
+            const net = gross - fees - withdrawalAmount
 
             setStats({
                 totalGross: gross,
                 totalFees: fees,
                 totalNet: net,
                 paidCount: paid.length,
-                pendingCount: pending.length
+                pendingCount: pending.length,
+                withdrawalAmount,
+                withdrawalNote
             })
         } catch (error) {
             console.error('Erro ao carregar dados financeiros:', error)
@@ -161,7 +167,7 @@ export default function FinanceiroPage() {
 
                     <Card className="p-6 border-l-4 border-l-amber-500 bg-white shadow-sm overflow-hidden relative group">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Taxas Estimadas (R$ 0,80/PIX)</p>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Taxas Estimadas (R$ 0,22/PIX)</p>
                             <PieChart className="text-amber-500 opacity-20 group-hover:opacity-40 transition-opacity" size={48} />
                         </div>
                         <p className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -181,8 +187,14 @@ export default function FinanceiroPage() {
                             R$ {stats.totalNet.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                         <p className="mt-4 text-xs text-emerald-600 font-medium italic">
-                            Valor aproximado a receber na conta
+                            Valor aproximado: bruto - taxas - retirada
                         </p>
+                        <p className="mt-2 text-xs text-emerald-700 font-semibold">
+                            Retirada aplicada: R$ {stats.withdrawalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                        {stats.withdrawalNote ? (
+                            <p className="mt-1 text-xs text-gray-600">{stats.withdrawalNote}</p>
+                        ) : null}
                     </Card>
                 </div>
 
@@ -247,21 +259,14 @@ export default function FinanceiroPage() {
                             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                                 <div className="flex items-center gap-3">
                                     <div className="w-3 h-3 bg-emerald-500 rounded-full" />
-                                    <span className="text-sm font-medium text-gray-700">Confirmados</span>
+                                    <span className="text-sm font-medium text-gray-700">Pagantes</span>
                                 </div>
                                 <span className="font-bold text-gray-900">{stats.paidCount}</span>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 bg-amber-500 rounded-full" />
-                                    <span className="text-sm font-medium text-gray-700">Pendentes</span>
-                                </div>
-                                <span className="font-bold text-gray-900">{stats.pendingCount}</span>
                             </div>
 
                             <div className="pt-6 border-t mt-6">
                                 <p className="text-xs text-gray-500 leading-relaxed">
-                                    * Os valores líquidos são estimativos e consideram apenas a taxa de transação PIX. Outros custos operacionais não estão deduzidos aqui.
+                                    * Os valores líquidos são estimativos e consideram taxa PIX e retirada configurada no Site Admin.
                                 </p>
                                 <button
                                     onClick={() => loadFinanceData()}
