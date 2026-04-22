@@ -235,7 +235,14 @@ export default function FinanceiroPage() {
                                                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                                                 padding: '12px'
                                             }}
-                                            formatter={(val: number) => [`R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
+                                            formatter={(value) => {
+                                                const n =
+                                                    value == null ? NaN : typeof value === 'number' ? value : Number(value)
+                                                const formatted = Number.isFinite(n)
+                                                    ? n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                                                    : '—'
+                                                return [`R$ ${formatted}`, 'Faturamento']
+                                            }}
                                         />
                                         <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={40}>
                                             {chartData.map((_entry, index) => (

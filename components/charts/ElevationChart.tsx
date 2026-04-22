@@ -58,7 +58,11 @@ export default function ElevationChart({ data, distanceLabel = 'km' }: Elevation
               domain={[Math.floor(minElev - 10), Math.ceil(maxElev + 10)]}
             />
             <Tooltip
-              formatter={(value: number) => [`${value.toFixed(1)} m`, 'Elevação']}
+              formatter={(value) => {
+                const n = typeof value === 'number' ? value : Number(value)
+                const text = Number.isFinite(n) ? `${n.toFixed(1)} m` : '—'
+                return [text, 'Elevação']
+              }}
               labelFormatter={(label) => `Km ${label}`}
               contentStyle={{
                 backgroundColor: 'white',

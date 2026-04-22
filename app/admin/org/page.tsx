@@ -277,7 +277,7 @@ export default function OrgAdminDashboard() {
                   </div>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 mb-0.5 md:mb-1">{total.toLocaleString('pt-BR')}</p>
-                <p className="text-xs md:text-sm text-gray-600">Pagantes</p>
+                <p className="text-xs md:text-sm text-gray-600">Inscritos</p>
               </div>
               <div className="admin-card">
                 <div className="flex items-center justify-between mb-2 md:mb-4">
