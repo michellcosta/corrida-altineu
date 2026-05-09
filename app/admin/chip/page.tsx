@@ -99,7 +99,9 @@ export default function ChipAdminDashboard() {
         .order('registered_at', { ascending: false })
 
       const list = (regs || []) as unknown as (RecentRegistration & { kit_picked_at?: string | null })[]
-      const total = list.length
+      // Alinhado a Site/Org: só pago ou gratuito confirmado (exclui pendente de pagamento etc.)
+      const confirmedPayment = (ps: string | null | undefined) => ps === 'paid' || ps === 'free'
+      const total = list.filter((r) => confirmedPayment(r.payment_status)).length
       const confirmed = list.filter((r) => r.status === 'confirmed').length
       const kitsRetirados = list.filter((r) => r.kit_picked_at != null).length
       const pending = list.filter((r) => PENDING_STATUSES.includes(r.status)).length
@@ -108,7 +110,6 @@ export default function ChipAdminDashboard() {
       setStats({ total, confirmed, kitsRetirados, pending, numerados })
       setRecentRegs(list.slice(0, 8))
 
-      const confirmedPayment = (ps: string | null | undefined) => ps === 'paid' || ps === 'free'
       const confirmedList = list.filter((r) => confirmedPayment(r.payment_status))
       const confirmedTotal = confirmedList.length
       const byCategory = confirmedList.reduce<Record<string, number>>((acc, r) => {
