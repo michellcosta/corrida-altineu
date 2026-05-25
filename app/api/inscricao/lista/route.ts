@@ -7,6 +7,42 @@ import { formatDateOnly } from '@/lib/formatDate'
 
 export const dynamic = 'force-dynamic'
 
+/** PostgREST limita ~1000 linhas por requisição; paginar para não omitir inscrições recentes. */
+const SUPABASE_PAGE_SIZE = 1000
+
+const REGISTRATION_SELECT = `
+  id, athlete_id, category_id, registration_number, confirmation_code, status, payment_status, bib_number, notes,
+  athlete:athletes(id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size, document_number)
+`
+
+async function fetchAllEventRegistrations(
+  supabaseService: ReturnType<typeof createServiceClient>,
+  eventId: string,
+  ascending: boolean
+) {
+  const all: Record<string, unknown>[] = []
+  let from = 0
+
+  while (true) {
+    const to = from + SUPABASE_PAGE_SIZE - 1
+    const { data, error } = await supabaseService
+      .from('registrations')
+      .select(REGISTRATION_SELECT)
+      .eq('event_id', eventId)
+      .order('registered_at', { ascending })
+      .range(from, to)
+
+    if (error) throw error
+    const page = data ?? []
+    if (page.length === 0) break
+    all.push(...page)
+    if (page.length < SUPABASE_PAGE_SIZE) break
+    from += SUPABASE_PAGE_SIZE
+  }
+
+  return all
+}
+
 /** Top N exibido na lista pública (municípios BR e países). */
 const TOP_MUNICIPIOS = 5
 const TOP_PAISES = 5
@@ -137,17 +173,14 @@ export async function GET(request: NextRequest) {
       .eq('event_id', event.id)
       .order('name')
 
-    const { data: regsRaw, error } = await supabaseService
-      .from('registrations')
-      .select(`
-        id, athlete_id, category_id, registration_number, confirmation_code, status, payment_status, bib_number, notes,
-        athlete:athletes(id, full_name, email, phone, birth_date, gender, city, state, country, team_name, tshirt_size, document_number)
-      `)
-      .eq('event_id', event.id)
-      .order('registered_at', { ascending: isAdmin ? false : true })
-      .limit(10000)
-
-    if (error) {
+    let regsRaw: Record<string, unknown>[]
+    try {
+      regsRaw = await fetchAllEventRegistrations(
+        supabaseService,
+        event.id,
+        !isAdmin
+      )
+    } catch (error) {
       console.error('Erro ao listar inscritos:', error)
       return NextResponse.json({ error: 'Erro ao listar inscritos' }, { status: 500 })
     }
