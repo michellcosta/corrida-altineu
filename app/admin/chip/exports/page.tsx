@@ -4,6 +4,7 @@ import { useState } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { Loader2, FileSpreadsheet } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
+import { fetchAllRows } from '@/lib/supabase/fetchAllRows'
 import { toast } from 'sonner'
 import { getCountryLabel } from '@/lib/countries'
 import { formatDateOnly } from '@/lib/formatDate'
@@ -122,19 +123,19 @@ export default function ExportsPage() {
     const { data: event } = await supabase.from('events').select('id').eq('year', 2026).single()
     if (!event) throw new Error('Evento não encontrado')
 
-    const { data: regs, error } = await supabase
-      .from('registrations')
-      .select(`
+    return (await fetchAllRows(async (from, to) =>
+      supabase
+        .from('registrations')
+        .select(`
         id, registration_number, confirmation_code, status, bib_number, registered_at,
         athlete:athletes(full_name, email, phone, whatsapp, gender, city, state, country, birth_date, team_name),
         category:categories(name, slug)
       `)
-      .eq('event_id', event.id)
-      .eq('status', 'confirmed')
-      .order('registered_at', { ascending: false })
-
-    if (error) throw error
-    return (regs || []) as any[]
+        .eq('event_id', event.id)
+        .eq('status', 'confirmed')
+        .order('registered_at', { ascending: false })
+        .range(from, to)
+    )) as any[]
   }
 
   function sortByRegNumber(list: any[]) {

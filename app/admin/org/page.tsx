@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
+import { fetchAllRows } from '@/lib/supabase/fetchAllRows'
 import { getCountryLabel } from '@/lib/countries'
 
 function formatCity(athlete: { city?: string | null; state?: string | null; country?: string | null }): string | null {
@@ -132,18 +133,19 @@ export default function OrgAdminDashboard() {
         setDaysToEvent(null)
       }
 
-      const { data: regs } = await supabase
-        .from('registrations')
-        .select(`
+      const list = (await fetchAllRows(async (from, to) =>
+        supabase
+          .from('registrations')
+          .select(`
           id,
           payment_status,
           payment_amount,
           athlete:athletes(full_name, birth_date, gender, city, state, country)
         `)
-        .eq('event_id', event.id)
-        .in('payment_status', ['paid', 'free'])
-
-      const list = (regs || []) as unknown as RegistrationWithAthlete[]
+          .eq('event_id', event.id)
+          .in('payment_status', ['paid', 'free'])
+          .range(from, to)
+      )) as unknown as RegistrationWithAthlete[]
       setTotal(list.length)
 
       const citySet = new Set(list.map((r) => formatCity(r.athlete)).filter((c): c is string => c != null))

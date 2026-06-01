@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { Users, CheckCircle, AlertTriangle, Award, Hash, Download, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
+import { fetchAllRows } from '@/lib/supabase/fetchAllRows'
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendente',
@@ -82,9 +83,10 @@ export default function ChipAdminDashboard() {
         return
       }
 
-      const { data: regs } = await supabase
-        .from('registrations')
-        .select(`
+      const list = (await fetchAllRows(async (from, to) =>
+        supabase
+          .from('registrations')
+          .select(`
           id,
           registration_number,
           status,
@@ -95,10 +97,10 @@ export default function ChipAdminDashboard() {
           athlete:athletes(full_name),
           category:categories(name)
         `)
-        .eq('event_id', event.id)
-        .order('registered_at', { ascending: false })
-
-      const list = (regs || []) as unknown as (RecentRegistration & { kit_picked_at?: string | null })[]
+          .eq('event_id', event.id)
+          .order('registered_at', { ascending: false })
+          .range(from, to)
+      )) as unknown as (RecentRegistration & { kit_picked_at?: string | null })[]
       // Alinhado a Site/Org: só pago ou gratuito confirmado (exclui pendente de pagamento etc.)
       const confirmedPayment = (ps: string | null | undefined) => ps === 'paid' || ps === 'free'
       const total = list.filter((r) => confirmedPayment(r.payment_status)).length

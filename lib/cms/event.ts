@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/serverClient'
+import { fetchAllRows } from '@/lib/supabase/fetchAllRows'
 
 export async function getLatestEvent() {
   const supabase = createClient()
@@ -64,17 +65,20 @@ export async function getEventConfig(year = 2026): Promise<EventConfig | null> {
 
     if (catError) return null
 
-    const { data: regs } = await supabase
-      .from('registrations')
-      .select('category_id, status')
-      .eq('event_id', event.id)
+    const regs = await fetchAllRows((from, to) =>
+      supabase
+        .from('registrations')
+        .select('category_id, status')
+        .eq('event_id', event.id)
+        .range(from, to)
+    )
 
     const isConfirmed = (s: string) => {
       const v = (s || '').toLowerCase().trim()
       return v === 'confirmed' || v === 'confirmado' || v.includes('confirm')
     }
     const confirmedCountByCategory = new Map<string, number>()
-    for (const r of regs || []) {
+    for (const r of regs) {
       if (r.category_id && isConfirmed((r as { status: string }).status ?? '')) {
         const id = String(r.category_id)
         confirmedCountByCategory.set(id, (confirmedCountByCategory.get(id) ?? 0) + 1)

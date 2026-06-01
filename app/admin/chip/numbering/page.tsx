@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { Hash, Loader2, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browserClient'
+import { fetchAllRows } from '@/lib/supabase/fetchAllRows'
 import { toast } from 'sonner'
 
 interface RegWithCat {
@@ -42,16 +43,19 @@ export default function NumberingPage() {
         .order('name')
       setCategories(cats || [])
 
-      const { data: regs } = await supabase
-        .from('registrations')
-        .select(`
+      const regs = await fetchAllRows(async (from, to) =>
+        supabase
+          .from('registrations')
+          .select(`
           id, registration_number, bib_number, status,
           athlete:athletes(full_name),
           category:categories(id, name)
         `)
-        .eq('event_id', event.id)
-        .eq('status', 'confirmed')
-        .order('registered_at', { ascending: true })
+          .eq('event_id', event.id)
+          .eq('status', 'confirmed')
+          .order('registered_at', { ascending: true })
+          .range(from, to)
+      )
 
       setRegistrations((regs as unknown as RegWithCat[]) || [])
     } catch (err: any) {

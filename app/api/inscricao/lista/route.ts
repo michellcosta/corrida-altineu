@@ -4,11 +4,9 @@ import { createClient, createServiceClient } from '@/lib/supabase/serverClient'
 import { getCountryLabel } from '@/lib/countries'
 import { CURRENT_EVENT_YEAR } from '@/lib/eventYear'
 import { formatDateOnly } from '@/lib/formatDate'
+import { fetchAllRows } from '@/lib/supabase/fetchAllRows'
 
 export const dynamic = 'force-dynamic'
-
-/** PostgREST limita ~1000 linhas por requisição; paginar para não omitir inscrições recentes. */
-const SUPABASE_PAGE_SIZE = 1000
 
 const REGISTRATION_SELECT = `
   id, athlete_id, category_id, registration_number, confirmation_code, status, payment_status, bib_number, notes,
@@ -20,27 +18,14 @@ async function fetchAllEventRegistrations(
   eventId: string,
   ascending: boolean
 ) {
-  const all: Record<string, unknown>[] = []
-  let from = 0
-
-  while (true) {
-    const to = from + SUPABASE_PAGE_SIZE - 1
-    const { data, error } = await supabaseService
+  return fetchAllRows((from, to) =>
+    supabaseService
       .from('registrations')
       .select(REGISTRATION_SELECT)
       .eq('event_id', eventId)
       .order('registered_at', { ascending })
       .range(from, to)
-
-    if (error) throw error
-    const page = data ?? []
-    if (page.length === 0) break
-    all.push(...page)
-    if (page.length < SUPABASE_PAGE_SIZE) break
-    from += SUPABASE_PAGE_SIZE
-  }
-
-  return all
+  )
 }
 
 /** Top N exibido na lista pública (municípios BR e países). */
